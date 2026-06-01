@@ -10,6 +10,11 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Academy of Gymnastics - CRM Portal",
   description: "Stateless security authorization and routing dashboard",
+  icons: {
+    icon: "/logo.webp",
+    shortcut: "/logo.webp",
+    apple: "/logo.webp",
+  },
 };
 
 export default function RootLayout({

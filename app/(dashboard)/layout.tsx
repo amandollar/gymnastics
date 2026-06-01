@@ -34,18 +34,18 @@ export default async function DashboardLayout({
               <div className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-brand-orange-600 to-brand-orange-500 opacity-60 blur-xs transition duration-1000 group-hover:opacity-100 group-hover:duration-200"></div>
               <div className="relative h-9 w-9 overflow-hidden rounded-full border border-brand-orange-500 bg-black shadow-sm">
                 <img
-                  src="/IMG_3758.PNG"
+                  src="/logo.webp"
                   alt="TAG"
                   className="h-full w-full object-cover"
                 />
               </div>
             </div>
             <div className="flex flex-col">
-              <span className="text-xs font-black uppercase tracking-[0.18em] text-brand-orange-500 leading-none">
+              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-brand-orange-500 leading-none">
                 The Academy
               </span>
               <span className="mt-1 text-sm font-extrabold text-zinc-900 dark:text-white leading-none">
-                Gymnastics CRM
+                of Gymnastics
               </span>
             </div>
           </div>
