@@ -12,6 +12,11 @@ enum Role {
   TRAINER
 }
 
+enum PlanType {
+  REGULAR
+  ONE_TO_ONE
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -20,4 +25,83 @@ model User {
   role      Role     @default(TRAINER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Student {
+  id            String        @id @default(cuid())
+  studentNumber Int           @unique
+  name          String
+  dateOfBirth   DateTime
+  parentName    String
+  contactNumber String
+  admissionDate DateTime      @default(now())
+  notes         String?
+  avatarUrl     String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  plans         StudentPlan[]
+  attendances   Attendance[]
+}
+
+model SessionPricing {
+  id              String   @id @default(cuid())
+  planType        PlanType
+  daysPerWeek     Int
+  pricePerSession Int
+  updatedAt       DateTime @updatedAt
+
+  @@unique([planType, daysPerWeek])
+}
+
+model PlanTemplate {
+  id             String   @id @default(cuid())
+  name           String
+  planType       PlanType @default(REGULAR)
+  durationMonths Int?
+  totalSessions  Int?
+  validityDays   Int?
+  defaultFee     Int?
+  description    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model StudentPlan {
+  id                String       @id @default(cuid())
+  studentId         String
+  student           Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  planType          PlanType
+  startDate         DateTime
+  endDate           DateTime
+  selectedDays      Json
+  sessionsPerWeek   Int
+  discountPercent   Float        @default(0)
+  totalSessions     Int
+  validityDays      Int
+  expiryDate        DateTime
+  fee               Int
+  pricePerSession   Int
+  sessionsCompleted Int          @default(0)
+  planMonths        Int?
+  isActive          Boolean      @default(true)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  attendances       Attendance[]
+
+  @@index([studentId])
+  @@index([studentId, isActive])
+}
+
+model Attendance {
+  id            String      @id @default(cuid())
+  studentId     String
+  student       Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  studentPlanId String
+  studentPlan   StudentPlan @relation(fields: [studentPlanId], references: [id], onDelete: Cascade)
+  date          DateTime    @db.Date
+  markedById    String?
+  createdAt     DateTime    @default(now())
+
+  @@unique([studentId, date])
+  @@index([studentPlanId])
 }

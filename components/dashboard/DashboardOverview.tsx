@@ -1,6 +1,7 @@
 "use client";
 
 import { useMediaQuery } from "@/components/hooks/useMediaQuery";
+import ChartBox from "@/components/charts/ChartBox";
 import {
   Bar,
   BarChart,
@@ -10,7 +11,6 @@ import {
   LineChart,
   Pie,
   PieChart,
-  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
@@ -24,6 +24,9 @@ import {
   recentActivity,
   formatINR,
 } from "@/lib/sample/dashboard";
+
+const CHART_H = 256;
+const CHART_H_SM = 224;
 
 const chartTooltipStyle = {
   backgroundColor: "#fff",
@@ -75,15 +78,15 @@ function KpiCard({
 function ChartCard({
   title,
   description,
+  chartHeight,
   children,
   footer,
-  chartClassName = "h-52 sm:h-64",
 }: {
   title: string;
   description?: string;
-  children: React.ReactNode;
+  chartHeight: number;
+  children: React.ReactElement;
   footer?: React.ReactNode;
-  chartClassName?: string;
 }) {
   return (
     <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-5 shadow-sm min-w-0 overflow-hidden">
@@ -91,7 +94,9 @@ function ChartCard({
       {description && (
         <p className="mt-0.5 text-xs text-zinc-500">{description}</p>
       )}
-      <div className={`mt-4 ${chartClassName}`}>{children}</div>
+      <div className="mt-4">
+        <ChartBox height={chartHeight}>{children}</ChartBox>
+      </div>
       {footer}
     </div>
   );
@@ -101,7 +106,10 @@ function PieLegend({ data }: { data: { name: string; color: string }[] }) {
   return (
     <ul className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-2">
       {data.map((item) => (
-        <li key={item.name} className="flex items-center gap-1.5 text-xs text-zinc-600">
+        <li
+          key={item.name}
+          className="flex items-center gap-1.5 text-xs text-zinc-600"
+        >
           <span
             className="h-2.5 w-2.5 shrink-0 rounded-full"
             style={{ backgroundColor: item.color }}
@@ -119,6 +127,7 @@ export default function DashboardOverview({
   firstName: string;
 }) {
   const isMobile = useMediaQuery("(max-width: 639px)");
+  const chartH = isMobile ? CHART_H_SM : CHART_H;
   const attendanceData = weeklyAttendance.map((d) => ({
     day: d.day,
     rate: Math.round((d.present / (d.present + d.absent)) * 100),
@@ -128,7 +137,7 @@ export default function DashboardOverview({
     : { top: 8, right: 8, left: -8, bottom: 0 };
 
   return (
-    <div className="space-y-5 sm:space-y-6 min-w-0">
+    <div className="space-y-5 sm:space-y-6 min-w-0 w-full">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-xl sm:text-2xl font-semibold text-zinc-900">
@@ -174,67 +183,68 @@ export default function DashboardOverview({
         <ChartCard
           title="Monthly revenue"
           description="Last 6 months (₹ lakhs)"
+          chartHeight={chartH}
         >
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <LineChart data={revenueByMonth} margin={chartMargin}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" vertical={false} />
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: isMobile ? 10 : 12, fill: "#71717a" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                width={isMobile ? 36 : 48}
-                tick={{ fontSize: isMobile ? 10 : 12, fill: "#71717a" }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => `₹${v}L`}
-              />
-              <Tooltip
-                contentStyle={chartTooltipStyle}
-                formatter={(value) => [`₹${value}L`, "Revenue"]}
-              />
-              <Line
-                type="monotone"
-                dataKey="revenue"
-                stroke="#f16d28"
-                strokeWidth={2.5}
-                dot={{ fill: "#f16d28", r: 4, strokeWidth: 0 }}
-                activeDot={{ r: 6 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <LineChart data={revenueByMonth} margin={chartMargin}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="#f4f4f5"
+              vertical={false}
+            />
+            <XAxis
+              dataKey="month"
+              tick={{ fontSize: isMobile ? 10 : 12, fill: "#71717a" }}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              width={isMobile ? 36 : 48}
+              tick={{ fontSize: isMobile ? 10 : 12, fill: "#71717a" }}
+              axisLine={false}
+              tickLine={false}
+              tickFormatter={(v) => `₹${v}L`}
+            />
+            <Tooltip
+              contentStyle={chartTooltipStyle}
+              formatter={(value) => [`₹${value}L`, "Revenue"]}
+            />
+            <Line
+              type="monotone"
+              dataKey="revenue"
+              stroke="#f16d28"
+              strokeWidth={2.5}
+              dot={{ fill: "#f16d28", r: 4, strokeWidth: 0 }}
+              activeDot={{ r: 6 }}
+            />
+          </LineChart>
         </ChartCard>
 
         <ChartCard
           title="Students by program"
           description="Current active enrollments"
-          chartClassName="h-48 sm:h-56"
+          chartHeight={chartH}
           footer={<PieLegend data={studentsByProgram} />}
         >
-          <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-            <PieChart>
-              <Pie
-                data={studentsByProgram}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                innerRadius={isMobile ? 40 : 52}
-                outerRadius={isMobile ? 64 : 76}
-                paddingAngle={2}
-              >
-                {studentsByProgram.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={chartTooltipStyle}
-                formatter={(value, name) => [`${value} students`, name]}
-              />
-            </PieChart>
-          </ResponsiveContainer>
+          <PieChart>
+            <Pie
+              data={studentsByProgram}
+              dataKey="value"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              innerRadius={isMobile ? 40 : 52}
+              outerRadius={isMobile ? 64 : 76}
+              paddingAngle={2}
+            >
+              {studentsByProgram.map((entry) => (
+                <Cell key={entry.name} fill={entry.color} />
+              ))}
+            </Pie>
+            <Tooltip
+              contentStyle={chartTooltipStyle}
+              formatter={(value, name) => [`${value} students`, name]}
+            />
+          </PieChart>
         </ChartCard>
       </div>
 
@@ -243,29 +253,27 @@ export default function DashboardOverview({
           <ChartCard
             title="Revenue mix"
             description="Share by source this month"
-            chartClassName="h-48 sm:h-64"
+            chartHeight={chartH}
             footer={<PieLegend data={revenueBySource} />}
           >
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <PieChart>
-                <Pie
-                  data={revenueBySource}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={isMobile ? 72 : 88}
-                >
-                  {revenueBySource.map((entry) => (
-                    <Cell key={entry.name} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={chartTooltipStyle}
-                  formatter={(value) => [`${value}%`, "Share"]}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <PieChart>
+              <Pie
+                data={revenueBySource}
+                dataKey="value"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={isMobile ? 72 : 88}
+              >
+                {revenueBySource.map((entry) => (
+                  <Cell key={entry.name} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={chartTooltipStyle}
+                formatter={(value) => [`${value}%`, "Share"]}
+              />
+            </PieChart>
           </ChartCard>
         </div>
 
@@ -273,38 +281,48 @@ export default function DashboardOverview({
           <ChartCard
             title="Weekly attendance"
             description="Daily attendance rate (%)"
+            chartHeight={chartH}
           >
-            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-              <BarChart data={attendanceData} margin={chartMargin}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" vertical={false} />
-                <XAxis
-                  dataKey="day"
-                  tick={{ fontSize: isMobile ? 10 : 12, fill: "#71717a" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  width={isMobile ? 32 : 48}
-                  domain={[80, 100]}
-                  tick={{ fontSize: isMobile ? 10 : 12, fill: "#71717a" }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => `${v}%`}
-                />
-                <Tooltip
-                  contentStyle={chartTooltipStyle}
-                  formatter={(value) => [`${value}%`, "Attendance"]}
-                />
-                <Bar dataKey="rate" fill="#3b82f6" radius={[6, 6, 0, 0]} maxBarSize={isMobile ? 32 : 48} />
-              </BarChart>
-            </ResponsiveContainer>
+            <BarChart data={attendanceData} margin={chartMargin}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="#f4f4f5"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="day"
+                tick={{ fontSize: isMobile ? 10 : 12, fill: "#71717a" }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                width={isMobile ? 32 : 48}
+                domain={[80, 100]}
+                tick={{ fontSize: isMobile ? 10 : 12, fill: "#71717a" }}
+                axisLine={false}
+                tickLine={false}
+                tickFormatter={(v) => `${v}%`}
+              />
+              <Tooltip
+                contentStyle={chartTooltipStyle}
+                formatter={(value) => [`${value}%`, "Attendance"]}
+              />
+              <Bar
+                dataKey="rate"
+                fill="#3b82f6"
+                radius={[6, 6, 0, 0]}
+                maxBarSize={isMobile ? 32 : 48}
+              />
+            </BarChart>
           </ChartCard>
         </div>
       </div>
 
       <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-5 shadow-sm min-w-0">
         <h3 className="text-sm font-medium text-zinc-900">Recent activity</h3>
-        <p className="mt-0.5 text-xs text-zinc-500">Latest updates across the academy</p>
+        <p className="mt-0.5 text-xs text-zinc-500">
+          Latest updates across the academy
+        </p>
         <ul className="mt-4 divide-y divide-zinc-100">
           {recentActivity.map((item) => (
             <li
@@ -312,7 +330,9 @@ export default function DashboardOverview({
               className="flex flex-col gap-0.5 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
             >
               <span className="text-sm text-zinc-700">{item.text}</span>
-              <span className="text-xs text-zinc-400 shrink-0 sm:pl-4">{item.time}</span>
+              <span className="text-xs text-zinc-400 shrink-0 sm:pl-4">
+                {item.time}
+              </span>
             </li>
           ))}
         </ul>

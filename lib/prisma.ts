@@ -1,26 +1,49 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
+import { createPgPool } from "@/lib/db/pg-pool";
 
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
+/** Bump when schema models change — invalidates stale dev singletons */
+const PRISMA_CLIENT_VERSION = "2025-session-pricing-v1";
+
+const globalForPrisma = global as unknown as {
+  prisma?: PrismaClient;
+  prismaClientVersion?: string;
+};
 
 function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error("DATABASE_URL is not set");
-  }
-
-  const pool = new Pool({ connectionString });
+  const pool = createPgPool();
   const adapter = new PrismaPg(pool);
 
-  return new PrismaClient({
+  const client = new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
+
+  if (typeof (client as PrismaClient & { student?: unknown }).student === "undefined") {
+    throw new Error(
+      "Prisma Client is out of date (missing Student model). Run: npm run db:generate — then restart the dev server."
+    );
+  }
+
+  return client;
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+function getPrisma(): PrismaClient {
+  const cached = globalForPrisma.prisma;
+  const versionOk = globalForPrisma.prismaClientVersion === PRISMA_CLIENT_VERSION;
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
+  if (cached && versionOk) {
+    return cached;
+  }
+
+  const client = createPrismaClient();
+
+  if (process.env.NODE_ENV !== "production") {
+    globalForPrisma.prisma = client;
+    globalForPrisma.prismaClientVersion = PRISMA_CLIENT_VERSION;
+  }
+
+  return client;
 }
+
+export const prisma = getPrisma();

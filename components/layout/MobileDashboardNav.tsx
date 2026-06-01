@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import DashboardNav, { HomeIcon, SettingsIcon } from "./DashboardNav";
+import DashboardNav, { HomeIcon, SettingsIcon, UsersIcon } from "./DashboardNav";
 
 export function MobileMenuButton({ onOpen }: { onOpen: () => void }) {
   return (
@@ -89,7 +89,11 @@ export function MobileBottomNav({ isAdmin }: { isAdmin: boolean }) {
       className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-zinc-200 bg-white/95 backdrop-blur-sm pb-[env(safe-area-inset-bottom)]"
       aria-label="Main navigation"
     >
-      <div className={`grid ${isAdmin ? "grid-cols-2" : "grid-cols-1"} h-14`}>
+      <div
+        className={`grid h-14 ${
+          isAdmin ? "grid-cols-3" : "grid-cols-2"
+        }`}
+      >
         <Link
           href="/dashboard"
           className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
@@ -97,7 +101,18 @@ export function MobileBottomNav({ isAdmin }: { isAdmin: boolean }) {
           }`}
         >
           <HomeIcon />
-          Dashboard
+          Home
+        </Link>
+        <Link
+          href="/students"
+          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
+            pathname.startsWith("/students")
+              ? "text-brand-orange-500"
+              : "text-zinc-500"
+          }`}
+        >
+          <UsersIcon />
+          Students
         </Link>
         {isAdmin && (
           <Link

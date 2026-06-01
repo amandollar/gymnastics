@@ -3,10 +3,10 @@ dotenv.config({ path: ".env.local" });
 
 import { PrismaClient, Role } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
-import { Pool } from "pg";
 import * as bcrypt from "bcryptjs";
+import { createPgPool } from "../lib/db/pg-pool";
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const pool = createPgPool();
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
@@ -67,6 +67,41 @@ async function main() {
     },
   });
   console.log(`Trainer: ${trainer.email}`);
+
+  const templates = [
+    {
+      name: "12 Sessions · ~1 month",
+      planType: "REGULAR" as const,
+      totalSessions: 12,
+      validityDays: 36,
+      defaultFee: 3200,
+      description: "Common starter package from academy sheet",
+    },
+    {
+      name: "36 Sessions · ~3 months",
+      planType: "REGULAR" as const,
+      totalSessions: 36,
+      validityDays: 108,
+      defaultFee: 8640,
+    },
+    {
+      name: "60 Sessions · extended",
+      planType: "REGULAR" as const,
+      totalSessions: 60,
+      validityDays: 120,
+      defaultFee: 11880,
+    },
+  ];
+
+  for (const t of templates) {
+    const existing = await prisma.planTemplate.findFirst({
+      where: { name: t.name },
+    });
+    if (!existing) {
+      await prisma.planTemplate.create({ data: t });
+    }
+  }
+  console.log("Plan templates seeded.");
 
   console.log("Seeding complete.");
 }
