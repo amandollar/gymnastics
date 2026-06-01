@@ -11,15 +11,12 @@ export default function LoginPage() {
 
   return (
     <div
-      className="relative flex min-h-screen w-full flex-col lg:flex-row font-sans antialiased select-none bg-cover bg-right bg-no-repeat"
+      className="relative flex min-h-screen min-h-[100dvh] w-full flex-col lg:flex-row font-sans antialiased bg-cover bg-center sm:bg-right bg-no-repeat"
       style={{ backgroundImage: "url('/BgIlluststion.webp')" }}
     >
-      {/* Left Section: Login Form (50% on large width, entirely transparent background) */}
-      <div className="relative flex w-full lg:w-1/2 flex-col justify-center items-center px-6 py-12 sm:px-12 md:px-16 xl:px-24 min-h-screen">
-        
-        {/* Mobile branding header (absolute top-left, visible only on small screens) */}
-        <div className="absolute top-6 left-6 flex items-center gap-4 lg:hidden">
-          <div className="h-16 w-16 overflow-hidden rounded-full border border-zinc-200/80 bg-white p-0.5 shadow-md">
+      <div className="relative flex w-full lg:w-1/2 flex-col justify-center items-center px-4 py-10 pt-[max(2.5rem,env(safe-area-inset-top))] pb-[max(2.5rem,env(safe-area-inset-bottom))] sm:px-12 md:px-16 xl:px-24 min-h-[100dvh] lg:min-h-screen">
+        <div className="absolute top-[max(1.25rem,env(safe-area-inset-top))] left-4 sm:left-6 flex items-center gap-3 lg:hidden">
+          <div className="h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-full border border-zinc-200/80 bg-white p-0.5 shadow-md shrink-0">
             <img
               src="/logo.webp"
               alt="Academy of Gymnastics"
@@ -30,20 +27,19 @@ export default function LoginPage() {
             <span className="text-[11px] font-black uppercase tracking-wider text-brand-orange-500 leading-none">
               The Academy
             </span>
-            <span className="mt-1 text-xl font-black text-zinc-950 uppercase leading-none">
+            <span className="mt-1 text-lg sm:text-xl font-bold text-zinc-950 leading-none">
               of Gymnastics
             </span>
           </div>
         </div>
 
-        {/* Vertically Centered Form Container */}
-        <div className="w-full max-w-sm space-y-8 mt-16 lg:mt-0">
+        <div className="w-full max-w-sm space-y-6 sm:space-y-8 mt-14 sm:mt-16 lg:mt-0">
           <div className="space-y-2">
-            <h1 className="text-3xl font-extrabold tracking-[-0.03em] text-zinc-950">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-950">
               Welcome back
             </h1>
-            <p className="text-sm font-semibold text-zinc-500">
-              Please sign in to your management account
+            <p className="text-sm text-zinc-500">
+              Sign in with your staff account
             </p>
           </div>
 
@@ -52,7 +48,7 @@ export default function LoginPage() {
               <div className="space-y-1.5">
                 <label
                   htmlFor="email"
-                  className="block text-xs font-bold text-zinc-700 tracking-wide uppercase"
+                  className="block text-sm font-medium text-zinc-700"
                 >
                   Email
                 </label>
@@ -70,7 +66,7 @@ export default function LoginPage() {
               <div className="space-y-1.5">
                 <label
                   htmlFor="password"
-                  className="block text-xs font-bold text-zinc-700 tracking-wide uppercase"
+                  className="block text-sm font-medium text-zinc-700"
                 >
                   Password
                 </label>

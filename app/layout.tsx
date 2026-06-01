@@ -8,8 +8,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Academy of Gymnastics - CRM Portal",
-  description: "Stateless security authorization and routing dashboard",
+  title: "TAG CRM · Academy of Gymnastics",
+  description: "Staff portal for The Academy of Gymnastics",
   icons: {
     icon: "/logo.webp",
     shortcut: "/logo.webp",
