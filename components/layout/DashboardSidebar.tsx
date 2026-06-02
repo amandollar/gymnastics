@@ -41,7 +41,7 @@ export default function DashboardSidebar({
       }`}
     >
       {/* Top Header Row */}
-      <div className={`flex h-14 items-center border-b border-zinc-200/80 dark:border-zinc-800/80 px-4 ${
+      <div className={`flex h-14 items-center px-4 ${
         isCollapsed ? "justify-center" : "justify-between gap-2.5"
       }`}>
         {!isCollapsed ? (
@@ -71,10 +71,10 @@ export default function DashboardSidebar({
           /* Expand Button when collapsed */
           <button
             onClick={toggleCollapse}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+            className="flex h-11 w-11 items-center justify-center rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all cursor-pointer"
             title="Expand sidebar"
           >
-            <PanelLeftOpen className="h-4.5 w-4.5" strokeWidth={2} />
+            <PanelLeftOpen className="h-5 w-5" strokeWidth={2} />
           </button>
         )}
       </div>
@@ -101,11 +101,11 @@ export default function DashboardSidebar({
         <DashboardNav pathname={pathname} isAdmin={isAdmin} isCollapsed={isCollapsed} />
       </div>
 
-      {/* Theme Selector (only show when expanded) */}
-      {!isCollapsed && <ThemeSelector />}
+      {/* Theme Selector */}
+      <ThemeSelector isCollapsed={isCollapsed} />
 
       {/* Bottom User Card */}
-      <div className={`p-3 border-t border-zinc-200/80 dark:border-zinc-800/80 bg-zinc-50/50 dark:bg-zinc-900/10 flex items-center justify-between ${
+      <div className={`p-3 bg-zinc-50/50 dark:bg-zinc-900/10 flex items-center justify-between ${
         isCollapsed ? "justify-center" : "gap-3"
       }`}>
         <div className="flex items-center gap-3 min-w-0 flex-1">
