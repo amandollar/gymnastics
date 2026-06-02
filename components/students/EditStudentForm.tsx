@@ -5,6 +5,8 @@ import Link from "next/link";
 import { updateStudentAction } from "@/lib/actions/students";
 import { toDateInputValue } from "@/lib/utils/student";
 import StudentAvatarPicker from "./StudentAvatarPicker";
+import DateOfBirthField from "./DateOfBirthField";
+import SimpleDateInput from "./SimpleDateInput";
 
 const inputClass =
   "w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 focus:border-brand-orange-500 transition-all duration-200";
@@ -107,17 +109,12 @@ export default function EditStudentForm({ student }: { student: StudentData }) {
                 <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
                   Date of birth *
                 </label>
-                <input
-                  name="dateOfBirth"
-                  type="date"
-                  required
-                  max={today}
+                <DateOfBirthField
                   defaultValue={toDateInputValue(new Date(student.dateOfBirth))}
-                  className={inputClass}
+                  maxDate={today}
+                  selectClassName={inputClass}
+                  error={state?.errors?.dateOfBirth?.[0]}
                 />
-                {state?.errors?.dateOfBirth && (
-                  <p className="mt-1 text-xs text-rose-600">{state.errors.dateOfBirth[0]}</p>
-                )}
               </div>
 
               {/* Gender */}
@@ -146,9 +143,8 @@ export default function EditStudentForm({ student }: { student: StudentData }) {
                 <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
                   Admission date *
                 </label>
-                <input
+                <SimpleDateInput
                   name="admissionDate"
-                  type="date"
                   required
                   defaultValue={toDateInputValue(new Date(student.admissionDate))}
                   className={inputClass}

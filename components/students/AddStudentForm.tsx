@@ -1,11 +1,14 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createStudentAction } from "@/lib/actions/students";
 import { toDateInputValue } from "@/lib/utils/student";
 import StudentAvatarPicker from "./StudentAvatarPicker";
 import StudentCreatedSuccess from "./StudentCreatedSuccess";
+import DateOfBirthField from "./DateOfBirthField";
+import SimpleDateInput from "./SimpleDateInput";
 
 const inputClass =
   "w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 focus:border-brand-orange-500 transition-all duration-200";
@@ -34,7 +37,23 @@ function FormSection({
 
 export default function AddStudentForm() {
   const today = toDateInputValue(new Date());
-  const [name, setName] = useState("");
+  const searchParams = useSearchParams();
+  const defaultChildName = searchParams.get("childName") || "";
+  const defaultParentName = searchParams.get("parentName") || "";
+  const defaultContactNumber = searchParams.get("contactNumber") || "";
+  const defaultGender = searchParams.get("gender") || "";
+  const defaultChildAge = searchParams.get("childAge") || "";
+
+  let defaultDob = "";
+  if (defaultChildAge) {
+    const ageNum = Number(defaultChildAge);
+    if (!isNaN(ageNum) && ageNum > 0) {
+      const birthYear = new Date().getFullYear() - ageNum;
+      defaultDob = `${birthYear}-06-01`;
+    }
+  }
+
+  const [name, setName] = useState(defaultChildName);
   const [state, action, pending] = useActionState(createStudentAction, null);
 
   if (
@@ -115,25 +134,19 @@ export default function AddStudentForm() {
                   <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
                     Date of birth *
                   </label>
-                  <input
-                    name="dateOfBirth"
-                    type="date"
-                    required
-                    max={today}
-                    className={inputClass}
+                  <DateOfBirthField
+                    maxDate={today}
+                    defaultValue={defaultDob}
+                    selectClassName={inputClass}
+                    error={state?.errors?.dateOfBirth?.[0]}
                   />
-                  {state?.errors?.dateOfBirth && (
-                    <p className="mt-1 text-xs text-rose-600">
-                      {state.errors.dateOfBirth[0]}
-                    </p>
-                  )}
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
                     Gender *
                   </label>
-                  <select name="gender" required className={inputClass} defaultValue="">
+                  <select name="gender" required className={inputClass} defaultValue={defaultGender}>
                     <option value="" disabled>Select gender</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
@@ -148,9 +161,8 @@ export default function AddStudentForm() {
                   <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
                     Admission date *
                   </label>
-                  <input
+                  <SimpleDateInput
                     name="admissionDate"
-                    type="date"
                     required
                     defaultValue={today}
                     className={inputClass}
@@ -173,7 +185,7 @@ export default function AddStudentForm() {
                   <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
                     Parent's name *
                   </label>
-                  <input name="parentName" required className={inputClass} placeholder="e.g. Vijay Sharma" />
+                  <input name="parentName" required defaultValue={defaultParentName} className={inputClass} placeholder="e.g. Vijay Sharma" />
                   {state?.errors?.parentName && (
                     <p className="mt-1 text-xs text-rose-600">
                       {state.errors.parentName[0]}
@@ -192,6 +204,7 @@ export default function AddStudentForm() {
                     pattern="\d{10}"
                     maxLength={10}
                     required
+                    defaultValue={defaultContactNumber}
                     className={inputClass}
                     placeholder="10 digit mobile"
                   />

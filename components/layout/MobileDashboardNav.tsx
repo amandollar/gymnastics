@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import DashboardNav, { HomeIcon, SettingsIcon, UsersIcon } from "./DashboardNav";
+import DashboardNav, { HomeIcon, SettingsIcon, UsersIcon, EnquiryIcon } from "./DashboardNav";
 import { Menu, X, LogOut } from "lucide-react";
 
 export function MobileMenuButton({ onOpen }: { onOpen: () => void }) {
@@ -94,7 +94,7 @@ export function MobileBottomNav({
     >
       <div
         className={`grid h-14 ${
-          isAdmin ? "grid-cols-4" : "grid-cols-3"
+          isAdmin ? "grid-cols-5" : "grid-cols-4"
         }`}
       >
         <Link
@@ -116,6 +116,17 @@ export function MobileBottomNav({
         >
           <UsersIcon />
           Students
+        </Link>
+        <Link
+          href="/enquiries"
+          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
+            pathname.startsWith("/enquiries")
+              ? "text-brand-orange-500"
+              : "text-zinc-500 dark:text-zinc-400"
+          }`}
+        >
+          <EnquiryIcon />
+          Enquiries
         </Link>
         {isAdmin && (
           <Link

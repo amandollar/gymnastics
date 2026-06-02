@@ -107,3 +107,29 @@ model Attendance {
   @@unique([studentId, date])
   @@index([studentPlanId])
 }
+
+enum EnquiryStatus {
+  NEW
+  CONTACTED
+  FOLLOW_UP
+  CONVERTED
+  LOST
+}
+
+model Enquiry {
+  id              String        @id @default(cuid())
+  enquiryNumber   Int           @unique
+  childName       String
+  childAge        Int?
+  gender          String?
+  parentName      String
+  contactNumber   String
+  source          String?
+  interestedIn    String?
+  status          EnquiryStatus @default(NEW)
+  notes           String?
+  followUpDate    DateTime?
+  convertedToId   String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}

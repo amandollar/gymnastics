@@ -4,6 +4,15 @@ import { useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { buildDiceBearAvatarUrl } from "@/lib/utils/avatar";
 
+const MAX_SIZE_MB = 2;
+const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function StudentAvatarPicker({
   name,
   defaultSeed = "new-student",
@@ -15,6 +24,8 @@ export default function StudentAvatarPicker({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previewFile, setPreviewFile] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(null);
 
   const dicebearSrc = useMemo(() => {
     const seed = name.trim() || defaultSeed;
@@ -26,20 +37,39 @@ export default function StudentAvatarPicker({
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
+    setUploadError(null);
+    setFileInfo(null);
+
     if (!file) {
       setPreviewFile(null);
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      alert("Image must be smaller than 2 MB");
+
+    // Validate file type
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError("Unsupported format. Please use JPG, PNG, or WebP.");
       e.target.value = "";
       return;
     }
+
+    // Validate file size
+    if (file.size > MAX_SIZE_BYTES) {
+      setUploadError(
+        `File is ${formatFileSize(file.size)} — exceeds the ${MAX_SIZE_MB} MB limit. Try a smaller photo or compress it.`
+      );
+      e.target.value = "";
+      return;
+    }
+
+    setFileInfo({ name: file.name, size: file.size });
     setPreviewFile(URL.createObjectURL(file));
   }
 
   function clearUpload() {
     setPreviewFile(null);
+    setUploadError(null);
+    setFileInfo(null);
     if (inputRef.current) inputRef.current.value = "";
   }
 
@@ -78,14 +108,46 @@ export default function StudentAvatarPicker({
         </div>
       </div>
 
-      {previewFile && (
-        <button
-          type="button"
-          onClick={clearUpload}
-          className="rounded-lg px-2.5 py-1 text-[11px] font-bold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer transition-colors"
-        >
-          Remove Photo
-        </button>
+      {/* Success state: file info + remove button */}
+      {previewFile && fileInfo && (
+        <div className="flex flex-col items-center gap-1">
+          <span className="inline-flex items-center gap-1.5 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+              <path fillRule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.74a.75.75 0 0 1 1.04-.207Z" clipRule="evenodd" />
+            </svg>
+            {formatFileSize(fileInfo.size)}
+          </span>
+          <button
+            type="button"
+            onClick={clearUpload}
+            className="rounded-lg px-2.5 py-1 text-[11px] font-bold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 cursor-pointer transition-colors"
+          >
+            Remove Photo
+          </button>
+        </div>
+      )}
+
+      {/* Error state: inline error message */}
+      {uploadError && (
+        <div className="flex items-start gap-1.5 max-w-[220px] text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5 text-red-500 mt-0.5 shrink-0">
+            <path fillRule="evenodd" d="M6.701 2.25c.577-1 2.02-1 2.598 0l5.196 9a1.5 1.5 0 0 1-1.299 2.25H2.804a1.5 1.5 0 0 1-1.3-2.25l5.197-9ZM8 4a.75.75 0 0 1 .75.75v3a.75.75 0 0 1-1.5 0v-3A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clipRule="evenodd" />
+          </svg>
+          <p className="text-[11px] text-red-600 dark:text-red-400 font-medium leading-tight">
+            {uploadError}
+          </p>
+        </div>
+      )}
+
+      {/* Guidance hint — shown only when no file is selected and no error */}
+      {!previewFile && !uploadError && (
+        <p className="text-[11px] text-zinc-400 dark:text-zinc-500 text-center leading-relaxed max-w-[200px]">
+          JPG recommended · Max 2 MB
+          <br />
+          <span className="text-zinc-350 dark:text-zinc-600">
+            PNG, WebP, GIF also supported
+          </span>
+        </p>
       )}
 
       <input

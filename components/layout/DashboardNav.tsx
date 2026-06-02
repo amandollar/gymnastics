@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Home, Users, FileText, CheckCircle, IndianRupee, Settings, Dumbbell } from "lucide-react";
+import { Home, Users, FileText, CheckCircle, IndianRupee, Settings, Dumbbell, ClipboardList } from "lucide-react";
 
 export const navLinkClass = (active: boolean, isCollapsed = false) =>
   `flex items-center ${isCollapsed ? "justify-center" : "gap-2.5"} rounded-lg ${isCollapsed ? "px-2" : "px-3"} ${
@@ -71,6 +71,15 @@ export default function DashboardNav({
       </Link>
       <DisabledItem icon={<CheckIcon className={disabledIconClass} />} label="Attendance" isCollapsed={isCollapsed} />
       <DisabledItem icon={<CurrencyIcon className={disabledIconClass} />} label="Fees" isCollapsed={isCollapsed} />
+      <Link
+        href="/enquiries"
+        onClick={close}
+        className={navLinkClass(pathname.startsWith("/enquiries"), isCollapsed)}
+        title={isCollapsed ? "Enquiries" : undefined}
+      >
+        <EnquiryIcon className={iconClass} />
+        {!isCollapsed && "Enquiries"}
+      </Link>
       {isAdmin && (
         <Link
           href="/settings"
@@ -139,6 +148,10 @@ function CurrencyIcon({ className = "h-4 w-4 shrink-0 opacity-60" }: { className
 
 function SettingsIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {}) {
   return <Settings className={className} strokeWidth={2} />;
+}
+
+export function EnquiryIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {}) {
+  return <ClipboardList className={className} strokeWidth={2} />;
 }
 
 export { HomeIcon, SettingsIcon };
