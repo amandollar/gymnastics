@@ -400,7 +400,7 @@ export default function EnquiryListClient({
               </div>
 
               {/* Mobile Actions */}
-              <div className="mt-3 flex items-center gap-2 border-t border-zinc-100 dark:border-zinc-800 pt-3">
+              <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-zinc-100 dark:border-zinc-800 pt-3">
                 {canManage && e.status !== "CONVERTED" && (
                   <Link
                     href={`/students/new?childName=${encodeURIComponent(
@@ -448,7 +448,7 @@ export default function EnquiryListClient({
 
       {/* Desktop view */}
       <div className="hidden md:block rounded-lg border-0 bg-white dark:bg-zinc-900 shadow-sm overflow-x-auto transition-colors">
-        <table className="w-full text-left text-sm min-w-[800px]">
+        <table className="w-full text-left text-sm min-w-[720px]">
           <thead>
             <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-800/40 text-xs font-medium text-zinc-500 dark:text-zinc-400">
               <th className="px-4 py-3 w-16">#</th>

@@ -8,7 +8,7 @@ export default async function NewEnquiryPage() {
   const role = (session.user as { role?: string })?.role;
   if (role !== "ADMIN" && role !== "MANAGER") redirect("/dashboard");
   return (
-    <div className="mx-auto max-w-3xl min-w-0 w-full">
+    <div className="mx-auto max-w-7xl min-w-0 w-full">
       <AddEnquiryForm />
     </div>
   );

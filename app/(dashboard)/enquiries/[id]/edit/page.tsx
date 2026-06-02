@@ -18,7 +18,7 @@ export default async function EditEnquiryPage({
   if (!enquiry) notFound();
 
   return (
-    <div className="mx-auto max-w-3xl min-w-0 w-full">
+    <div className="mx-auto max-w-7xl min-w-0 w-full">
       <EditEnquiryForm enquiry={JSON.parse(JSON.stringify(enquiry))} />
     </div>
   );
