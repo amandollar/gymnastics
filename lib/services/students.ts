@@ -268,3 +268,98 @@ export function parsePlanFormDates(start: string, end: string) {
     endDate: parseDateInput(end),
   };
 }
+
+export interface BulkStudentPayload {
+  name: string;
+  dateOfBirth: Date;
+  gender: string;
+  parentName: string;
+  contactNumber: string;
+  admissionDate: Date;
+  plan: {
+    planType: PlanType;
+    startDate: Date;
+    endDate: Date;
+    totalSessions: number;
+    fee: number;
+    sessionsCompleted: number;
+  } | null;
+  attendances: Date[];
+}
+
+import { randomUUID } from "crypto";
+
+export async function bulkImportStudents(students: BulkStudentPayload[]) {
+  const currentStudentNumberRes = await prisma.student.aggregate({
+    _max: { studentNumber: true },
+  });
+  let currentStudentNumber = currentStudentNumberRes._max.studentNumber ?? 0;
+
+  const studentsToCreate = [];
+  const plansToCreate = [];
+  const attendancesToCreate = [];
+  const results = [];
+
+  for (const data of students) {
+    currentStudentNumber++;
+    const studentId = randomUUID();
+
+    studentsToCreate.push({
+      id: studentId,
+      studentNumber: currentStudentNumber,
+      name: data.name,
+      dateOfBirth: data.dateOfBirth,
+      gender: data.gender || "Other",
+      parentName: data.parentName,
+      contactNumber: data.contactNumber,
+      admissionDate: data.admissionDate,
+    });
+
+    results.push({ id: studentId, name: data.name });
+
+    if (data.plan) {
+      const planId = randomUUID();
+      const validityDays = Math.ceil((data.plan.endDate.getTime() - data.plan.startDate.getTime()) / (1000 * 60 * 60 * 24));
+      const pricePerSession = data.plan.totalSessions > 0 ? Math.round(data.plan.fee / data.plan.totalSessions) : 0;
+      
+      plansToCreate.push({
+        id: planId,
+        studentId: studentId,
+        planType: data.plan.planType,
+        startDate: data.plan.startDate,
+        endDate: data.plan.endDate,
+        selectedDays: [], // Historical data might not specify selected days
+        sessionsPerWeek: 0,
+        discountPercent: 0,
+        totalSessions: data.plan.totalSessions,
+        validityDays,
+        expiryDate: data.plan.endDate,
+        fee: data.plan.fee,
+        pricePerSession,
+        sessionsCompleted: data.plan.sessionsCompleted,
+        isActive: true,
+      });
+
+      if (data.attendances && data.attendances.length > 0) {
+        const uniqueDates = Array.from(new Set(data.attendances.map(d => d.toISOString().split('T')[0])));
+        for (const dateStr of uniqueDates) {
+           attendancesToCreate.push({
+              studentId: studentId,
+              studentPlanId: planId,
+              date: new Date(dateStr)
+           });
+        }
+      }
+    }
+  }
+
+  // Blazing fast array-based transaction with exactly 3 bulk queries total
+  await prisma.$transaction([
+    prisma.student.createMany({ data: studentsToCreate, skipDuplicates: true }),
+    ...(plansToCreate.length > 0 ? [prisma.studentPlan.createMany({ data: plansToCreate, skipDuplicates: true })] : []),
+    ...(attendancesToCreate.length > 0 ? [prisma.attendance.createMany({ data: attendancesToCreate, skipDuplicates: true })] : [])
+  ]);
+  
+  return results;
+}
+

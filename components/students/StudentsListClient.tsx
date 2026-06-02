@@ -234,12 +234,20 @@ export default function StudentsListClient({
           </p>
         </div>
         {canManage && (
-          <Link
-            href="/students/new"
-            className="inline-flex w-full sm:w-auto items-center justify-center rounded-lg bg-brand-orange-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-orange-600 transition-colors"
-          >
-            Add student
-          </Link>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Link
+              href="/students/bulk-upload"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+            >
+              Bulk upload
+            </Link>
+            <Link
+              href="/students/new"
+              className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-lg bg-brand-orange-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-orange-600 transition-colors"
+            >
+              Add student
+            </Link>
+          </div>
         )}
       </div>
 

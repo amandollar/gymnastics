@@ -231,3 +231,29 @@ export async function assignPlanAction(
     };
   }
 }
+
+export async function bulkImportStudentsAction(
+  data: import("@/lib/services/students").BulkStudentPayload[]
+): Promise<{ success: boolean; message?: string; importedCount?: number }> {
+  try {
+    await assertCanManageStudents();
+    
+    if (!data || data.length === 0) {
+       return { success: false, message: "No valid data to import." };
+    }
+
+    const { bulkImportStudents } = await import("@/lib/services/students");
+    const results = await bulkImportStudents(data);
+
+    revalidatePath("/students");
+    revalidatePath("/dashboard");
+
+    return { success: true, message: "Bulk import completed successfully.", importedCount: results.length };
+  } catch (e) {
+    console.error("Bulk import error:", e);
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Failed to import students",
+    };
+  }
+}
