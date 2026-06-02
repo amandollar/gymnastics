@@ -91,6 +91,10 @@ export async function getStudentById(id: string) {
       plans: {
         orderBy: { createdAt: "desc" },
       },
+      attendances: {
+        orderBy: { date: "asc" },
+        select: { id: true, date: true, studentPlanId: true },
+      },
     },
   });
 
@@ -120,10 +124,12 @@ export async function getStudentById(id: string) {
 export async function createStudent(data: {
   name: string;
   dateOfBirth: Date;
+  gender: string;
   parentName: string;
   contactNumber: string;
   admissionDate: Date;
   notes?: string;
+  medicalHistory?: string;
   avatarFile?: File | null;
 }) {
   const studentNumber = await getNextStudentNumber();
@@ -133,11 +139,55 @@ export async function createStudent(data: {
       studentNumber,
       name: data.name,
       dateOfBirth: data.dateOfBirth,
+      gender: data.gender,
       parentName: data.parentName,
       contactNumber: data.contactNumber,
       admissionDate: data.admissionDate,
       notes: data.notes,
+      medicalHistory: data.medicalHistory,
       avatarUrl: null,
+    },
+  });
+
+  if (data.avatarFile && data.avatarFile.size > 0) {
+    const uploadedUrl = await uploadStudentAvatarToCloudinary(
+      student.id,
+      data.avatarFile
+    );
+    return prisma.student.update({
+      where: { id: student.id },
+      data: { avatarUrl: uploadedUrl },
+    });
+  }
+
+  return student;
+}
+
+export async function updateStudent(
+  id: string,
+  data: {
+    name: string;
+    dateOfBirth: Date;
+    gender: string;
+    parentName: string;
+    contactNumber: string;
+    admissionDate: Date;
+    notes?: string;
+    medicalHistory?: string;
+    avatarFile?: File | null;
+  }
+) {
+  const student = await prisma.student.update({
+    where: { id },
+    data: {
+      name: data.name,
+      dateOfBirth: data.dateOfBirth,
+      gender: data.gender,
+      parentName: data.parentName,
+      contactNumber: data.contactNumber,
+      admissionDate: data.admissionDate,
+      notes: data.notes ?? null,
+      medicalHistory: data.medicalHistory ?? null,
     },
   });
 

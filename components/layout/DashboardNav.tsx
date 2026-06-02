@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Home, Users, FileText, CheckCircle, IndianRupee, Settings } from "lucide-react";
+import { Home, Users, FileText, CheckCircle, IndianRupee, Settings, Dumbbell } from "lucide-react";
 
 export const navLinkClass = (active: boolean, isCollapsed = false) =>
   `flex items-center ${isCollapsed ? "justify-center" : "gap-2.5"} rounded-lg ${isCollapsed ? "px-2" : "px-3"} ${
@@ -50,6 +50,15 @@ export default function DashboardNav({
       >
         <UsersIcon className={iconClass} />
         {!isCollapsed && "Students"}
+      </Link>
+      <Link
+        href="/mentors"
+        onClick={close}
+        className={navLinkClass(pathname.startsWith("/mentors"), isCollapsed)}
+        title={isCollapsed ? "Mentors" : undefined}
+      >
+        <GymIcon className={iconClass} />
+        {!isCollapsed && "Mentors"}
       </Link>
       <Link
         href="/plans"
@@ -110,6 +119,10 @@ function HomeIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {
 
 export function UsersIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {}) {
   return <Users className={className} strokeWidth={2} />;
+}
+
+export function GymIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {}) {
+  return <Dumbbell className={className} strokeWidth={2} />;
 }
 
 function DocIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {}) {

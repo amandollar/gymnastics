@@ -3,12 +3,27 @@ import { z } from "zod";
 export const createStudentSchema = z.object({
   name: z.string().min(2, "Name is required"),
   dateOfBirth: z.string().min(1, "Date of birth is required"),
+  gender: z.enum(["Male", "Female", "Other"]),
   parentName: z.string().min(2, "Parent name is required"),
   contactNumber: z
     .string()
     .regex(/^\d{10}$/, "Contact must be exactly 10 digits"),
   admissionDate: z.string().min(1, "Admission date is required"),
   notes: z.string().optional(),
+  medicalHistory: z.string().optional(),
+});
+
+export const updateStudentSchema = z.object({
+  name: z.string().min(2, "Name is required"),
+  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  gender: z.enum(["Male", "Female", "Other"]),
+  parentName: z.string().min(2, "Parent name is required"),
+  contactNumber: z
+    .string()
+    .regex(/^\d{10}$/, "Contact must be exactly 10 digits"),
+  admissionDate: z.string().min(1, "Admission date is required"),
+  notes: z.string().optional(),
+  medicalHistory: z.string().optional(),
 });
 
 export const assignPlanSchema = z.object({

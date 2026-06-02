@@ -26,7 +26,7 @@ export default async function StudentDetailPage({
   if (!student) notFound();
 
   return (
-    <div className="mx-auto max-w-4xl min-w-0 w-full">
+    <div className="mx-auto max-w-7xl min-w-0 w-full">
       <StudentDetailClient
         canManage={canManage}
         showAssignInitially={assignPlan === "1"}

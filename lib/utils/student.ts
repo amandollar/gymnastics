@@ -52,8 +52,22 @@ export function computeTenureMonths(
   return Math.max(0, months);
 }
 
+export function formatJoinedDate(date: Date): string {
+  return date.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 export function formatTenure(admissionDate: Date): string {
-  return `${computeTenureMonths(admissionDate)} Months`;
+  const months = computeTenureMonths(admissionDate);
+  if (months < 1) return "Just joined";
+  const years = Math.floor(months / 12);
+  const rem = months % 12;
+  if (years === 0) return `${rem} month${rem !== 1 ? "s" : ""}`;
+  if (rem === 0) return `${years} year${years !== 1 ? "s" : ""}`;
+  return `${years} year${years !== 1 ? "s" : ""} ${rem} month${rem !== 1 ? "s" : ""}`;
 }
 
 /** Status logic from plan.md (master) — never stored in DB */

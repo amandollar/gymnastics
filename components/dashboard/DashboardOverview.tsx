@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { UserPlus, UserCheck, IndianRupee, ChevronRight, X, Check } from "lucide-react";
 import { useMediaQuery } from "@/components/hooks/useMediaQuery";
 import ChartBox from "@/components/charts/ChartBox";
@@ -61,7 +62,6 @@ export default function DashboardOverview({
 
   // Modals visibility state
   const [qrOpen, setQrOpen] = useState(false);
-  const [admissionOpen, setAdmissionOpen] = useState(false);
   const [feeOpen, setFeeOpen] = useState(false);
 
   // Camera QR Scanner states
@@ -73,14 +73,6 @@ export default function DashboardOverview({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // New Admission states
-  const [newStudentName, setNewStudentName] = useState("");
-  const [newParentName, setNewParentName] = useState("");
-  const [newContact, setNewContact] = useState("");
-  const [newDob, setNewDob] = useState("");
-  const [selectedPlan, setSelectedPlan] = useState("36s");
-  const [customFee, setCustomFee] = useState("8640");
-  const [admissionSuccess, setAdmissionSuccess] = useState(false);
 
   // Collect Fee states
   const [feeSearchQuery, setFeeSearchQuery] = useState("");
@@ -131,13 +123,6 @@ export default function DashboardOverview({
     return () => stopCamera();
   }, [qrOpen, scanMethod]);
 
-  // Handle Plan Change - Autofill default fees
-  const handlePlanChange = (plan: string) => {
-    setSelectedPlan(plan);
-    if (plan === "12s") setCustomFee("3200");
-    else if (plan === "36s") setCustomFee("8640");
-    else if (plan === "60s") setCustomFee("11880");
-  };
 
   // Simulate scanning a student
   const handleSimulateScan = (student: typeof dummyStudents[0]) => {
@@ -289,11 +274,8 @@ export default function DashboardOverview({
         </button>
 
         {/* Action 2: New Admission (Emerald Green) */}
-        <button
-          onClick={() => {
-            setAdmissionOpen(true);
-            setAdmissionSuccess(false);
-          }}
+        <Link
+          href="/students/new"
           className="group flex flex-col sm:flex-row items-center gap-2.5 sm:gap-4.5 py-4.5 px-3 sm:py-5.5 sm:px-4.5 rounded-3xl border-0 bg-emerald-200/90 dark:bg-emerald-950/60 hover:bg-emerald-300/80 dark:hover:bg-emerald-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center sm:text-left w-full"
         >
           <img 
@@ -310,7 +292,7 @@ export default function DashboardOverview({
             </span>
           </div>
           <ChevronRight className="hidden sm:block h-5 w-5 ml-auto text-emerald-955 dark:text-emerald-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" strokeWidth={2.5} />
-        </button>
+        </Link>
 
         {/* Action 3: Collect Fee (Charcoal / Zinc grey) */}
         <button
@@ -641,182 +623,7 @@ export default function DashboardOverview({
 
           </div>
         </div>
-      )}
-
-      {/* Interactive Modal 2: New Admission */}
-      {admissionOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 border-0 shadow-2xl p-6">
-            
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-850 pb-4 mb-4">
-              <div>
-                <h3 className="text-base font-bold text-zinc-950 dark:text-zinc-50">
-                  New Student Admission
-                </h3>
-                <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
-                  Register a student and assign an initial plan
-                </p>
-              </div>
-              <button
-                onClick={() => setAdmissionOpen(false)}
-                className="h-8 w-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-              >
-                <X className="h-5 w-5" strokeWidth={2} />
-              </button>
-            </div>
-
-            {admissionSuccess ? (
-              <div className="py-6 text-center flex flex-col items-center">
-                <span className="h-12 w-12 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md mb-4 animate-scale-in">
-                  <Check className="h-6 w-6" strokeWidth={3} />
-                </span>
-                <h4 className="font-bold text-lg text-emerald-600 dark:text-emerald-400">
-                  Admission Registered!
-                </h4>
-                <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2 px-4 max-w-sm">
-                  {newStudentName} has been successfully added to TAG Academy and enrolled in the plan.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setAdmissionOpen(false)}
-                  className="mt-6 px-5 py-2.5 rounded-xl text-xs font-bold bg-zinc-900 dark:bg-zinc-800 text-white hover:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
-                >
-                  Return to Dashboard
-                </button>
-              </div>
-            ) : (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!newStudentName || !newContact) return;
-                  setAdmissionSuccess(true);
-                }}
-                className="space-y-4"
-              >
-                {/* Form fields */}
-                <div className="grid grid-cols-2 gap-3.5">
-                  <div className="flex flex-col gap-1 col-span-2">
-                    <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-                      Student Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={newStudentName}
-                      onChange={(e) => setNewStudentName(e.target.value)}
-                      placeholder="e.g. Advait Tambe"
-                      className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-                      Parent's Name
-                    </label>
-                    <input
-                      type="text"
-                      value={newParentName}
-                      onChange={(e) => setNewParentName(e.target.value)}
-                      placeholder="e.g. Saif Tambe"
-                      className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-                      Contact Number *
-                    </label>
-                    <input
-                      type="tel"
-                      required
-                      value={newContact}
-                      onChange={(e) => setNewContact(e.target.value)}
-                      placeholder="10-digit mobile"
-                      className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-                      Date of Birth
-                    </label>
-                    <input
-                      type="date"
-                      value={newDob}
-                      onChange={(e) => setNewDob(e.target.value)}
-                      className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1">
-                    <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-                      Admission Date
-                    </label>
-                    <input
-                      type="date"
-                      defaultValue={new Date().toISOString().split("T")[0]}
-                      className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
-                    />
-                  </div>
-                </div>
-
-                <div className="border-t border-zinc-100 dark:border-zinc-850 pt-3 space-y-3">
-                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-                    Plan Assignment
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-3.5">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-                        Select Plan Template
-                      </label>
-                      <select
-                        value={selectedPlan}
-                        onChange={(e) => handlePlanChange(e.target.value)}
-                        className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
-                      >
-                        <option value="12s">Gold - 12 Sessions (36 Days)</option>
-                        <option value="36s">Diamond - 36 Sessions (108 Days)</option>
-                        <option value="60s">Platinum - 60 Sessions (120 Days)</option>
-                      </select>
-                    </div>
-
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-                        Custom Fee Charged (INR)
-                      </label>
-                      <input
-                        type="number"
-                        value={customFee}
-                        onChange={(e) => setCustomFee(e.target.value)}
-                        placeholder="Default plan fee"
-                        className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 font-semibold"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-end gap-2 border-t border-zinc-100 dark:border-zinc-850 pt-4 mt-4">
-                  <button
-                    type="button"
-                    onClick={() => setAdmissionOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-colors cursor-pointer"
-                  >
-                    Confirm Admission
-                  </button>
-                </div>
-              </form>
-            )}
-
-          </div>
-        </div>
+ 
       )}
 
       {/* Interactive Modal 3: Collect Fee */}

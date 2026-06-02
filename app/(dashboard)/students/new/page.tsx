@@ -12,7 +12,7 @@ export default async function NewStudentPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl min-w-0 w-full">
+    <div className="mx-auto max-w-7xl min-w-0 w-full">
       <AddStudentForm />
     </div>
   );

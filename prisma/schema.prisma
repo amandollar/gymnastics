@@ -28,19 +28,21 @@ model User {
 }
 
 model Student {
-  id            String        @id @default(cuid())
-  studentNumber Int           @unique
-  name          String
-  dateOfBirth   DateTime
-  parentName    String
-  contactNumber String
-  admissionDate DateTime      @default(now())
-  notes         String?
-  avatarUrl     String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  plans         StudentPlan[]
-  attendances   Attendance[]
+  id             String        @id @default(cuid())
+  studentNumber  Int           @unique
+  name           String
+  dateOfBirth    DateTime
+  gender         String
+  parentName     String
+  contactNumber  String
+  admissionDate  DateTime      @default(now())
+  notes          String?
+  medicalHistory String?
+  avatarUrl      String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  plans          StudentPlan[]
+  attendances    Attendance[]
 }
 
 model SessionPricing {

@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import AssignPlanForm from "./AssignPlanForm";
 import StudentStatusBadge from "./StudentStatusBadge";
@@ -9,12 +8,15 @@ import StudentAvatar from "./StudentAvatar";
 import {
   formatAge,
   formatINR,
+  formatJoinedDate,
   formatTenure,
   toDateInputValue,
   type StudentStatus,
 } from "@/lib/utils/student";
 import { computeDaysLeft } from "@/lib/plan/calculations";
 import type { PricingMaps } from "@/lib/plan/pricing-defaults";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type PlanRow = {
   id: string;
@@ -30,6 +32,403 @@ type PlanRow = {
   discountPercent: number;
 };
 
+type AttendanceRow = {
+  id: string;
+  date: Date;
+  studentPlanId: string;
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatSessionDate(date: Date) {
+  return new Date(date).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+/** Returns YYYY-MM-DD string for a date (no timezone shift) */
+function toYMD(date: Date) {
+  const d = new Date(date);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// ─── Calendar Popup ───────────────────────────────────────────────────────────
+
+function CalendarPopup({
+  attendanceMap,
+  onClose,
+}: {
+  attendanceMap: Map<string, number>; // "YYYY-MM-DD" → sessionNumber
+  onClose: () => void;
+}) {
+  const today = new Date();
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth()); // 0-indexed
+
+  const monthName = new Date(viewYear, viewMonth, 1).toLocaleDateString(
+    "en-IN",
+    { month: "long", year: "numeric" }
+  );
+
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+
+  function prevMonth() {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
+    else setViewMonth(m => m - 1);
+  }
+  function nextMonth() {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
+    else setViewMonth(m => m + 1);
+  }
+
+  const cells: (number | null)[] = [
+    ...Array(firstDay).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-sm bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100 dark:border-zinc-800">
+          <button
+            onClick={prevMonth}
+            className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500"
+          >
+            ‹
+          </button>
+          <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            {monthName}
+          </span>
+          <button
+            onClick={nextMonth}
+            className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-500"
+          >
+            ›
+          </button>
+          <button
+            onClick={onClose}
+            className="ml-2 p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-400 text-sm"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Day labels */}
+        <div className="grid grid-cols-7 text-center text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase px-4 pt-3 pb-1">
+          {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d) => (
+            <span key={d}>{d}</span>
+          ))}
+        </div>
+
+        {/* Day cells */}
+        <div className="grid grid-cols-7 gap-px px-4 pb-5">
+          {cells.map((day, idx) => {
+            if (!day) return <div key={`empty-${idx}`} />;
+            const key = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+            const sessionNum = attendanceMap.get(key);
+            const isPresent = sessionNum !== undefined;
+            return (
+              <div
+                key={key}
+                className={`flex flex-col items-center justify-center rounded-xl py-1.5 text-xs transition-colors ${
+                  isPresent
+                    ? "bg-brand-orange-500 text-white font-bold"
+                    : "text-zinc-500 dark:text-zinc-400"
+                }`}
+              >
+                <span className={isPresent ? "text-[9px] font-bold opacity-80" : "hidden"}>
+                  S{sessionNum}
+                </span>
+                <span>{day}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center gap-2 px-5 pb-4 text-xs text-zinc-400 dark:text-zinc-500">
+          <span className="inline-block w-3 h-3 rounded bg-brand-orange-500" />
+          Session attended
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Plan Package Card ────────────────────────────────────────────────────────
+
+function PlanCard({
+  plan,
+  sessionsPending,
+  status,
+  student,
+  canManage,
+  showAssign,
+  setShowAssign,
+  pricingMaps,
+  onPlanAssigned,
+}: {
+  plan: PlanRow | null;
+  sessionsPending: number | null;
+  status: StudentStatus;
+  student: { id: string; name: string; parentName: string; contactNumber: string };
+  canManage: boolean;
+  showAssign: boolean;
+  setShowAssign: (v: boolean) => void;
+  pricingMaps: PricingMaps;
+  onPlanAssigned: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const msgRef = useRef<HTMLTextAreaElement>(null);
+
+  const isGraceOrFreeze = status === "GRACE" || status === "FREEZE";
+  const daysLeft = plan ? computeDaysLeft(new Date(plan.expiryDate)) : 0;
+  const graceDeadline = plan
+    ? new Date(new Date(plan.expiryDate).getTime() + 6 * 24 * 60 * 60 * 1000)
+    : null;
+
+  const waMessage = plan
+    ? `Hi ${student.parentName}, 🙏\n\n${student.name}'s gymnastics plan (${plan.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular"}) ${status === "FREEZE" ? "has expired" : "is expiring soon"} on ${new Date(plan.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.\n\nYou have a 6-day grace period until ${graceDeadline?.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}. Please renew the plan soon to avoid any break in sessions.\n\nThank you! 🤸`
+    : "";
+
+  function copyMessage() {
+    navigator.clipboard.writeText(waMessage).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  function openWhatsApp() {
+    const encoded = encodeURIComponent(waMessage);
+    const phone = student.contactNumber.replace(/\D/g, "");
+    window.open(`https://wa.me/91${phone}?text=${encoded}`, "_blank");
+  }
+
+  // Progress bar
+  const progress = plan
+    ? Math.min(100, Math.round((plan.sessionsCompleted / plan.totalSessions) * 100))
+    : 0;
+
+  return (
+    <div className="rounded-3xl bg-white dark:bg-zinc-900 p-5 shadow-sm space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+          Plan Package
+        </h2>
+        {canManage && plan && (
+          <button
+            type="button"
+            onClick={() => setShowAssign(!showAssign)}
+            className="text-xs font-medium text-brand-orange-500 hover:underline cursor-pointer"
+          >
+            {showAssign ? "Cancel" : "Change plan"}
+          </button>
+        )}
+      </div>
+
+      {plan ? (
+        <>
+          {/* Plan type pill */}
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-orange-50 text-brand-orange-700 dark:bg-brand-orange-950/40 dark:text-brand-orange-400">
+              {plan.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular"}
+            </span>
+            <span className="text-xs text-zinc-400 dark:text-zinc-500">
+              {new Date(plan.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+              {" – "}
+              {new Date(plan.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+            </span>
+          </div>
+
+          {/* Sessions progress bar */}
+          <div className="space-y-1.5">
+            <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
+              <span>{plan.sessionsCompleted} sessions done</span>
+              <span>{sessionsPending ?? 0} left of {plan.totalSessions}</span>
+            </div>
+            <div className="h-2 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-brand-orange-500 transition-all duration-500"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Key details */}
+          <dl className="grid grid-cols-2 gap-2 text-sm">
+            <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 px-3 py-2.5">
+              <dt className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-0.5">Fee</dt>
+              <dd className="font-semibold text-zinc-900 dark:text-zinc-100">{formatINR(plan.fee)}</dd>
+            </div>
+            <div className={`rounded-2xl px-3 py-2.5 ${daysLeft <= 7 ? "bg-amber-50 dark:bg-amber-950/40" : "bg-zinc-50 dark:bg-zinc-800/60"}`}>
+              <dt className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-0.5">Expires</dt>
+              <dd className={`font-semibold text-sm ${daysLeft <= 7 ? "text-amber-700 dark:text-amber-400" : "text-zinc-900 dark:text-zinc-100"}`}>
+                {new Date(plan.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                {daysLeft > 0 && <span className="text-xs font-normal ml-1 opacity-70">({daysLeft}d left)</span>}
+              </dd>
+            </div>
+          </dl>
+
+          {/* Grace period banner */}
+          {isGraceOrFreeze && (
+            <div className="rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 space-y-3">
+              <div className="flex items-start gap-2">
+                <span className="text-amber-500 text-lg leading-none">⚠️</span>
+                <div>
+                  <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                    {status === "FREEZE" ? "Plan expired — Grace period active" : "Expiring soon — Grace period"}
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                    6-day grace period until{" "}
+                    <strong>
+                      {graceDeadline?.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                    </strong>
+                  </p>
+                </div>
+              </div>
+
+              {/* WhatsApp message box */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
+                  Auto-generated message
+                </p>
+                <textarea
+                  ref={msgRef}
+                  readOnly
+                  value={waMessage}
+                  rows={5}
+                  className="w-full text-xs rounded-xl border border-amber-200 dark:border-amber-800/60 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 px-3 py-2 resize-none focus:outline-none"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={copyMessage}
+                    className="flex-1 rounded-xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-zinc-900 px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer"
+                  >
+                    {copied ? "✓ Copied!" : "Copy message"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openWhatsApp}
+                    className="flex-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-colors cursor-pointer"
+                  >
+                    Open WhatsApp
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <p className="text-sm text-zinc-400 dark:text-zinc-500">No plan assigned yet.</p>
+      )}
+
+      {canManage && !plan && !showAssign && (
+        <button
+          type="button"
+          onClick={() => setShowAssign(true)}
+          className="w-full rounded-xl bg-brand-orange-500 py-2.5 text-sm font-semibold text-white text-center hover:bg-brand-orange-600 transition-colors"
+        >
+          Assign plan
+        </button>
+      )}
+
+      {canManage && showAssign && (
+        <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800">
+          <AssignPlanForm
+            studentId={student.id}
+            pricingMaps={pricingMaps}
+            onSuccess={onPlanAssigned}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Attendance Card ──────────────────────────────────────────────────────────
+
+function AttendanceCard({ attendances }: { attendances: AttendanceRow[] }) {
+  const [showCalendar, setShowCalendar] = useState(false);
+
+  // Build a map for calendar: "YYYY-MM-DD" → sessionNumber
+  const attendanceMap = new Map<string, number>();
+  attendances.forEach((a, idx) => {
+    attendanceMap.set(toYMD(a.date), idx + 1);
+  });
+
+  return (
+    <>
+      <div className="rounded-3xl bg-white dark:bg-zinc-900 p-5 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+            Attendance
+          </h2>
+          {attendances.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowCalendar(true)}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-orange-500 hover:text-brand-orange-600 transition-colors cursor-pointer"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              Calendar view
+            </button>
+          )}
+        </div>
+
+        {attendances.length === 0 ? (
+          <p className="text-sm text-zinc-400 dark:text-zinc-500">No sessions attended yet.</p>
+        ) : (
+          <div className="space-y-1 max-h-80 overflow-y-auto pr-1">
+            {attendances.map((a, idx) => (
+              <div
+                key={a.id}
+                className="flex items-center gap-3 rounded-2xl px-3 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/60 transition-colors"
+              >
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-orange-50 dark:bg-brand-orange-950/40 text-brand-orange-600 dark:text-brand-orange-400 text-[11px] font-bold shrink-0">
+                  {idx + 1}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wide">
+                    Session {idx + 1}
+                  </p>
+                  <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                    {formatSessionDate(a.date)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {showCalendar && (
+        <CalendarPopup
+          attendanceMap={attendanceMap}
+          onClose={() => setShowCalendar(false)}
+        />
+      )}
+    </>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export default function StudentDetailClient({
   student,
   canManage,
@@ -41,15 +440,18 @@ export default function StudentDetailClient({
     studentNumber: number;
     name: string;
     dateOfBirth: Date;
+    gender: string;
     parentName: string;
     contactNumber: string;
     admissionDate: Date;
     notes: string | null;
+    medicalHistory: string | null;
     avatarUrl?: string | null;
     status: StudentStatus;
     activePlan: PlanRow | null;
     sessionsPending: number | null;
     plans: PlanRow[];
+    attendances: AttendanceRow[];
   };
   canManage: boolean;
   showAssignInitially?: boolean;
@@ -65,212 +467,205 @@ export default function StudentDetailClient({
     router.refresh();
   }
 
-  const plan = student.activePlan;
-
   return (
-    <div className="space-y-4 min-w-0">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-start gap-4 min-w-0">
-          <StudentAvatar student={student} size={80} />
-          <div className="min-w-0">
-            <Link
-              href="/students"
-              className="text-sm text-zinc-500 hover:text-zinc-800"
-            >
-              ← Students
-            </Link>
-            <h1 className="mt-2 text-xl sm:text-2xl font-semibold text-zinc-900 truncate">
-              {student.name}
-            </h1>
-            <p className="text-sm text-zinc-500">
-              ID #{student.studentNumber} · {formatAge(new Date(student.dateOfBirth))} ·{" "}
-              Tenure {formatTenure(new Date(student.admissionDate))}
-            </p>
-          </div>
+    <div className="space-y-6 min-w-0">
+      {/* Page title + action buttons */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="text-3xl sm:text-4xl font-light tracking-tight text-zinc-900 dark:text-zinc-50">
+            Student Profile
+          </h1>
+          <StudentStatusBadge status={student.status} />
         </div>
-        <StudentStatusBadge status={student.status} />
-      </div>
-
-      <div className="grid gap-3.5 lg:grid-cols-2">
-        <div className="rounded-lg border-0 bg-white dark:bg-zinc-900 p-4 sm:p-6 shadow-sm">
-          <h2 className="text-sm font-medium text-zinc-900">Contact</h2>
-          <dl className="mt-3 space-y-2 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="text-zinc-500">Parent</dt>
-              <dd className="font-medium text-zinc-900 text-right">
-                {student.parentName}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-zinc-500">Phone</dt>
-              <dd className="font-medium text-zinc-900">
-                <a href={`tel:${student.contactNumber}`} className="hover:underline">
-                  {student.contactNumber}
-                </a>
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-zinc-500">DOB</dt>
-              <dd className="font-medium text-zinc-900">
-                {new Date(student.dateOfBirth).toLocaleDateString("en-IN")}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-zinc-500">Admitted</dt>
-              <dd className="font-medium text-zinc-900">
-                {new Date(student.admissionDate).toLocaleDateString("en-IN")}
-              </dd>
-            </div>
-          </dl>
-          {student.notes && (
-            <p className="mt-4 text-sm text-zinc-600 border-t border-zinc-100 pt-3">
-              {student.notes}
-            </p>
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Print ID card */}
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
+          >
+            <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 9V2h12v7" />
+              <rect x="3" y="9" width="18" height="10" rx="2" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 14h12M6 18h8" />
+              <circle cx="18" cy="13" r="1" fill="currentColor" />
+            </svg>
+            Print ID card
+          </button>
+          {/* Edit profile */}
+          {canManage && (
+            <a
+              href={`/students/${student.id}/edit`}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors shadow-sm"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-1.414.94l-3.414 1.137 1.137-3.414A4 4 0 019 13z" />
+              </svg>
+              Edit profile
+            </a>
           )}
         </div>
+      </div>
 
-        <div className="rounded-lg border-0 bg-white dark:bg-zinc-900 p-4 sm:p-6 shadow-sm">
-          <div className="flex items-center justify-between gap-2">
-            <h2 className="text-sm font-medium text-zinc-900">Current plan</h2>
-            {canManage && plan && (
-              <button
-                type="button"
-                onClick={() => setShowAssign(!showAssign)}
-                className="text-xs font-medium text-brand-orange-600 hover:underline cursor-pointer"
-              >
-                {showAssign ? "Cancel" : "Change plan"}
-              </button>
-            )}
+      {/* Two-column layout */}
+      <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
+
+        {/* ── Left column ── */}
+        <div className="space-y-4">
+
+          {/* Avatar + name card */}
+          <div className="rounded-3xl bg-white dark:bg-zinc-900 p-6 shadow-sm flex flex-col items-center text-center gap-3">
+            <StudentAvatar student={student} size={96} />
+            <div>
+              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+                {student.name}
+              </h2>
+              <p className="text-sm text-zinc-400 dark:text-zinc-500 mt-0.5">
+                #{student.studentNumber}
+              </p>
+            </div>
           </div>
 
-          {plan ? (
-            <dl className="mt-3 space-y-2 text-sm">
-              <div className="flex justify-between gap-4">
-                <dt className="text-zinc-500">Type</dt>
-                <dd className="font-medium">
-                  {plan.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular"}
+          {/* Basic info card */}
+          <div className="rounded-3xl bg-white dark:bg-zinc-900 p-5 shadow-sm space-y-4">
+            <h2 className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+              Details
+            </h2>
+            <dl className="space-y-3 text-sm">
+              <div className="flex justify-between gap-2">
+                <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">Age</dt>
+                <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
+                  {formatAge(new Date(student.dateOfBirth))}
                 </dd>
               </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-zinc-500">Period</dt>
-                <dd className="font-medium text-right text-xs sm:text-sm">
-                  {new Date(plan.startDate).toLocaleDateString("en-IN")} –{" "}
-                  {new Date(plan.endDate).toLocaleDateString("en-IN")}
+              <div className="flex justify-between gap-2">
+                <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">Gender</dt>
+                <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right capitalize">
+                  {student.gender}
                 </dd>
               </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-zinc-500">Sessions</dt>
-                <dd className="font-medium">
-                  {plan.sessionsCompleted} / {plan.totalSessions} done ·{" "}
-                  {student.sessionsPending} left
+              <div className="flex justify-between gap-2">
+                <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">DOB</dt>
+                <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
+                  {new Date(student.dateOfBirth).toLocaleDateString("en-IN", {
+                    day: "numeric", month: "short", year: "numeric",
+                  })}
                 </dd>
               </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-zinc-500">Fee</dt>
-                <dd className="font-medium">{formatINR(plan.fee)}</dd>
+              <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
+              <div className="flex justify-between gap-2">
+                <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">Parent</dt>
+                <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
+                  {student.parentName}
+                </dd>
               </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-zinc-500">Expiry</dt>
-                <dd className="font-medium">
-                  {new Date(plan.expiryDate).toLocaleDateString("en-IN")} (
-                  {computeDaysLeft(new Date(plan.expiryDate))} days left)
+              <div className="flex justify-between gap-2">
+                <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">Phone</dt>
+                <dd className="font-medium text-right">
+                  <a
+                    href={`tel:${student.contactNumber}`}
+                    className="text-brand-orange-500 hover:underline"
+                  >
+                    {student.contactNumber}
+                  </a>
+                </dd>
+              </div>
+              <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
+              <div className="flex justify-between gap-2">
+                <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">Joined</dt>
+                <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
+                  {formatJoinedDate(new Date(student.admissionDate))}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">Tenure</dt>
+                <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
+                  {formatTenure(new Date(student.admissionDate))}
                 </dd>
               </div>
             </dl>
-          ) : (
-            <p className="mt-3 text-sm text-zinc-500">No plan assigned yet.</p>
-          )}
 
-          {canManage && !plan && !showAssign && (
-            <div className="mt-4 flex flex-col gap-2">
-              <Link
-                href={`/plans?student=${student.id}`}
-                className="w-full rounded-lg bg-brand-orange-500 py-2.5 text-sm font-semibold text-white text-center hover:bg-brand-orange-600"
-              >
-                Create & assign plan
-              </Link>
-              <button
-                type="button"
-                onClick={() => setShowAssign(true)}
-                className="text-xs text-zinc-500 hover:text-zinc-700 cursor-pointer"
-              >
-                Or fill in the form on this page
-              </button>
+            {(student.notes || student.medicalHistory) && (
+              <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800 space-y-2">
+                {student.notes && (
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                    📝 {student.notes}
+                  </p>
+                )}
+                {student.medicalHistory && (
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                    🏥 {student.medicalHistory}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── Right column ── */}
+        <div className="space-y-4">
+          <AttendanceCard attendances={student.attendances} />
+
+          <PlanCard
+            plan={student.activePlan}
+            sessionsPending={student.sessionsPending}
+            status={student.status}
+            student={student}
+            canManage={canManage}
+            showAssign={showAssign}
+            setShowAssign={setShowAssign}
+            pricingMaps={pricingMaps}
+            onPlanAssigned={onPlanAssigned}
+          />
+
+          {/* Plan history */}
+          {student.plans.length > 0 && (
+            <div className="rounded-3xl bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
+              <h2 className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider p-5 pb-3">
+                Plan History
+              </h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[420px]">
+                  <thead>
+                    <tr className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider bg-zinc-50 dark:bg-zinc-800/60">
+                      <th className="px-5 py-2.5 text-left">Type</th>
+                      <th className="px-5 py-2.5 text-left">Period</th>
+                      <th className="px-5 py-2.5 text-left">Sessions</th>
+                      <th className="px-5 py-2.5 text-left">Fee</th>
+                      <th className="px-5 py-2.5 text-left">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                    {student.plans.map((p) => (
+                      <tr key={p.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
+                        <td className="px-5 py-3">
+                          {p.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular"}
+                        </td>
+                        <td className="px-5 py-3 text-xs text-zinc-500">
+                          {toDateInputValue(new Date(p.startDate))} → {toDateInputValue(new Date(p.endDate))}
+                        </td>
+                        <td className="px-5 py-3">
+                          {p.sessionsCompleted}/{p.totalSessions}
+                        </td>
+                        <td className="px-5 py-3">{formatINR(p.fee)}</td>
+                        <td className="px-5 py-3">
+                          {p.isActive ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
+                              Active
+                            </span>
+                          ) : (
+                            <span className="text-zinc-400 text-xs">Archived</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
       </div>
-
-      {canManage && showAssign && (
-        <div className="rounded-lg border-0 bg-white dark:bg-zinc-900 p-4 sm:p-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-4">
-            <div>
-              <h2 className="text-sm font-medium text-zinc-900">
-                {plan ? "Assign new plan" : "Assign plan"}
-              </h2>
-              <p className="text-xs text-zinc-500 mt-1">
-                A new plan replaces the current active plan.
-              </p>
-            </div>
-            <Link
-              href={`/plans?student=${student.id}`}
-              className="text-xs font-medium text-brand-orange-600 hover:underline shrink-0"
-            >
-              Open full Plans page →
-            </Link>
-          </div>
-          <AssignPlanForm
-            studentId={student.id}
-            pricingMaps={pricingMaps}
-            onSuccess={onPlanAssigned}
-          />
-        </div>
-      )}
-
-      {student.plans.length > 0 && (
-        <div className="rounded-lg border-0 bg-white dark:bg-zinc-900 shadow-sm overflow-x-auto">
-          <h2 className="text-sm font-medium text-zinc-900 p-4 border-b border-zinc-100">
-            Plan history
-          </h2>
-          <table className="w-full text-sm min-w-[480px]">
-            <thead>
-              <tr className="text-xs text-zinc-500 bg-zinc-50/80">
-                <th className="px-4 py-2 text-left">Type</th>
-                <th className="px-4 py-2 text-left">Dates</th>
-                <th className="px-4 py-2 text-left">Sessions</th>
-                <th className="px-4 py-2 text-left">Fee</th>
-                <th className="px-4 py-2 text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-100">
-              {student.plans.map((p) => (
-                <tr key={p.id}>
-                  <td className="px-4 py-2">
-                    {p.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular"}
-                  </td>
-                  <td className="px-4 py-2 text-xs">
-                    {toDateInputValue(new Date(p.startDate))} →{" "}
-                    {toDateInputValue(new Date(p.endDate))}
-                  </td>
-                  <td className="px-4 py-2">
-                    {p.sessionsCompleted}/{p.totalSessions}
-                  </td>
-                  <td className="px-4 py-2">{formatINR(p.fee)}</td>
-                  <td className="px-4 py-2">
-                    {p.isActive ? (
-                      <span className="text-emerald-600 text-xs font-medium">
-                        Active
-                      </span>
-                    ) : (
-                      <span className="text-zinc-400 text-xs">Archived</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   );
 }

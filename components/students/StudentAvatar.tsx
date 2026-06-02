@@ -16,6 +16,8 @@ const sizeMap = {
   48: 48,
   64: 64,
   80: 80,
+  96: 96,
+  128: 128,
 } as const;
 
 export default function StudentAvatar({
