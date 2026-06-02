@@ -2,79 +2,96 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { Home, Users, FileText, CheckCircle, IndianRupee, Settings } from "lucide-react";
 
-export const navLinkClass = (active: boolean) =>
-  `flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+export const navLinkClass = (active: boolean, isCollapsed = false) =>
+  `flex items-center ${isCollapsed ? "justify-center" : "gap-2.5"} rounded-lg ${isCollapsed ? "px-2" : "px-3"} py-2.5 text-sm font-medium transition-colors ${
     active
-      ? "bg-zinc-100 text-zinc-900"
-      : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-900"
+      ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+      : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:text-zinc-900 dark:hover:text-zinc-50"
   }`;
 
 const disabledClass =
-  "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-400 cursor-not-allowed";
+  "flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-400 dark:text-zinc-600 cursor-not-allowed";
 
 export default function DashboardNav({
   pathname,
   isAdmin,
   onNavigate,
+  isCollapsed = false,
 }: {
   pathname: string;
   isAdmin: boolean;
   onNavigate?: () => void;
+  isCollapsed?: boolean;
 }) {
   const close = onNavigate ?? (() => {});
 
   return (
-    <nav className="space-y-6 p-3">
-      <div>
-        <p className="px-3 mb-2 text-xs font-medium text-zinc-500">Main</p>
-        <div className="space-y-0.5">
-          <Link
-            href="/dashboard"
-            onClick={close}
-            className={navLinkClass(pathname === "/dashboard")}
-          >
-            <HomeIcon />
-            Dashboard
-          </Link>
+    <nav className={`space-y-4 ${isCollapsed ? "p-1.5" : "p-3"}`}>
+      {!isCollapsed && (
+        <div>
+          <p className="px-3 mb-2 text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Main</p>
+          <div className="space-y-0.5">
+            <Link
+              href="/dashboard"
+              onClick={close}
+              className={navLinkClass(pathname === "/dashboard", isCollapsed)}
+              title={isCollapsed ? "Dashboard" : undefined}
+            >
+              <HomeIcon />
+              {!isCollapsed && "Dashboard"}
+            </Link>
+          </div>
         </div>
-      </div>
+      )}
 
       <div>
-        <p className="px-3 mb-2 text-xs font-medium text-zinc-500">Operations</p>
+        {!isCollapsed ? (
+          <p className="px-3 mb-2 text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Operations</p>
+        ) : (
+          <div className="border-t border-zinc-200 dark:border-zinc-800 my-3" />
+        )}
         <div className="space-y-0.5">
           <Link
             href="/students"
             onClick={close}
-            className={navLinkClass(pathname.startsWith("/students"))}
+            className={navLinkClass(pathname.startsWith("/students"), isCollapsed)}
+            title={isCollapsed ? "Students" : undefined}
           >
             <UsersIcon />
-            Students
+            {!isCollapsed && "Students"}
           </Link>
           <Link
             href="/plans"
             onClick={close}
-            className={navLinkClass(pathname === "/plans")}
+            className={navLinkClass(pathname === "/plans", isCollapsed)}
+            title={isCollapsed ? "Plans" : undefined}
           >
             <DocIcon />
-            Plans
+            {!isCollapsed && "Plans"}
           </Link>
-          <DisabledItem icon={<CheckIcon />} label="Attendance" />
-          <DisabledItem icon={<CurrencyIcon />} label="Fees" />
+          <DisabledItem icon={<CheckIcon />} label="Attendance" isCollapsed={isCollapsed} />
+          <DisabledItem icon={<CurrencyIcon />} label="Fees" isCollapsed={isCollapsed} />
         </div>
       </div>
 
       {isAdmin && (
         <div>
-          <p className="px-3 mb-2 text-xs font-medium text-zinc-500">Admin</p>
+          {!isCollapsed ? (
+            <p className="px-3 mb-2 text-xs font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Admin</p>
+          ) : (
+            <div className="border-t border-zinc-200 dark:border-zinc-800 my-3" />
+          )}
           <div className="space-y-0.5">
             <Link
               href="/settings"
               onClick={close}
-              className={navLinkClass(pathname === "/settings")}
+              className={navLinkClass(pathname === "/settings", isCollapsed)}
+              title={isCollapsed ? "Settings" : undefined}
             >
               <SettingsIcon />
-              Users
+              {!isCollapsed && "Settings"}
             </Link>
           </div>
         </div>
@@ -86,70 +103,52 @@ export default function DashboardNav({
 function DisabledItem({
   icon,
   label,
+  isCollapsed = false,
 }: {
   icon: ReactNode;
   label: string;
+  isCollapsed?: boolean;
 }) {
   return (
-    <div className={disabledClass}>
+    <div
+      className={`${disabledClass} ${isCollapsed ? "justify-center px-2" : ""}`}
+      title={isCollapsed ? `${label} (Soon)` : undefined}
+    >
       <span className="flex items-center gap-2.5">
         {icon}
-        {label}
+        {!isCollapsed && label}
       </span>
-      <span className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">
-        Soon
-      </span>
+      {!isCollapsed && (
+        <span className="rounded-md bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+          Soon
+        </span>
+      )}
     </div>
   );
 }
 
 function HomeIcon() {
-  return (
-    <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
-    </svg>
-  );
+  return <Home className="h-4 w-4 shrink-0" strokeWidth={2} />;
 }
 
 export function UsersIcon() {
-  return (
-    <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
-    </svg>
-  );
+  return <Users className="h-4 w-4 shrink-0" strokeWidth={2} />;
 }
 
 function DocIcon() {
-  return (
-    <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-    </svg>
-  );
+  return <FileText className="h-4 w-4 shrink-0" strokeWidth={2} />;
 }
 
 function CheckIcon() {
-  return (
-    <svg className="h-4 w-4 shrink-0 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  );
+  return <CheckCircle className="h-4 w-4 shrink-0 opacity-60" strokeWidth={2} />;
 }
 
 function CurrencyIcon() {
-  return (
-    <svg className="h-4 w-4 shrink-0 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  );
+  return <IndianRupee className="h-4 w-4 shrink-0 opacity-60" strokeWidth={2} />;
 }
 
 function SettingsIcon() {
-  return (
-    <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.43l-1.003.828c-.293.24-.438.613-.43.992a7.723 7.723 0 010 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.43l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.991l-1.004-.827a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  );
+  return <Settings className="h-4 w-4 shrink-0" strokeWidth={2} />;
 }
 
 export { HomeIcon, SettingsIcon };

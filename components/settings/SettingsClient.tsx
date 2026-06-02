@@ -3,6 +3,7 @@
 import React, { useState, useTransition, useActionState } from "react";
 import { createUser, updateUser, deleteUser } from "@/lib/actions/users";
 import RoleBadge from "@/components/layout/RoleBadge";
+import { X, Search, LogOut } from "lucide-react";
 
 interface User {
   id: string;
@@ -15,6 +16,7 @@ interface User {
 interface SettingsClientProps {
   initialUsers: User[];
   currentUserId: string;
+  signOutAction: () => Promise<void>;
 }
 
 type ActionResult = {
@@ -68,11 +70,12 @@ const roleDescriptions: Record<
 };
 
 const inputClass =
-  "w-full rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20 focus:border-brand-orange-500";
+  "w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20 focus:border-brand-orange-500";
 
 export default function SettingsClient({
   initialUsers,
   currentUserId,
+  signOutAction,
 }: SettingsClientProps) {
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -185,8 +188,8 @@ export default function SettingsClient({
         <div
           className={`fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-50 rounded-lg border px-4 py-3 text-sm shadow-lg ${
             toast.type === "success"
-              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-              : "bg-rose-50 text-rose-800 border-rose-200"
+              ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/30"
+              : "bg-rose-50 dark:bg-rose-950/20 text-rose-800 dark:text-rose-400 border-rose-200 dark:border-rose-900/30"
           }`}
         >
           {toast.message}
@@ -195,8 +198,8 @@ export default function SettingsClient({
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-zinc-900">Users</h1>
-          <p className="mt-1 text-sm text-zinc-500">
+          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Users</h1>
+          <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
             Add and manage staff accounts and roles.
           </p>
         </div>
@@ -213,17 +216,32 @@ export default function SettingsClient({
         </button>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3 items-start min-w-0">
+      <div className="grid gap-3.5 lg:grid-cols-3 items-start min-w-0">
         {/* Role preview — shown first on mobile for context */}
-        <div className="lg:hidden rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+        <div className="lg:hidden rounded-lg border-0 bg-white dark:bg-zinc-950 p-4 shadow-sm space-y-4">
           <RolePreviewCard selectedUser={selectedUser} roleInfo={roleInfo} compact />
+          
+          <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100">Session Settings</p>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Manage current session</p>
+            </div>
+            <form action={signOutAction}>
+              <button
+                type="submit"
+                className="flex items-center gap-1.5 rounded-lg border border-rose-200 dark:border-rose-900/30 bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100/50 dark:hover:bg-rose-950/30 px-3 py-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 transition-colors cursor-pointer"
+              >
+                Sign out
+              </button>
+            </form>
+          </div>
         </div>
 
-        <div className="lg:col-span-2 space-y-6 min-w-0 order-2 lg:order-none">
+        <div className="lg:col-span-2 space-y-4 min-w-0 order-2 lg:order-none">
           {(isAddingNew || editingUser) && (
-            <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-6 shadow-sm">
+            <div className="rounded-lg border-0 bg-white dark:bg-zinc-950 p-4 sm:p-6 shadow-sm">
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-sm font-medium text-zinc-900">
+                <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                   {editingUser ? "Edit user" : "New user"}
                 </h2>
                 <button
@@ -232,12 +250,10 @@ export default function SettingsClient({
                     setIsAddingNew(false);
                     setEditingUser(null);
                   }}
-                  className="text-zinc-400 hover:text-zinc-600 cursor-pointer"
+                  className="text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 cursor-pointer"
                   aria-label="Close"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X className="w-5 h-5" strokeWidth={2} />
                 </button>
               </div>
 
@@ -247,7 +263,7 @@ export default function SettingsClient({
               >
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-medium text-zinc-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                       Name
                     </label>
                     <input
@@ -259,13 +275,13 @@ export default function SettingsClient({
                       className={inputClass}
                     />
                     {(createState?.errors?.name || editState?.errors?.name) && (
-                      <p className="mt-1 text-xs text-rose-600">
+                      <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">
                         {(createState?.errors?.name || editState?.errors?.name)?.[0]}
                       </p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-zinc-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                       Email
                     </label>
                     <input
@@ -277,7 +293,7 @@ export default function SettingsClient({
                       className={inputClass}
                     />
                     {(createState?.errors?.email || editState?.errors?.email) && (
-                      <p className="mt-1 text-xs text-rose-600">
+                      <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">
                         {(createState?.errors?.email || editState?.errors?.email)?.[0]}
                       </p>
                     )}
@@ -286,7 +302,7 @@ export default function SettingsClient({
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label className="block text-sm font-medium text-zinc-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                       Role
                     </label>
                     <select
@@ -300,10 +316,10 @@ export default function SettingsClient({
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-zinc-700 mb-1">
+                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                       Password
                       {editingUser && (
-                        <span className="font-normal text-zinc-500">
+                        <span className="font-normal text-zinc-500 dark:text-zinc-400">
                           {" "}
                           (leave blank to keep current)
                         </span>
@@ -317,7 +333,7 @@ export default function SettingsClient({
                       className={inputClass}
                     />
                     {(createState?.errors?.password || editState?.errors?.password) && (
-                      <p className="mt-1 text-xs text-rose-600">
+                      <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">
                         {(createState?.errors?.password || editState?.errors?.password)?.[0]}
                       </p>
                     )}
@@ -331,14 +347,14 @@ export default function SettingsClient({
                       setIsAddingNew(false);
                       setEditingUser(null);
                     }}
-                    className="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 cursor-pointer"
+                    className="rounded-lg border border-zinc-200 dark:border-zinc-800 px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-900 cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isCreatePending || isEditPending}
-                    className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-50 cursor-pointer"
+                    className="rounded-lg bg-zinc-900 dark:bg-zinc-150 px-4 py-2 text-sm font-medium text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 cursor-pointer"
                   >
                     {isCreatePending || isEditPending
                       ? "Saving…"
@@ -351,9 +367,9 @@ export default function SettingsClient({
             </div>
           )}
 
-          <div className="rounded-lg border border-zinc-200 bg-white shadow-sm overflow-hidden">
-            <div className="flex flex-col gap-3 border-b border-zinc-200 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-zinc-500">
+          <div className="rounded-lg border-0 bg-white dark:bg-zinc-950 shadow-sm overflow-hidden">
+            <div className="flex flex-col gap-3 border-b border-zinc-200 dark:border-zinc-800 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
                 {filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}
               </p>
               <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -363,22 +379,14 @@ export default function SettingsClient({
                     placeholder="Search…"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full rounded-lg border border-zinc-200 pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20 focus:border-brand-orange-500"
+                    className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-8 pr-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20 focus:border-brand-orange-500"
                   />
-                  <svg
-                    className="pointer-events-none absolute left-2.5 top-2 h-4 w-4 text-zinc-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                  </svg>
+                  <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-zinc-400" strokeWidth={2} />
                 </div>
                 <select
                   value={filterRole}
                   onChange={(e) => setFilterRole(e.target.value)}
-                  className="w-full sm:w-auto rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
+                  className="w-full sm:w-auto rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
                 >
                   <option value="ALL">All roles</option>
                   <option value="ADMIN">Admin</option>
@@ -389,7 +397,7 @@ export default function SettingsClient({
             </div>
 
             {/* Mobile: card list */}
-            <div className="md:hidden divide-y divide-zinc-100">
+            <div className="md:hidden divide-y divide-zinc-100 dark:divide-zinc-800">
               {filteredUsers.length === 0 ? (
                 <p className="px-4 py-10 text-center text-sm text-zinc-500">
                   No users match your search.
@@ -420,14 +428,14 @@ export default function SettingsClient({
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-sm min-w-[520px]">
                 <thead>
-                  <tr className="border-b border-zinc-200 bg-zinc-50/80 text-xs font-medium text-zinc-500">
+                  <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-900/50 text-xs font-medium text-zinc-500 dark:text-zinc-400">
                     <th className="px-4 py-3">User</th>
                     <th className="px-4 py-3">Role</th>
                     <th className="px-4 py-3 hidden sm:table-cell">Joined</th>
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-100">
+                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                   {filteredUsers.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="px-4 py-10 text-center text-zinc-500">
@@ -439,25 +447,25 @@ export default function SettingsClient({
                       <tr
                         key={u.id}
                         onClick={() => setSelectedUser(u)}
-                        className={`cursor-pointer hover:bg-zinc-50/80 ${
-                          selectedUser.id === u.id ? "bg-zinc-50" : ""
+                        className={`cursor-pointer hover:bg-zinc-50/80 dark:hover:bg-zinc-900/40 ${
+                          selectedUser.id === u.id ? "bg-zinc-50/50 dark:bg-zinc-900/30" : ""
                         }`}
                       >
                         <td className="px-4 py-3">
-                          <div className="font-medium text-zinc-900 flex items-center gap-2">
+                          <div className="font-medium text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
                             {u.name}
                             {u.id === currentUserId && (
-                              <span className="text-xs font-normal text-zinc-500">
+                              <span className="text-xs font-normal text-zinc-500 dark:text-zinc-400">
                                 (you)
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-zinc-500 mt-0.5">{u.email}</div>
+                          <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{u.email}</div>
                         </td>
                         <td className="px-4 py-3">
                           <RoleBadge role={u.role} />
                         </td>
-                        <td className="px-4 py-3 hidden sm:table-cell text-zinc-500">
+                        <td className="px-4 py-3 hidden sm:table-cell text-zinc-500 dark:text-zinc-400">
                           {new Date(u.createdAt).toLocaleDateString("en-IN", {
                             day: "numeric",
                             month: "short",
@@ -475,14 +483,14 @@ export default function SettingsClient({
                                 type="button"
                                 onClick={() => handleDelete(u.id)}
                                 disabled={isPending}
-                                className="text-xs font-medium text-rose-600 hover:text-rose-700 cursor-pointer disabled:opacity-50"
+                                className="text-xs font-medium text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 cursor-pointer disabled:opacity-50"
                               >
                                 Yes
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setDeleteConfirmId(null)}
-                                className="text-xs font-medium text-zinc-600 hover:text-zinc-900 cursor-pointer"
+                                className="text-xs font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-300 cursor-pointer"
                               >
                                 No
                               </button>
@@ -495,7 +503,7 @@ export default function SettingsClient({
                                   setIsAddingNew(false);
                                   setEditingUser(u);
                                 }}
-                                className="text-xs font-medium text-zinc-600 hover:text-zinc-900 cursor-pointer"
+                                className="text-xs font-medium text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-350 cursor-pointer"
                               >
                                 Edit
                               </button>
@@ -503,7 +511,7 @@ export default function SettingsClient({
                                 <button
                                   type="button"
                                   onClick={() => setDeleteConfirmId(u.id)}
-                                  className="text-xs font-medium text-rose-600 hover:text-rose-700 cursor-pointer"
+                                  className="text-xs font-medium text-rose-600 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-350 cursor-pointer"
                                 >
                                   Delete
                                 </button>
@@ -520,8 +528,26 @@ export default function SettingsClient({
           </div>
         </div>
 
-        <div className="hidden lg:block rounded-lg border border-zinc-200 bg-white p-6 shadow-sm lg:sticky lg:top-20 order-3">
-          <RolePreviewCard selectedUser={selectedUser} roleInfo={roleInfo} />
+        <div className="hidden lg:block space-y-3.5 lg:sticky lg:top-20 order-3">
+          <div className="rounded-lg border-0 bg-white dark:bg-zinc-950 p-6 shadow-sm">
+            <RolePreviewCard selectedUser={selectedUser} roleInfo={roleInfo} />
+          </div>
+
+          <div className="rounded-lg border-0 bg-white dark:bg-zinc-950 p-6 shadow-sm">
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Session Settings</h3>
+            <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Manage your current session and authentication.
+            </p>
+            <form action={signOutAction} className="mt-4">
+              <button
+                type="submit"
+                className="w-full flex items-center justify-center gap-2 rounded-lg border border-rose-200 dark:border-rose-900/30 bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-100/50 dark:hover:bg-rose-950/30 px-3 py-2 text-sm font-medium text-rose-600 dark:text-rose-400 transition-colors cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" strokeWidth={2} />
+                Sign out
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>
@@ -548,17 +574,17 @@ function RolePreviewCard({
     <>
       <div className={`flex ${compact ? "flex-row items-center gap-3 text-left" : "flex-col items-center text-center"}`}>
         <div
-          className={`flex shrink-0 items-center justify-center rounded-full bg-zinc-100 font-semibold text-zinc-600 ${
+          className={`flex shrink-0 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 font-semibold text-zinc-600 dark:text-zinc-300 ${
             compact ? "h-12 w-12 text-sm" : "h-16 w-16 text-lg"
           }`}
         >
           {initials}
         </div>
         <div className={compact ? "min-w-0 flex-1" : ""}>
-          <h3 className={`font-medium text-zinc-900 ${compact ? "text-sm truncate" : "mt-3 text-base"}`}>
+          <h3 className={`font-medium text-zinc-900 dark:text-zinc-100 ${compact ? "text-sm truncate" : "mt-3 text-base"}`}>
             {selectedUser.name}
           </h3>
-          <p className={`text-zinc-500 ${compact ? "text-xs truncate" : "text-sm"}`}>
+          <p className={`text-zinc-500 dark:text-zinc-400 ${compact ? "text-xs truncate" : "text-sm"}`}>
             {selectedUser.email}
           </p>
           <div className={compact ? "mt-1" : "mt-2"}>
@@ -569,23 +595,23 @@ function RolePreviewCard({
 
       {!compact && (
         <>
-          <p className="mt-4 text-sm text-zinc-600 leading-relaxed">
+          <p className="mt-4 text-sm text-zinc-650 dark:text-zinc-300 leading-relaxed">
             {roleInfo.summary}
           </p>
-          <div className="mt-5 border-t border-zinc-100 pt-4">
-            <p className="text-xs font-medium text-zinc-500 mb-3">Access</p>
+          <div className="mt-5 border-t border-zinc-100 dark:border-zinc-800 pt-4">
+            <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400 mb-3">Access</p>
             <ul className="space-y-2">
               {roleInfo.permissions.map((p) => (
                 <li
                   key={p.label}
                   className="flex items-center justify-between text-sm"
                 >
-                  <span className="text-zinc-700">{p.label}</span>
+                  <span className="text-zinc-700 dark:text-zinc-300">{p.label}</span>
                   <span
                     className={
                       p.allowed
-                        ? "text-emerald-600 text-xs font-medium"
-                        : "text-zinc-400 text-xs"
+                        ? "text-emerald-600 dark:text-emerald-400 text-xs font-medium"
+                        : "text-zinc-400 dark:text-zinc-550 text-xs"
                     }
                   >
                     {p.allowed ? "Yes" : "No"}
@@ -629,20 +655,20 @@ function UserListCard({
       tabIndex={0}
       onClick={onSelect}
       onKeyDown={(e) => e.key === "Enter" && onSelect()}
-      className={`p-4 cursor-pointer ${isSelected ? "bg-zinc-50" : ""}`}
+      className={`p-4 cursor-pointer transition-colors ${isSelected ? "bg-zinc-50/50 dark:bg-zinc-900/30" : "hover:bg-zinc-50/20 dark:hover:bg-zinc-900/10"}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="font-medium text-zinc-900 truncate">
+          <p className="font-medium text-zinc-900 dark:text-zinc-100 truncate">
             {user.name}
             {isCurrentUser && (
-              <span className="font-normal text-zinc-500"> (you)</span>
+              <span className="font-normal text-zinc-500 dark:text-zinc-405"> (you)</span>
             )}
           </p>
-          <p className="text-xs text-zinc-500 truncate mt-0.5">{user.email}</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">{user.email}</p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <RoleBadge role={user.role} />
-            <span className="text-xs text-zinc-400">
+            <span className="text-xs text-zinc-400 dark:text-zinc-500">
               {new Date(user.createdAt).toLocaleDateString("en-IN", {
                 day: "numeric",
                 month: "short",
@@ -661,14 +687,14 @@ function UserListCard({
                 type="button"
                 onClick={onDelete}
                 disabled={isPending}
-                className="text-xs font-medium text-rose-600 cursor-pointer disabled:opacity-50"
+                className="text-xs font-medium text-rose-600 dark:text-rose-400 cursor-pointer disabled:opacity-50"
               >
                 Confirm
               </button>
               <button
                 type="button"
                 onClick={onDeleteCancel}
-                className="text-xs font-medium text-zinc-600 cursor-pointer"
+                className="text-xs font-medium text-zinc-600 dark:text-zinc-400 cursor-pointer"
               >
                 Cancel
               </button>
@@ -678,7 +704,7 @@ function UserListCard({
               <button
                 type="button"
                 onClick={onEdit}
-                className="text-xs font-medium text-zinc-600 cursor-pointer py-1 px-2"
+                className="text-xs font-medium text-zinc-655 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200 cursor-pointer py-1 px-2"
               >
                 Edit
               </button>
@@ -686,7 +712,7 @@ function UserListCard({
                 <button
                   type="button"
                   onClick={onDeleteConfirm}
-                  className="text-xs font-medium text-rose-600 cursor-pointer py-1 px-2"
+                  className="text-xs font-medium text-rose-600 dark:text-rose-400 cursor-pointer py-1 px-2"
                 >
                   Delete
                 </button>

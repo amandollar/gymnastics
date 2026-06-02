@@ -55,7 +55,7 @@ export default function AddStudentForm() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
         <Link
           href="/students"
@@ -82,8 +82,8 @@ export default function AddStudentForm() {
         </div>
       </div>
 
-      <form action={action} className="space-y-6">
-        <div className="rounded-xl border border-zinc-200 bg-white shadow-sm divide-y divide-zinc-100">
+      <form action={action} className="space-y-4">
+        <div className="rounded-xl border-0 bg-white dark:bg-zinc-900 shadow-sm divide-y divide-zinc-100 dark:divide-zinc-800">
           <div className="p-4 sm:p-5">
             <FormSection
               title="Profile photo"

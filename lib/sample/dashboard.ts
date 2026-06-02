@@ -1,14 +1,14 @@
 /** Sample dashboard data — replace with real queries later */
 
 export const kpiStats = {
-  studentsEnrolled: 248,
-  studentsChange: 12,
+  totalAdmissions: 312,          // all-time admissions
+  admissionsThisMonth: 12,       // new admissions in current month
+  activeStudents: 224,           // currently active membership
+  gracePeriodStudents: 24,       // in grace period (plan expired but within grace window)
   activeTrainers: 14,
-  trainersChange: 1,
   monthlyRevenue: 4_85_200,
   revenueChange: 8.4,
-  attendanceRate: 91,
-  attendanceChange: 2.1,
+  todayAttendanceCount: 186,     // students who attended today (present count only)
   pendingFees: 38_400,
   pendingCount: 7,
   trialsThisWeek: 9,
@@ -23,28 +23,13 @@ export const revenueByMonth = [
   { month: "Jun", revenue: 4.85 },
 ];
 
-export const studentsByProgram = [
-  { name: "Beginner", value: 92, color: "#f16d28" },
-  { name: "Intermediate", value: 78, color: "#3b82f6" },
-  { name: "Advanced", value: 48, color: "#10b981" },
-  { name: "Competitive", value: 30, color: "#8b5cf6" },
-];
-
-export const revenueBySource = [
-  { name: "Memberships", value: 62, color: "#f16d28" },
-  { name: "Trial classes", value: 14, color: "#3b82f6" },
-  { name: "Workshops", value: 12, color: "#10b981" },
-  { name: "Events & camps", value: 8, color: "#8b5cf6" },
-  { name: "Other", value: 4, color: "#a1a1aa" },
-];
-
 export const weeklyAttendance = [
-  { day: "Mon", present: 186, absent: 14 },
-  { day: "Tue", present: 192, absent: 11 },
-  { day: "Wed", present: 178, absent: 18 },
-  { day: "Thu", present: 195, absent: 9 },
-  { day: "Fri", present: 188, absent: 12 },
-  { day: "Sat", present: 142, absent: 8 },
+  { day: "Mon", present: 186 },
+  { day: "Tue", present: 192 },
+  { day: "Wed", present: 178 },
+  { day: "Thu", present: 195 },
+  { day: "Fri", present: 188 },
+  { day: "Sat", present: 142 },
 ];
 
 export const recentActivity = [

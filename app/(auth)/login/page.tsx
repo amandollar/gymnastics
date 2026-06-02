@@ -2,6 +2,7 @@
 
 import React, { useActionState } from "react";
 import { authenticate } from "@/lib/actions/auth";
+import { AlertTriangle } from "lucide-react";
 
 export default function LoginPage() {
   const [errorMessage, formAction, isPending] = useActionState(
@@ -10,13 +11,16 @@ export default function LoginPage() {
   );
 
   return (
-    <div
-      className="relative flex min-h-screen min-h-[100dvh] w-full flex-col lg:flex-row font-sans antialiased bg-cover bg-center sm:bg-right bg-no-repeat"
-      style={{ backgroundImage: "url('/BgIlluststion.webp')" }}
-    >
-      <div className="relative flex w-full lg:w-1/2 flex-col justify-center items-center px-4 py-10 pt-[max(2.5rem,env(safe-area-inset-top))] pb-[max(2.5rem,env(safe-area-inset-bottom))] sm:px-12 md:px-16 xl:px-24 min-h-[100dvh] lg:min-h-screen">
+    <div className="relative flex min-h-screen min-h-[100dvh] w-full flex-col lg:flex-row font-sans antialiased bg-zinc-50 dark:bg-zinc-950 overflow-hidden transition-colors duration-200">
+      {/* Background Graphic with dark mode invert filter */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center sm:bg-right bg-no-repeat transition-all duration-500 dark:invert-[0.9] dark:opacity-75 pointer-events-none"
+        style={{ backgroundImage: "url('/BgIlluststion.webp')" }}
+      />
+ 
+      <div className="relative flex w-full lg:w-1/2 flex-col justify-center items-center px-4 py-10 pt-[max(2.5rem,env(safe-area-inset-top))] pb-[max(2.5rem,env(safe-area-inset-bottom))] sm:px-12 md:px-16 xl:px-24 min-h-[100dvh] lg:min-h-screen bg-white/70 dark:bg-zinc-900/80 backdrop-blur-md lg:bg-transparent lg:dark:bg-transparent z-10 transition-colors">
         <div className="absolute top-[max(1.25rem,env(safe-area-inset-top))] left-4 sm:left-6 flex items-center gap-3 lg:hidden">
-          <div className="h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-full border border-zinc-200/80 bg-white p-0.5 shadow-md shrink-0">
+          <div className="h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-full border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-0.5 shadow-md shrink-0">
             <img
               src="/logo.webp"
               alt="Academy of Gymnastics"
@@ -27,28 +31,28 @@ export default function LoginPage() {
             <span className="text-[11px] font-black uppercase tracking-wider text-brand-orange-500 leading-none">
               The Academy
             </span>
-            <span className="mt-1 text-lg sm:text-xl font-bold text-zinc-950 leading-none">
+            <span className="mt-1 text-lg sm:text-xl font-bold text-zinc-955 dark:text-zinc-50 leading-none">
               of Gymnastics
             </span>
           </div>
         </div>
-
+ 
         <div className="w-full max-w-sm space-y-6 sm:space-y-8 mt-14 sm:mt-16 lg:mt-0">
           <div className="space-y-2">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-950">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-955 dark:text-zinc-50">
               Welcome back
             </h1>
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
               Sign in with your staff account
             </p>
           </div>
-
+ 
           <form action={formAction} className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label
                   htmlFor="email"
-                  className="block text-sm font-medium text-zinc-700"
+                  className="block text-sm font-medium text-zinc-700 dark:text-zinc-350"
                 >
                   Email
                 </label>
@@ -59,14 +63,14 @@ export default function LoginPage() {
                   autoComplete="email"
                   required
                   placeholder="Enter your email"
-                  className="block w-full rounded-xl border border-zinc-200/80 bg-white px-4 py-3 text-sm font-medium text-zinc-900 placeholder-zinc-400 outline-none transition-all duration-200 focus:border-brand-orange-500/80 focus:ring-4 focus:ring-brand-orange-500/10"
+                  className="block w-full rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-4 py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 outline-none transition-all duration-200 focus:border-brand-orange-500/80 focus:ring-4 focus:ring-brand-orange-500/10"
                 />
               </div>
-
+ 
               <div className="space-y-1.5">
                 <label
                   htmlFor="password"
-                  className="block text-sm font-medium text-zinc-700"
+                  className="block text-sm font-medium text-zinc-700 dark:text-zinc-350"
                 >
                   Password
                 </label>
@@ -77,11 +81,11 @@ export default function LoginPage() {
                   autoComplete="current-password"
                   required
                   placeholder="••••••••"
-                  className="block w-full rounded-xl border border-zinc-200/80 bg-white px-4 py-3 text-sm font-medium text-zinc-900 placeholder-zinc-400 outline-none transition-all duration-200 focus:border-brand-orange-500/80 focus:ring-4 focus:ring-brand-orange-500/10"
+                  className="block w-full rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-4 py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 outline-none transition-all duration-200 focus:border-brand-orange-500/80 focus:ring-4 focus:ring-brand-orange-500/10"
                 />
               </div>
             </div>
-
+ 
             <div className="flex items-center justify-end text-xs font-bold pt-1">
               <a
                 href="#"
@@ -90,30 +94,18 @@ export default function LoginPage() {
                 Forgot password?
               </a>
             </div>
-
+ 
             {errorMessage && (
-              <div className="rounded-xl bg-red-50 border border-red-200 p-4">
+              <div className="rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 p-4">
                 <div className="flex gap-3 items-center">
-                  <svg
-                    className="h-4.5 w-4.5 text-red-600 flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    />
-                  </svg>
-                  <p className="text-xs font-bold text-red-600">
+                  <AlertTriangle className="h-4.5 w-4.5 text-red-600 dark:text-red-400 flex-shrink-0" strokeWidth={2.5} />
+                  <p className="text-xs font-bold text-red-600 dark:text-red-400">
                     {errorMessage}
                   </p>
                 </div>
               </div>
             )}
-
+ 
             <div className="pt-2">
               <button
                 type="submit"
@@ -131,20 +123,20 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
-
+ 
           <div className="border-t border-zinc-200/20 mt-8 pt-5">
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-zinc-400">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
               The Academy of Gymnastics · Pune
             </span>
           </div>
         </div>
       </div>
-
+ 
       {/* Right Section: Visual / Branding Presentation (50% on large width, entirely transparent background) */}
-      <div className="hidden lg:flex w-1/2 flex-col justify-center items-center p-12">
+      <div className="hidden lg:flex w-1/2 flex-col justify-center items-center p-12 z-10">
         <div className="relative group w-full h-full flex justify-center items-center flex-col items-start text-left space-y-12">
           <div className="relative">
-            <div className="relative h-46 w-46 overflow-hidden rounded-full border border-white/40 bg-white/20 ">
+            <div className="relative h-46 w-46 overflow-hidden rounded-full border border-white/40 dark:border-zinc-700 bg-white/20 dark:bg-zinc-800/15">
               <img
                 src="/logo.webp"
                 alt="Academy of Gymnastics"
@@ -153,10 +145,10 @@ export default function LoginPage() {
             </div>
           </div>
           <div className="space-y-1">
-            <h2 className="text-4xl font-black tracking-[0.05em] text-zinc-950 uppercase leading-none">
+            <h2 className="text-4xl font-black tracking-[0.05em] text-zinc-955 dark:text-zinc-50 uppercase leading-none">
               The Academy
             </h2>
-            <p className="text-4xl font-black tracking-[0.05em] text-zinc-950 uppercase leading-none">
+            <p className="text-4xl font-black tracking-[0.05em] text-zinc-955 dark:text-zinc-50 uppercase leading-none">
               of Gymnastics
             </p>
           </div>

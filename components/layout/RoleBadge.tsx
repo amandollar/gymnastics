@@ -1,11 +1,15 @@
 const roleStyles: Record<string, string> = {
   ADMIN: "bg-amber-50 text-amber-800 ring-1 ring-amber-200/80",
+  SUPER: "bg-amber-50 text-amber-800 ring-1 ring-amber-200/80",
+  SUPER_ADMIN: "bg-amber-50 text-amber-800 ring-1 ring-amber-200/80",
   MANAGER: "bg-blue-50 text-blue-800 ring-1 ring-blue-200/80",
   TRAINER: "bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200/80",
 };
 
 const roleLabels: Record<string, string> = {
   ADMIN: "Admin",
+  SUPER: "Admin",
+  SUPER_ADMIN: "Admin",
   MANAGER: "Manager",
   TRAINER: "Trainer",
 };

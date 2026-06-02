@@ -2,7 +2,6 @@ import React from "react";
 import { auth, signOut } from "@/auth";
 import { redirect } from "next/navigation";
 import DashboardSidebar from "@/components/layout/DashboardSidebar";
-import DashboardHeader from "@/components/layout/DashboardHeader";
 import { MobileBottomNav } from "@/components/layout/MobileDashboardNav";
 
 export default async function DashboardLayout({
@@ -26,23 +25,20 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-[100dvh] bg-zinc-50 flex">
-      <DashboardSidebar isAdmin={isAdmin} />
+    <div className="min-h-[100dvh] bg-[var(--background)] dark:bg-zinc-950 flex gap-0 md:gap-2 transition-colors duration-200">
+      <DashboardSidebar
+        isAdmin={isAdmin}
+        userName={user?.name || "User"}
+        userRole={userRole}
+        signOutAction={signOutAction}
+      />
 
-      <div className="flex-1 flex flex-col min-w-0 md:pl-60">
-        <DashboardHeader
-          userName={user?.name || "User"}
-          userEmail={user?.email || ""}
-          userRole={userRole}
-          isAdmin={isAdmin}
-          signOutAction={signOutAction}
-        />
-
-        <main className="flex-1 p-3 sm:p-6 lg:p-8 pb-20 md:pb-8 min-w-0">
+      <div className="flex-1 flex flex-col min-w-0">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 pt-6 sm:pt-6 lg:pt-8 pb-24 md:pb-8 min-w-0 text-zinc-900 dark:text-zinc-100">
           {children}
         </main>
 
-        <MobileBottomNav isAdmin={isAdmin} />
+        <MobileBottomNav isAdmin={isAdmin} signOutAction={signOutAction} />
       </div>
     </div>
   );

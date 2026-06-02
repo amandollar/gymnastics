@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import StudentAvatar from "./StudentAvatar";
+import { Check, ArrowRight } from "lucide-react";
 
 export default function StudentCreatedSuccess({
   studentId,
@@ -15,7 +16,7 @@ export default function StudentCreatedSuccess({
   avatarUrl?: string | null;
 }) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
         <Link
           href="/students"
@@ -25,22 +26,10 @@ export default function StudentCreatedSuccess({
         </Link>
       </div>
 
-      <div className="rounded-2xl border border-zinc-200 bg-white shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-br from-emerald-50 via-white to-orange-50/40 px-6 pt-8 pb-6 text-center">
+      <div className="rounded-2xl border-0 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-br from-emerald-50/40 via-white dark:via-zinc-900 to-orange-50/20 px-6 pt-8 pb-6 text-center">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/25">
-            <svg
-              className="h-6 w-6"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M4.5 12.75l6 6 9-13.5"
-              />
-            </svg>
+            <Check className="h-6 w-6" strokeWidth={2.5} />
           </div>
           <h1 className="mt-4 text-xl sm:text-2xl font-semibold text-zinc-900">
             Student added
@@ -79,19 +68,7 @@ export default function StudentCreatedSuccess({
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-orange-600 transition-colors"
             >
               Create & assign plan
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
-                />
-              </svg>
+              <ArrowRight className="h-4 w-4" strokeWidth={2} />
             </Link>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

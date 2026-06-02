@@ -22,19 +22,19 @@ function RatesTable({
   editMode: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white overflow-hidden">
-      <p className="px-4 py-3 text-sm font-medium text-zinc-900 border-b border-zinc-100 bg-zinc-50">
+    <div className="rounded-xl border-0 bg-white dark:bg-zinc-900 overflow-hidden shadow-sm">
+      <p className="px-4 py-3 text-sm font-semibold text-zinc-900 dark:text-zinc-150 border-b border-zinc-100 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
         {title}
       </p>
-      <ul className="divide-y divide-zinc-100 text-sm">
+      <ul className="divide-y divide-zinc-100 dark:divide-zinc-800 text-sm">
         {[1, 2, 3, 4, 5, 6].map((days) => (
           <li key={days} className="flex items-center justify-between gap-3 px-4 py-2.5">
-            <span className="text-zinc-600 shrink-0">
+            <span className="text-zinc-600 dark:text-zinc-400 shrink-0">
               {days} day{days > 1 ? "s" : ""} per week
             </span>
             {editMode && isAdmin ? (
               <div className="flex items-center gap-1.5 max-w-[140px]">
-                <span className="text-zinc-400">₹</span>
+                <span className="text-zinc-450 dark:text-zinc-500">₹</span>
                 <input
                   name={`${planType}_${days}`}
                   type="number"
@@ -46,7 +46,7 @@ function RatesTable({
                 />
               </div>
             ) : (
-              <span className="font-medium text-zinc-900">
+              <span className="font-semibold text-zinc-900 dark:text-zinc-100">
                 {formatINR(prices[days])} / class
               </span>
             )}

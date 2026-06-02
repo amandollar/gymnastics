@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import StudentStatusBadge from "@/components/students/StudentStatusBadge";
 import type { StudentStatus } from "@/lib/utils/student";
+import { Search } from "lucide-react";
 
 export type PlanStudentOption = {
   id: string;
@@ -50,19 +51,7 @@ export default function StudentPicker({
           className="w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20 focus:border-brand-orange-500"
           aria-label="Search students"
         />
-        <svg
-          className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={1.5}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-          />
-        </svg>
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400" strokeWidth={1.5} />
       </div>
 
       {selected && (

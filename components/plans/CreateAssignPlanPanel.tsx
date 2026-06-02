@@ -4,6 +4,7 @@ import { useActionState, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { assignPlanFromPlansPageAction } from "@/lib/actions/students";
+import { Check } from "lucide-react";
 import {
   computePlanFields,
   type PlanTypeKey,
@@ -75,9 +76,7 @@ export default function CreateAssignPlanPanel({
     return (
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 sm:p-8 text-center space-y-4">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-          <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-          </svg>
+          <Check className="h-6 w-6" strokeWidth={2} />
         </div>
         <div>
           <h2 className="text-lg font-semibold text-emerald-900">Plan saved</h2>
@@ -122,9 +121,9 @@ export default function CreateAssignPlanPanel({
   }
 
   return (
-    <form action={action} onSubmit={handleSubmit} className="space-y-8">
+    <form action={action} onSubmit={handleSubmit} className="space-y-4">
       <input type="hidden" name="studentId" value={studentId} readOnly />
-      <section className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6 shadow-sm space-y-4">
+      <section className="rounded-2xl border-0 bg-white dark:bg-zinc-900 p-4 sm:p-6 shadow-sm space-y-4">
         <div className="flex items-start gap-3">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-sm font-bold text-white">
             1
@@ -151,7 +150,7 @@ export default function CreateAssignPlanPanel({
         />
       </section>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6 shadow-sm space-y-4">
+      <section className="rounded-2xl border-0 bg-white dark:bg-zinc-900 p-4 sm:p-6 shadow-sm space-y-4">
         <div className="flex items-start gap-3">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-sm font-bold text-white">
             2

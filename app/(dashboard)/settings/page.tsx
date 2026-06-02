@@ -1,5 +1,5 @@
 import React from "react";
-import { auth } from "@/auth";
+import { auth, signOut } from "@/auth";
 import { redirect } from "next/navigation";
 import { getAllUsers } from "@/lib/services/users";
 import SettingsClient from "@/components/settings/SettingsClient";
@@ -17,10 +17,16 @@ export default async function SettingsPage() {
   // Fetch users via service layer
   const users = await getAllUsers();
 
+  async function signOutAction() {
+    "use server";
+    await signOut({ redirectTo: "/login" });
+  }
+
   return (
     <SettingsClient
       initialUsers={users as any[]}
       currentUserId={(user as { id: string }).id}
+      signOutAction={signOutAction}
     />
   );
 }

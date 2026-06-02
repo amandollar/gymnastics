@@ -68,7 +68,7 @@ export default function StudentDetailClient({
   const plan = student.activePlan;
 
   return (
-    <div className="space-y-6 min-w-0">
+    <div className="space-y-4 min-w-0">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-start gap-4 min-w-0">
           <StudentAvatar student={student} size={80} />
@@ -91,8 +91,8 @@ export default function StudentDetailClient({
         <StudentStatusBadge status={student.status} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-6 shadow-sm">
+      <div className="grid gap-3.5 lg:grid-cols-2">
+        <div className="rounded-lg border-0 bg-white dark:bg-zinc-900 p-4 sm:p-6 shadow-sm">
           <h2 className="text-sm font-medium text-zinc-900">Contact</h2>
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between gap-4">
@@ -129,7 +129,7 @@ export default function StudentDetailClient({
           )}
         </div>
 
-        <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-6 shadow-sm">
+        <div className="rounded-lg border-0 bg-white dark:bg-zinc-900 p-4 sm:p-6 shadow-sm">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-sm font-medium text-zinc-900">Current plan</h2>
             {canManage && plan && (
@@ -202,7 +202,7 @@ export default function StudentDetailClient({
       </div>
 
       {canManage && showAssign && (
-        <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-6 shadow-sm">
+        <div className="rounded-lg border-0 bg-white dark:bg-zinc-900 p-4 sm:p-6 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-4">
             <div>
               <h2 className="text-sm font-medium text-zinc-900">
@@ -228,7 +228,7 @@ export default function StudentDetailClient({
       )}
 
       {student.plans.length > 0 && (
-        <div className="rounded-lg border border-zinc-200 bg-white shadow-sm overflow-x-auto">
+        <div className="rounded-lg border-0 bg-white dark:bg-zinc-900 shadow-sm overflow-x-auto">
           <h2 className="text-sm font-medium text-zinc-900 p-4 border-b border-zinc-100">
             Plan history
           </h2>

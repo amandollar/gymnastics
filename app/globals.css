@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-brand-orange-50: #fff7ed;
   --color-brand-orange-500: #f16d28;
@@ -7,8 +9,29 @@
 }
 
 :root {
-  --background: #ffffff;
+  --background: #EDEBE7;
   --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --border: #e4e4e7;
+  --chart-grid: #f4f4f5;
+  --chart-tooltip-bg: #ffffff;
+  --chart-tooltip-border: #e4e4e7;
+  --chart-tooltip-text: #09090b;
+  --tick-color: #71717a;
+}
+
+.dark {
+  --background: #09090b;
+  --foreground: #f4f4f5;
+  --card: #09090b;
+  --card-foreground: #f4f4f5;
+  --border: #27272a;
+  --chart-grid: #27272a;
+  --chart-tooltip-bg: #18181b;
+  --chart-tooltip-border: #27272a;
+  --chart-tooltip-text: #f4f4f5;
+  --tick-color: #a1a1aa;
 }
 
 html {
@@ -31,6 +54,11 @@ body {
   color: #09090b;
 }
 
+.dark ::selection {
+  background-color: rgba(241, 109, 40, 0.3);
+  color: #ffffff;
+}
+
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
@@ -43,6 +71,19 @@ select:-webkit-autofill:focus {
   -webkit-text-fill-color: #09090b !important;
   -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
   transition: background-color 5000s ease-in-out 0s;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover,
+.dark input:-webkit-autofill:focus,
+.dark textarea:-webkit-autofill,
+.dark textarea:-webkit-autofill:hover,
+.dark textarea:-webkit-autofill:focus,
+.dark select:-webkit-autofill,
+.dark select:-webkit-autofill:hover,
+.dark select:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f4f4f5 !important;
+  -webkit-box-shadow: 0 0 0px 1000px #09090b inset !important;
 }
 
 /* Smooth scrollbar */
@@ -62,5 +103,81 @@ select:-webkit-autofill:focus {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #a1a1aa;
+}
+
+/* ==========================================
+   GLOBAL DESIGN SYSTEM OVERRIDES: 
+   Unified Border Radius, Borderless Cards, and Tighter Spacings
+   ========================================== */
+
+/* 1. Global Card Radius and Border Removal for Block-Level Card elements */
+div[class*="rounded-"].bg-white,
+div[class*="rounded-"].dark\:bg-zinc-900,
+div[class*="rounded-"].dark\:bg-zinc-950,
+div[class*="rounded-"].bg-zinc-50,
+div[class*="rounded-"].dark\:bg-zinc-800,
+div[class*="rounded-"].dark\:bg-zinc-850,
+section[class*="rounded-"].bg-white,
+section[class*="rounded-"].dark\:bg-zinc-900,
+section[class*="rounded-"].dark\:bg-zinc-950,
+section[class*="rounded-"].bg-zinc-50,
+section[class*="rounded-"].dark\:bg-zinc-800,
+section[class*="rounded-"].dark\:bg-zinc-850,
+article[class*="rounded-"].bg-white,
+article[class*="rounded-"].dark\:bg-zinc-900,
+article[class*="rounded-"].dark\:bg-zinc-950,
+article[class*="rounded-"].bg-zinc-50,
+article[class*="rounded-"].dark\:bg-zinc-800,
+article[class*="rounded-"].dark\:bg-zinc-850 {
+  border-radius: 1.5rem !important; /* rounded-3xl (24px) */
+  border-width: 0px !important;     /* border-0 */
+  border-color: transparent !important;
+  box-shadow: none !important;      /* shadow-none */
+}
+
+/* 2. Global Section and Grid/Flex Card Gap Optimization (Dashboard Style) */
+.grid.gap-4, 
+.grid.gap-3\.5, 
+.grid.gap-6,
+.flex.gap-4, 
+.flex.gap-3\.5, 
+.flex.gap-6 {
+  gap: 0.75rem !important; /* tighter layout gaps */
+}
+
+.grid.gap-x-4, 
+.grid.gap-x-3\.5, 
+.grid.gap-x-6,
+.flex.gap-x-4, 
+.flex.gap-x-3\.5, 
+.flex.gap-x-6 {
+  column-gap: 0.75rem !important;
+}
+
+.grid.gap-y-4, 
+.grid.gap-y-3\.5, 
+.grid.gap-y-6,
+.flex.gap-y-4, 
+.flex.gap-y-3\.5, 
+.flex.gap-y-6 {
+  row-gap: 0.75rem !important;
+}
+
+/* 3. Global Vertical Layout Spacers */
+.space-y-4 > :not([hidden]) ~ :not([hidden]),
+.space-y-6 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-y-reverse: 0;
+  margin-top: calc(0.625rem * calc(1 - var(--tw-space-y-reverse))) !important; /* space-y-2.5 (10px) */
+  margin-bottom: calc(0.625rem * var(--tw-space-y-reverse)) !important;
+}
+
+/* 4. Focus outline reset for Recharts & SVGs */
+.recharts-wrapper,
+.recharts-surface,
+.recharts-surface:focus,
+.recharts-wrapper:focus,
+svg:focus {
+  outline: none !important;
+  box-shadow: none !important;
 }
 

@@ -25,8 +25,8 @@ export default function PlansPageClient({
   return (
     <div className="space-y-6 min-w-0 max-w-3xl">
       <header>
-        <h1 className="text-xl sm:text-2xl font-semibold text-zinc-900">Plans</h1>
-        <p className="mt-2 text-sm text-zinc-600 leading-relaxed max-w-xl">
+        <h1 className="text-xl sm:text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Plans</h1>
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed max-w-xl">
           Create a plan, see the fee, and assign it to a student — all in one place.
           You do not need the Excel sheet anymore.
         </p>
@@ -34,7 +34,7 @@ export default function PlansPageClient({
 
       <div
         role="tablist"
-        className="inline-flex gap-1 p-1 rounded-xl bg-zinc-100"
+        className="inline-flex gap-1 p-1 rounded-xl bg-zinc-100 dark:bg-zinc-800"
         aria-label="Plans sections"
       >
         <button
@@ -44,8 +44,8 @@ export default function PlansPageClient({
           onClick={() => setTab("assign")}
           className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors cursor-pointer ${
             tab === "assign"
-              ? "bg-white text-zinc-900 shadow-sm"
-              : "text-zinc-600 hover:text-zinc-900"
+              ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+              : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
           }`}
         >
           Create & assign
@@ -57,8 +57,8 @@ export default function PlansPageClient({
           onClick={() => setTab("rates")}
           className={`rounded-lg px-4 py-2 text-sm font-semibold transition-colors cursor-pointer ${
             tab === "rates"
-              ? "bg-white text-zinc-900 shadow-sm"
-              : "text-zinc-600 hover:text-zinc-900"
+              ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm"
+              : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
           }`}
         >
           Class rates
@@ -69,7 +69,7 @@ export default function PlansPageClient({
         {tab === "assign" && (
           <Suspense
             fallback={
-              <div className="h-40 rounded-xl bg-zinc-100 animate-pulse" />
+              <div className="h-40 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
             }
           >
             <CreateAssignPlanPanel
@@ -85,9 +85,9 @@ export default function PlansPageClient({
       </div>
 
       {tab === "assign" && canManage && (
-        <p className="text-xs text-zinc-400">
+        <p className="text-xs text-zinc-400 dark:text-zinc-500">
           You can also assign from a student profile under{" "}
-          <Link href="/students" className="text-zinc-600 hover:underline">
+          <Link href="/students" className="text-zinc-600 dark:text-zinc-400 hover:underline">
             Students
           </Link>
           .

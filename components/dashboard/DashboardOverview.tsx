@@ -1,16 +1,15 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
+import { UserPlus, UserCheck, IndianRupee, ChevronRight, X, Check } from "lucide-react";
 import { useMediaQuery } from "@/components/hooks/useMediaQuery";
 import ChartBox from "@/components/charts/ChartBox";
 import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   Line,
   LineChart,
-  Pie,
-  PieChart,
   Tooltip,
   XAxis,
   YAxis,
@@ -18,108 +17,30 @@ import {
 import {
   kpiStats,
   revenueByMonth,
-  studentsByProgram,
-  revenueBySource,
   weeklyAttendance,
   recentActivity,
   formatINR,
 } from "@/lib/sample/dashboard";
 
-const CHART_H = 256;
+const CHART_H = 260;
 const CHART_H_SM = 224;
 
 const chartTooltipStyle = {
-  backgroundColor: "#fff",
-  border: "1px solid #e4e4e7",
+  backgroundColor: "var(--chart-tooltip-bg)",
+  border: "1px solid var(--chart-tooltip-border)",
+  color: "var(--chart-tooltip-text)",
   borderRadius: "8px",
   fontSize: "12px",
   boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.08)",
 };
 
-function KpiCard({
-  label,
-  value,
-  sub,
-  trend,
-  trendUp,
-}: {
-  label: string;
-  value: string;
-  sub?: string;
-  trend?: string;
-  trendUp?: boolean;
-}) {
-  return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-5 shadow-sm min-w-0">
-      <p className="text-sm text-zinc-500">{label}</p>
-      <p className="mt-1 text-xl sm:text-2xl font-semibold text-zinc-900 tabular-nums break-words">
-        {value}
-      </p>
-      {(sub || trend) && (
-        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
-          {trend && (
-            <span
-              className={
-                trendUp === false
-                  ? "font-medium text-rose-600"
-                  : "font-medium text-emerald-600"
-              }
-            >
-              {trend}
-            </span>
-          )}
-          {sub && <span className="text-zinc-400">{sub}</span>}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ChartCard({
-  title,
-  description,
-  chartHeight,
-  children,
-  footer,
-}: {
-  title: string;
-  description?: string;
-  chartHeight: number;
-  children: React.ReactElement;
-  footer?: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-5 shadow-sm min-w-0 overflow-hidden">
-      <h3 className="text-sm font-medium text-zinc-900">{title}</h3>
-      {description && (
-        <p className="mt-0.5 text-xs text-zinc-500">{description}</p>
-      )}
-      <div className="mt-4">
-        <ChartBox height={chartHeight}>{children}</ChartBox>
-      </div>
-      {footer}
-    </div>
-  );
-}
-
-function PieLegend({ data }: { data: { name: string; color: string }[] }) {
-  return (
-    <ul className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-2">
-      {data.map((item) => (
-        <li
-          key={item.name}
-          className="flex items-center gap-1.5 text-xs text-zinc-600"
-        >
-          <span
-            className="h-2.5 w-2.5 shrink-0 rounded-full"
-            style={{ backgroundColor: item.color }}
-          />
-          {item.name}
-        </li>
-      ))}
-    </ul>
-  );
-}
+const dummyStudents = [
+  { id: "1", studentNumber: 101, name: "Rohan Patel", parentName: "Deepak Patel", contactNumber: "9876543210", activePlan: "Intermediate Gymnastics", outstanding: 0 },
+  { id: "2", studentNumber: 102, name: "Ananya Sharma", parentName: "Vijay Sharma", contactNumber: "9812345678", activePlan: "Beginner Gymnastics", outstanding: 4500 },
+  { id: "3", studentNumber: 103, name: "Kabir Mehta", parentName: "Rajesh Mehta", contactNumber: "9988776655", activePlan: "Advanced Trampoline", outstanding: 8000 },
+  { id: "4", studentNumber: 104, name: "Siddharth Rao", parentName: "Prakash Rao", contactNumber: "9765432109", activePlan: "Elite Artistic Plan", outstanding: 0 },
+  { id: "5", studentNumber: 105, name: "Meera Nair", parentName: "Suresh Nair", contactNumber: "9543210987", activePlan: "Beginner Gymnastics", outstanding: 1200 },
+];
 
 export default function DashboardOverview({
   firstName,
@@ -128,215 +49,985 @@ export default function DashboardOverview({
 }) {
   const isMobile = useMediaQuery("(max-width: 639px)");
   const chartH = isMobile ? CHART_H_SM : CHART_H;
+  
   const attendanceData = weeklyAttendance.map((d) => ({
     day: d.day,
-    rate: Math.round((d.present / (d.present + d.absent)) * 100),
+    present: d.present,
   }));
+
   const chartMargin = isMobile
     ? { top: 8, right: 4, left: -16, bottom: 0 }
     : { top: 8, right: 8, left: -8, bottom: 0 };
 
+  // Modals visibility state
+  const [qrOpen, setQrOpen] = useState(false);
+  const [admissionOpen, setAdmissionOpen] = useState(false);
+  const [feeOpen, setFeeOpen] = useState(false);
+
+  // Camera QR Scanner states
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [scannedStudent, setScannedStudent] = useState<typeof dummyStudents[0] | null>(null);
+  const [scanMethod, setScanMethod] = useState<"camera" | "manual">("camera");
+  const [manualIdInput, setManualIdInput] = useState("");
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  // New Admission states
+  const [newStudentName, setNewStudentName] = useState("");
+  const [newParentName, setNewParentName] = useState("");
+  const [newContact, setNewContact] = useState("");
+  const [newDob, setNewDob] = useState("");
+  const [selectedPlan, setSelectedPlan] = useState("36s");
+  const [customFee, setCustomFee] = useState("8640");
+  const [admissionSuccess, setAdmissionSuccess] = useState(false);
+
+  // Collect Fee states
+  const [feeSearchQuery, setFeeSearchQuery] = useState("");
+  const [feeSelectedStudent, setFeeSelectedStudent] = useState<typeof dummyStudents[0] | null>(null);
+  const [feeAmount, setFeeAmount] = useState("");
+  const [feeMethod, setFeeMethod] = useState("UPI");
+  const [feeNotes, setFeeNotes] = useState("");
+  const [feeSuccess, setFeeSuccess] = useState(false);
+
+  // Clean up camera stream on close
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    setCameraActive(false);
+    setCameraError(null);
+  };
+
+  const startCamera = async () => {
+    setCameraError(null);
+    setScannedStudent(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+      setCameraActive(true);
+    } catch (err: any) {
+      console.error("Camera error:", err);
+      setCameraError(
+        "Could not access the rear camera. Make sure permissions are granted or try the manual simulation fallback."
+      );
+    }
+  };
+
+  useEffect(() => {
+    if (qrOpen && scanMethod === "camera") {
+      startCamera();
+    } else {
+      stopCamera();
+    }
+    return () => stopCamera();
+  }, [qrOpen, scanMethod]);
+
+  // Handle Plan Change - Autofill default fees
+  const handlePlanChange = (plan: string) => {
+    setSelectedPlan(plan);
+    if (plan === "12s") setCustomFee("3200");
+    else if (plan === "36s") setCustomFee("8640");
+    else if (plan === "60s") setCustomFee("11880");
+  };
+
+  // Simulate scanning a student
+  const handleSimulateScan = (student: typeof dummyStudents[0]) => {
+    setScannedStudent(student);
+    // Play virtual bip sound
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.1);
+    } catch (e) {
+      console.log("Audio not allowed yet or not supported");
+    }
+  };
+
+  const totalStudents = kpiStats.activeStudents + kpiStats.gracePeriodStudents;
+  const activePercent = totalStudents > 0 ? Math.round((kpiStats.activeStudents / totalStudents) * 100) : 0;
+  const gracePercent = totalStudents > 0 ? Math.round((kpiStats.gracePeriodStudents / totalStudents) * 100) : 0;
+
   return (
-    <div className="space-y-5 sm:space-y-6 min-w-0 w-full">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-xl sm:text-2xl font-semibold text-zinc-900">
-            Welcome back, {firstName}
-          </h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            Overview of enrollment, attendance, and revenue for your academy.
-          </p>
-        </div>
-        <span className="inline-flex w-fit items-center rounded-md bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800 ring-1 ring-amber-200/80">
-          Sample data — live stats coming soon
-        </span>
-      </div>
+    <div className="space-y-2.5 min-w-0 w-full pb-6">
+      
+      {/* Premium Dashboard Header */}
+      <div className="relative z-10 flex flex-col gap-4 pt-1 pb-3">
+        {/* Header Row 1 */}
+          <div>
+            <h1 className="text-3xl sm:text-5xl font-light tracking-tight text-zinc-955 dark:text-zinc-50">
+              Welcome back, <span className="font-semibold text-brand-orange-500 dark:text-brand-orange-500">{firstName}</span>
+            </h1>
+          </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard
-          label="Students enrolled"
-          value={kpiStats.studentsEnrolled.toString()}
-          trend={`+${kpiStats.studentsChange} this month`}
-          trendUp
-        />
-        <KpiCard
-          label="Active trainers"
-          value={kpiStats.activeTrainers.toString()}
-          sub={`${kpiStats.trialsThisWeek} trial sessions this week`}
-        />
-        <KpiCard
-          label="Revenue (June)"
-          value={formatINR(kpiStats.monthlyRevenue)}
-          trend={`+${kpiStats.revenueChange}% vs last month`}
-          trendUp
-        />
-        <KpiCard
-          label="Attendance rate"
-          value={`${kpiStats.attendanceRate}%`}
-          trend={`+${kpiStats.attendanceChange}%`}
-          trendUp
-          sub={`${formatINR(kpiStats.pendingFees)} pending · ${kpiStats.pendingCount} accounts`}
-        />
-      </div>
-
-      <div className="grid gap-5 sm:gap-6 lg:grid-cols-2 min-w-0">
-        <ChartCard
-          title="Monthly revenue"
-          description="Last 6 months (₹ lakhs)"
-          chartHeight={chartH}
-        >
-          <LineChart data={revenueByMonth} margin={chartMargin}>
-            <CartesianGrid
-              strokeDasharray="3 3"
-              stroke="#f4f4f5"
-              vertical={false}
-            />
-            <XAxis
-              dataKey="month"
-              tick={{ fontSize: isMobile ? 10 : 12, fill: "#71717a" }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              width={isMobile ? 36 : 48}
-              tick={{ fontSize: isMobile ? 10 : 12, fill: "#71717a" }}
-              axisLine={false}
-              tickLine={false}
-              tickFormatter={(v) => `₹${v}L`}
-            />
-            <Tooltip
-              contentStyle={chartTooltipStyle}
-              formatter={(value) => [`₹${value}L`, "Revenue"]}
-            />
-            <Line
-              type="monotone"
-              dataKey="revenue"
-              stroke="#f16d28"
-              strokeWidth={2.5}
-              dot={{ fill: "#f16d28", r: 4, strokeWidth: 0 }}
-              activeDot={{ r: 6 }}
-            />
-          </LineChart>
-        </ChartCard>
-
-        <ChartCard
-          title="Students by program"
-          description="Current active enrollments"
-          chartHeight={chartH}
-          footer={<PieLegend data={studentsByProgram} />}
-        >
-          <PieChart>
-            <Pie
-              data={studentsByProgram}
-              dataKey="value"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              innerRadius={isMobile ? 40 : 52}
-              outerRadius={isMobile ? 64 : 76}
-              paddingAngle={2}
+        {/* Header Row 2: Pill Bar and Stats */}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between pt-3 pb-2 sm:pt-6 sm:pb-3">
+          {/* Left Part: Premium standalone pills side-by-side with extra gap (Cleanest UI, matching user reference image exactly, scaled proportionally) */}
+          <div className="flex items-center gap-0.5 pt-2 w-full max-w-sm shrink-0">
+            {/* Active Group */}
+            <div 
+              className="flex flex-col"
+              style={{ width: `${activePercent}%`, minWidth: "140px" }}
             >
-              {studentsByProgram.map((entry) => (
-                <Cell key={entry.name} fill={entry.color} />
-              ))}
-            </Pie>
-            <Tooltip
-              contentStyle={chartTooltipStyle}
-              formatter={(value, name) => [`${value} students`, name]}
-            />
-          </PieChart>
-        </ChartCard>
-      </div>
-
-      <div className="grid gap-5 sm:gap-6 lg:grid-cols-3 min-w-0">
-        <div className="lg:col-span-1 min-w-0">
-          <ChartCard
-            title="Revenue mix"
-            description="Share by source this month"
-            chartHeight={chartH}
-            footer={<PieLegend data={revenueBySource} />}
-          >
-            <PieChart>
-              <Pie
-                data={revenueBySource}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={isMobile ? 72 : 88}
+              <div 
+                className="h-10 w-full bg-zinc-800 dark:bg-white text-white dark:text-black flex items-center justify-center text-xs font-semibold shadow-xs whitespace-nowrap px-4 transition-all duration-300"
+                style={{ borderRadius: '20px 8px 8px 20px' }}
               >
-                {revenueBySource.map((entry) => (
-                  <Cell key={entry.name} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={chartTooltipStyle}
-                formatter={(value) => [`${value}%`, "Share"]}
-              />
-            </PieChart>
-          </ChartCard>
-        </div>
+                {kpiStats.activeStudents} ({activePercent}%)
+              </div>
+              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-left pl-5 mt-1.5">
+                Active
+              </p>
+            </div>
 
-        <div className="lg:col-span-2 min-w-0">
-          <ChartCard
-            title="Weekly attendance"
-            description="Daily attendance rate (%)"
-            chartHeight={chartH}
-          >
-            <BarChart data={attendanceData} margin={chartMargin}>
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#f4f4f5"
-                vertical={false}
-              />
-              <XAxis
-                dataKey="day"
-                tick={{ fontSize: isMobile ? 10 : 12, fill: "#71717a" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                width={isMobile ? 32 : 48}
-                domain={[80, 100]}
-                tick={{ fontSize: isMobile ? 10 : 12, fill: "#71717a" }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => `${v}%`}
-              />
-              <Tooltip
-                contentStyle={chartTooltipStyle}
-                formatter={(value) => [`${value}%`, "Attendance"]}
-              />
-              <Bar
-                dataKey="rate"
-                fill="#3b82f6"
-                radius={[6, 6, 0, 0]}
-                maxBarSize={isMobile ? 32 : 48}
-              />
-            </BarChart>
-          </ChartCard>
+            {/* Grace Period Group */}
+            <div 
+              className="flex flex-col"
+              style={{ width: `${gracePercent}%`, minWidth: "90px" }}
+            >
+              <div 
+                className="h-10 w-full bg-brand-orange-500 text-white flex items-center justify-center text-xs font-bold shadow-xs whitespace-nowrap px-3 transition-all duration-300"
+                style={{ borderRadius: '8px 20px 20px 8px' }}
+              >
+                {kpiStats.gracePeriodStudents} ({gracePercent}%)
+              </div>
+              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-left pl-2 mt-1.5">
+                Grace Period
+              </p>
+            </div>
+          </div>
+
+          {/* Right Part: Three Primary Stats */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 justify-start lg:justify-end shrink-0">
+            {/* Stat 1: Admissions This Month */}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <span className="hidden sm:inline-flex items-center justify-center p-1 rounded-md bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border border-zinc-200/40 dark:border-zinc-800/40">
+                  <UserPlus className="h-4 w-4" />
+                </span>
+                <span className="text-3xl sm:text-4xl font-extralight text-zinc-955 dark:text-zinc-50 tracking-tight">
+                  {kpiStats.admissionsThisMonth}
+                </span>
+              </div>
+              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-left sm:pl-7 mt-0.5">
+                Joined This Mo.
+              </p>
+            </div>
+
+            {/* Stat 2: Today's Attendance (Counts, no percentage) */}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <span className="hidden sm:inline-flex items-center justify-center p-1 rounded-md bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border border-zinc-200/40 dark:border-zinc-800/40">
+                  <UserCheck className="h-4 w-4" />
+                </span>
+                <span className="text-3xl sm:text-4xl font-extralight text-zinc-955 dark:text-zinc-50 tracking-tight">
+                  {kpiStats.todayAttendanceCount}
+                </span>
+              </div>
+              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-left sm:pl-7 mt-0.5">
+                Attended Today
+              </p>
+            </div>
+
+            {/* Stat 3: Monthly Revenue */}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <span className="hidden sm:inline-flex items-center justify-center p-1 rounded-md bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border border-zinc-200/40 dark:border-zinc-800/40">
+                  <IndianRupee className="h-4 w-4" />
+                </span>
+                <span className="text-3xl sm:text-4xl font-extralight text-zinc-955 dark:text-zinc-50 tracking-tight">
+                  {formatINR(kpiStats.monthlyRevenue)}
+                </span>
+              </div>
+              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-left sm:pl-7 mt-0.5">
+                Revenue This Mo.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="rounded-lg border border-zinc-200 bg-white p-4 sm:p-5 shadow-sm min-w-0">
-        <h3 className="text-sm font-medium text-zinc-900">Recent activity</h3>
-        <p className="mt-0.5 text-xs text-zinc-500">
+      {/* Premium Quick Actions Row - Shades representing Terracotta, Emerald Green, and Charcoal grey */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        {/* Action 1: Take Attendance (Terracotta / Warm Coral-Orange) */}
+        <button
+          onClick={() => {
+            setQrOpen(true);
+            setScanMethod("camera");
+          }}
+          className="group flex flex-col sm:flex-row items-center gap-2.5 sm:gap-4.5 py-4.5 px-3 sm:py-5.5 sm:px-4.5 rounded-3xl border-0 bg-orange-200/90 dark:bg-orange-950/60 hover:bg-orange-300/80 dark:hover:bg-orange-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center sm:text-left w-full"
+        >
+          <img 
+            src="/attendance.webp" 
+            alt="Attendance" 
+            className="h-12 w-12 sm:h-16 sm:w-16 object-cover rounded-xl shrink-0 shadow-3xs" 
+          />
+          <div className="flex flex-col justify-center min-w-0">
+            <span className="font-bold text-xs sm:text-[14px] text-orange-955 dark:text-orange-100 leading-tight">
+              Take Attendance
+            </span>
+            <span className="hidden sm:block text-[10px] sm:text-xs text-orange-855 dark:text-orange-200/70 mt-1 leading-normal">
+              Scan via QR or type ID
+            </span>
+          </div>
+          <ChevronRight className="hidden sm:block h-5 w-5 ml-auto text-orange-955 dark:text-orange-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" strokeWidth={2.5} />
+        </button>
+
+        {/* Action 2: New Admission (Emerald Green) */}
+        <button
+          onClick={() => {
+            setAdmissionOpen(true);
+            setAdmissionSuccess(false);
+          }}
+          className="group flex flex-col sm:flex-row items-center gap-2.5 sm:gap-4.5 py-4.5 px-3 sm:py-5.5 sm:px-4.5 rounded-3xl border-0 bg-emerald-200/90 dark:bg-emerald-950/60 hover:bg-emerald-300/80 dark:hover:bg-emerald-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center sm:text-left w-full"
+        >
+          <img 
+            src="/newAdmission.webp" 
+            alt="New Admission" 
+            className="h-12 w-12 sm:h-16 sm:w-16 object-cover rounded-xl shrink-0 shadow-3xs" 
+          />
+          <div className="flex flex-col justify-center min-w-0">
+            <span className="font-bold text-xs sm:text-[14px] text-emerald-955 dark:text-emerald-100 leading-tight">
+              New Admission
+            </span>
+            <span className="hidden sm:block text-[10px] sm:text-xs text-emerald-855 dark:text-emerald-200/70 mt-1 leading-normal">
+              Enroll student to a plan
+            </span>
+          </div>
+          <ChevronRight className="hidden sm:block h-5 w-5 ml-auto text-emerald-955 dark:text-emerald-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" strokeWidth={2.5} />
+        </button>
+
+        {/* Action 3: Collect Fee (Charcoal / Zinc grey) */}
+        <button
+          onClick={() => {
+            setFeeOpen(true);
+            setFeeSuccess(false);
+            setFeeSelectedStudent(null);
+            setFeeSearchQuery("");
+            setFeeAmount("");
+            setFeeNotes("");
+          }}
+          className="group flex flex-col sm:flex-row items-center gap-2.5 sm:gap-4.5 py-4.5 px-3 sm:py-5.5 sm:px-4.5 rounded-3xl border-0 bg-zinc-300/95 dark:bg-zinc-800/80 hover:bg-zinc-400/85 dark:hover:bg-zinc-700/80 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center sm:text-left w-full"
+        >
+          <img 
+            src="/fee.webp" 
+            alt="Collect Fee" 
+            className="h-12 w-12 sm:h-16 sm:w-16 object-cover rounded-xl shrink-0 shadow-3xs" 
+          />
+          <div className="flex flex-col justify-center min-w-0">
+            <span className="font-bold text-xs sm:text-[14px] text-zinc-955 dark:text-zinc-100 leading-tight">
+              Collect Fee
+            </span>
+            <span className="hidden sm:block text-[10px] sm:text-xs text-zinc-850 dark:text-zinc-200/70 mt-1 leading-normal">
+              Record student payment
+            </span>
+          </div>
+          <ChevronRight className="hidden sm:block h-5 w-5 ml-auto text-zinc-955 dark:text-zinc-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" strokeWidth={2.5} />
+        </button>
+      </div>
+
+      {/* Modern Two-Column Charts Grid (Clean, side-by-side, same gap-3.5 and rounded-2xl border-0 shadow-xs as before) */}
+      <div className="grid gap-2.5 lg:grid-cols-2 min-w-0">
+        
+        {/* Chart 1: Monthly Revenue (Line Chart) */}
+        <div className="rounded-3xl border-0 bg-white dark:bg-zinc-900 p-5 shadow-xs min-w-0 overflow-hidden transition-all duration-300">
+          <h3 className="text-sm font-bold text-zinc-950 dark:text-zinc-50 uppercase tracking-wider">
+            Monthly Revenue
+          </h3>
+          <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
+            Last 6 months collection in INR (₹ lakhs)
+          </p>
+          <div className="mt-4">
+            <ChartBox height={chartH}>
+              <LineChart data={revenueByMonth} margin={chartMargin}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--chart-grid)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: isMobile ? 10 : 11, fill: "var(--tick-color)", fontWeight: 500 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  width={isMobile ? 36 : 48}
+                  tick={{ fontSize: isMobile ? 10 : 11, fill: "var(--tick-color)", fontWeight: 500 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => `₹${v}L`}
+                />
+                <Tooltip
+                  contentStyle={chartTooltipStyle}
+                  formatter={(value) => [`₹${value}L`, "Revenue"]}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#f16d28"
+                  strokeWidth={3}
+                  dot={{ fill: "#f16d28", r: 4, strokeWidth: 0 }}
+                  activeDot={{ r: 6, stroke: "var(--background)", strokeWidth: 2 }}
+                />
+              </LineChart>
+            </ChartBox>
+          </div>
+        </div>
+
+        {/* Chart 2: Weekly Attendance Count (Bar Chart) */}
+        <div className="rounded-3xl border-0 bg-white dark:bg-zinc-900 p-5 shadow-xs min-w-0 overflow-hidden transition-all duration-300">
+          <h3 className="text-sm font-bold text-zinc-955 dark:text-zinc-50 uppercase tracking-wider">
+            Weekly Attendance
+          </h3>
+          <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
+            Daily present count of students attended class
+          </p>
+          <div className="mt-4">
+            <ChartBox height={chartH}>
+              <BarChart data={attendanceData} margin={chartMargin} barCategoryGap={6}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--chart-grid)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="day"
+                  tick={{ fontSize: isMobile ? 10 : 11, fill: "var(--tick-color)", fontWeight: 500 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  width={isMobile ? 36 : 48}
+                  domain={['auto', 'auto']}
+                  tick={{ fontSize: isMobile ? 10 : 11, fill: "var(--tick-color)", fontWeight: 500 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => `${v}`}
+                />
+                <Tooltip
+                  contentStyle={chartTooltipStyle}
+                  formatter={(value) => [`${value} students`, "Present Count"]}
+                />
+                <Bar
+                  dataKey="present"
+                  fill="#f16d28"
+                  radius={[9999, 9999, 8, 8]}
+                  maxBarSize={isMobile ? 28 : 42}
+                />
+              </BarChart>
+            </ChartBox>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Recent Activity Section */}
+      <div className="rounded-3xl border-0 bg-white dark:bg-zinc-900 p-5 shadow-xs min-w-0 transition-colors">
+        <h3 className="text-sm font-bold text-zinc-955 dark:text-zinc-100 uppercase tracking-wider">Recent activity</h3>
+        <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
           Latest updates across the academy
         </p>
-        <ul className="mt-4 divide-y divide-zinc-100">
+        <ul className="mt-4 divide-y divide-zinc-100 dark:divide-zinc-800">
           {recentActivity.map((item) => (
             <li
               key={item.id}
-              className="flex flex-col gap-0.5 py-3 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+              className="flex flex-col gap-0.5 py-3.5 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between hover:bg-zinc-50/30 dark:hover:bg-zinc-800/10 px-2 rounded-lg transition-colors"
             >
-              <span className="text-sm text-zinc-700">{item.text}</span>
-              <span className="text-xs text-zinc-400 shrink-0 sm:pl-4">
+              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">{item.text}</span>
+              <span className="text-xs text-zinc-400 dark:text-zinc-500 font-semibold shrink-0 sm:pl-4">
                 {item.time}
               </span>
             </li>
           ))}
         </ul>
       </div>
+
+      {/* Interactive Modal 1: Take Attendance */}
+      {qrOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="relative w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 border-0 shadow-2xl p-6 overflow-hidden">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-850 pb-4 mb-4">
+              <div>
+                <h3 className="text-base font-bold text-zinc-950 dark:text-zinc-50 flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                  </span>
+                  QR Attendance Scanner
+                </h3>
+                <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                  Point the camera at a student QR code to mark attendance
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  setQrOpen(false);
+                  stopCamera();
+                }}
+                className="h-8 w-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                <X className="h-5 w-5" strokeWidth={2} />
+              </button>
+            </div>
+
+            {/* Toggle Scanner Method */}
+            <div className="grid grid-cols-2 gap-1 bg-zinc-100 dark:bg-zinc-800/80 p-0.5 rounded-lg mb-4 text-xs font-semibold">
+              <button
+                onClick={() => setScanMethod("camera")}
+                className={`py-1.5 px-3 rounded-md transition-all cursor-pointer ${
+                  scanMethod === "camera"
+                    ? "bg-white dark:bg-zinc-700 text-zinc-950 dark:text-zinc-50 shadow-3xs"
+                    : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-350"
+                }`}
+              >
+                Camera Scanner
+              </button>
+              <button
+                onClick={() => setScanMethod("manual")}
+                className={`py-1.5 px-3 rounded-md transition-all cursor-pointer ${
+                  scanMethod === "manual"
+                    ? "bg-white dark:bg-zinc-700 text-zinc-950 dark:text-zinc-50 shadow-3xs"
+                    : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-350"
+                }`}
+              >
+                Manual & Simulation
+              </button>
+            </div>
+
+            {/* Camera View */}
+            {scanMethod === "camera" && (
+              <div className="relative aspect-video rounded-xl bg-black border border-zinc-800 overflow-hidden flex flex-col items-center justify-center">
+                {cameraActive && !cameraError ? (
+                  <>
+                    <video
+                      ref={videoRef}
+                      playsInline
+                      muted
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                    
+                    {/* Visual Overlay Scan Box */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="relative h-44 w-44 sm:h-52 sm:w-52 rounded-2xl border-2 border-dashed border-emerald-400/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]">
+                        {/* Corner Accents */}
+                        <div className="absolute -top-1 -left-1 h-5 w-5 border-t-4 border-l-4 border-emerald-500 rounded-tl-sm"></div>
+                        <div className="absolute -top-1 -right-1 h-5 w-5 border-t-4 border-r-4 border-emerald-500 rounded-tr-sm"></div>
+                        <div className="absolute -bottom-1 -left-1 h-5 w-5 border-b-4 border-l-4 border-emerald-500 rounded-bl-sm"></div>
+                        <div className="absolute -bottom-1 -right-1 h-5 w-5 border-b-4 border-r-4 border-emerald-500 rounded-br-sm"></div>
+                        
+                        {/* Laser Scan line */}
+                        <div className="absolute left-0 w-full h-0.5 bg-emerald-400/90 shadow-[0_0_8px_rgba(52,211,153,1)] animate-bounce" style={{ top: "10%" }}></div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Status bar */}
+                    <div className="absolute bottom-3 left-3 right-3 bg-black/75 px-3 py-1.5 rounded-lg text-[10px] text-zinc-300 font-semibold text-center border border-zinc-800">
+                      Camera feed active · Facing Mode: back/environment
+                    </div>
+                  </>
+                ) : (
+                  <div className="p-6 text-center">
+                    {cameraError ? (
+                      <p className="text-xs text-rose-500 px-4">{cameraError}</p>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2">
+                        <span className="h-6 w-6 rounded-full border-2 border-zinc-600 border-t-transparent animate-spin"></span>
+                        <p className="text-xs text-zinc-400">Requesting camera device stream...</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Manual Simulation View */}
+            {scanMethod === "manual" && (
+              <div className="space-y-4 py-2">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                    Student ID No / Search Student
+                  </label>
+                  <input
+                    type="text"
+                    value={manualIdInput}
+                    onChange={(e) => setManualIdInput(e.target.value)}
+                    placeholder="e.g. Rohan, 101, 102..."
+                    className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                  />
+                </div>
+
+                {/* Autocomplete List */}
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider px-1">
+                    Select student to simulate scan
+                  </p>
+                  {dummyStudents
+                    .filter(
+                      (st) =>
+                        st.name.toLowerCase().includes(manualIdInput.toLowerCase()) ||
+                        st.studentNumber.toString().includes(manualIdInput)
+                    )
+                    .map((student) => (
+                      <button
+                        key={student.id}
+                        type="button"
+                        onClick={() => handleSimulateScan(student)}
+                        className="w-full text-left flex items-center justify-between p-2.5 rounded-lg border border-zinc-100 dark:border-zinc-850 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer text-xs"
+                      >
+                        <div>
+                          <p className="font-bold text-zinc-900 dark:text-zinc-100">{student.name}</p>
+                          <p className="text-[10px] text-zinc-400 dark:text-zinc-500">ID: {student.studentNumber} · {student.activePlan}</p>
+                        </div>
+                        <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-500 font-bold text-[9px] uppercase tracking-wider">
+                          Simulate Scan
+                        </span>
+                      </button>
+                    ))}
+                </div>
+              </div>
+            )}
+
+            {/* Simulated/Camera Scan Success Banner */}
+            {scannedStudent && (
+              <div className="mt-4 p-4 rounded-xl border border-emerald-200/50 dark:border-emerald-900/50 bg-emerald-500/5 dark:bg-emerald-500/10 flex items-start gap-3.5 animate-scale-in">
+                <span className="h-8 w-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                  <Check className="h-4.5 w-4.5" strokeWidth={3} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-bold text-sm text-emerald-700 dark:text-emerald-400">
+                    Attendance Recorded!
+                  </h4>
+                  <p className="text-xs text-zinc-900 dark:text-zinc-100 mt-1 font-semibold">
+                    {scannedStudent.name} (ID: {scannedStudent.studentNumber})
+                  </p>
+                  <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">
+                    Plan: {scannedStudent.activePlan} · Status updated successfully.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-2 border-t border-zinc-100 dark:border-zinc-850 pt-4 mt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setQrOpen(false);
+                  stopCamera();
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                Close Scanner
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Interactive Modal 2: New Admission */}
+      {admissionOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="relative w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 border-0 shadow-2xl p-6">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-850 pb-4 mb-4">
+              <div>
+                <h3 className="text-base font-bold text-zinc-950 dark:text-zinc-50">
+                  New Student Admission
+                </h3>
+                <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                  Register a student and assign an initial plan
+                </p>
+              </div>
+              <button
+                onClick={() => setAdmissionOpen(false)}
+                className="h-8 w-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                <X className="h-5 w-5" strokeWidth={2} />
+              </button>
+            </div>
+
+            {admissionSuccess ? (
+              <div className="py-6 text-center flex flex-col items-center">
+                <span className="h-12 w-12 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md mb-4 animate-scale-in">
+                  <Check className="h-6 w-6" strokeWidth={3} />
+                </span>
+                <h4 className="font-bold text-lg text-emerald-600 dark:text-emerald-400">
+                  Admission Registered!
+                </h4>
+                <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2 px-4 max-w-sm">
+                  {newStudentName} has been successfully added to TAG Academy and enrolled in the plan.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setAdmissionOpen(false)}
+                  className="mt-6 px-5 py-2.5 rounded-xl text-xs font-bold bg-zinc-900 dark:bg-zinc-800 text-white hover:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                >
+                  Return to Dashboard
+                </button>
+              </div>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!newStudentName || !newContact) return;
+                  setAdmissionSuccess(true);
+                }}
+                className="space-y-4"
+              >
+                {/* Form fields */}
+                <div className="grid grid-cols-2 gap-3.5">
+                  <div className="flex flex-col gap-1 col-span-2">
+                    <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                      Student Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newStudentName}
+                      onChange={(e) => setNewStudentName(e.target.value)}
+                      placeholder="e.g. Advait Tambe"
+                      className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                      Parent's Name
+                    </label>
+                    <input
+                      type="text"
+                      value={newParentName}
+                      onChange={(e) => setNewParentName(e.target.value)}
+                      placeholder="e.g. Saif Tambe"
+                      className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                      Contact Number *
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={newContact}
+                      onChange={(e) => setNewContact(e.target.value)}
+                      placeholder="10-digit mobile"
+                      className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                      Date of Birth
+                    </label>
+                    <input
+                      type="date"
+                      value={newDob}
+                      onChange={(e) => setNewDob(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                      Admission Date
+                    </label>
+                    <input
+                      type="date"
+                      defaultValue={new Date().toISOString().split("T")[0]}
+                      className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="border-t border-zinc-100 dark:border-zinc-850 pt-3 space-y-3">
+                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                    Plan Assignment
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-3.5">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                        Select Plan Template
+                      </label>
+                      <select
+                        value={selectedPlan}
+                        onChange={(e) => handlePlanChange(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
+                      >
+                        <option value="12s">Gold - 12 Sessions (36 Days)</option>
+                        <option value="36s">Diamond - 36 Sessions (108 Days)</option>
+                        <option value="60s">Platinum - 60 Sessions (120 Days)</option>
+                      </select>
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                        Custom Fee Charged (INR)
+                      </label>
+                      <input
+                        type="number"
+                        value={customFee}
+                        onChange={(e) => setCustomFee(e.target.value)}
+                        placeholder="Default plan fee"
+                        className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500/50 font-semibold"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 border-t border-zinc-100 dark:border-zinc-850 pt-4 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setAdmissionOpen(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm transition-colors cursor-pointer"
+                  >
+                    Confirm Admission
+                  </button>
+                </div>
+              </form>
+            )}
+
+          </div>
+        </div>
+      )}
+
+      {/* Interactive Modal 3: Collect Fee */}
+      {feeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="relative w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 border-0 shadow-2xl p-6">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-850 pb-4 mb-4">
+              <div>
+                <h3 className="text-base font-bold text-zinc-950 dark:text-zinc-50">
+                  Collect Student Fee
+                </h3>
+                <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
+                  Record a manual payment received from a student
+                </p>
+              </div>
+              <button
+                onClick={() => setFeeOpen(false)}
+                className="h-8 w-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                <X className="h-5 w-5" strokeWidth={2} />
+              </button>
+            </div>
+
+            {feeSuccess ? (
+              <div className="py-6 text-center flex flex-col items-center">
+                <span className="h-12 w-12 rounded-full bg-brand-orange-500 text-white flex items-center justify-center shrink-0 shadow-md mb-4 animate-scale-in">
+                  <Check className="h-6 w-6" strokeWidth={3} />
+                </span>
+                <h4 className="font-bold text-lg text-brand-orange-600 dark:text-brand-orange-400">
+                  Payment Recorded!
+                </h4>
+                <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2 px-4 max-w-sm">
+                  Amount of ₹{feeAmount} has been credited to {feeSelectedStudent?.name}'s account.
+                </p>
+                <div className="mt-4 p-4 border border-zinc-200 dark:border-zinc-850 rounded-xl bg-zinc-50 dark:bg-zinc-950 text-left w-full text-xs">
+                  <div className="flex justify-between border-b border-zinc-200/50 dark:border-zinc-850 pb-2">
+                    <span className="text-zinc-400 dark:text-zinc-500">Student:</span>
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">{feeSelectedStudent?.name}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-zinc-200/50 dark:border-zinc-850 py-2">
+                    <span className="text-zinc-400 dark:text-zinc-500">Amount Paid:</span>
+                    <span className="font-bold text-zinc-900 dark:text-zinc-100">₹{feeAmount}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-zinc-200/50 dark:border-zinc-850 py-2">
+                    <span className="text-zinc-400 dark:text-zinc-500">Method:</span>
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">{feeMethod}</span>
+                  </div>
+                  <div className="flex justify-between pt-2">
+                    <span className="text-zinc-400 dark:text-zinc-500">Transaction Date:</span>
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">{new Date().toLocaleDateString("en-IN")}</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFeeOpen(false)}
+                  className="mt-6 px-5 py-2.5 rounded-xl text-xs font-bold bg-zinc-900 dark:bg-zinc-800 text-white hover:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                >
+                  Close Receipt
+                </button>
+              </div>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!feeSelectedStudent || !feeAmount) return;
+                  setFeeSuccess(true);
+                }}
+                className="space-y-4"
+              >
+                
+                {/* Search Student Autocomplete */}
+                {!feeSelectedStudent ? (
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                      Search Student *
+                    </label>
+                    <input
+                      type="text"
+                      value={feeSearchQuery}
+                      onChange={(e) => setFeeSearchQuery(e.target.value)}
+                      placeholder="Type student name or ID..."
+                      className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50"
+                    />
+
+                    {/* Autocomplete Dropdown */}
+                    <div className="mt-2 space-y-1.5 max-h-36 overflow-y-auto border border-zinc-100 dark:border-zinc-850 rounded-xl p-1 bg-zinc-50 dark:bg-zinc-950">
+                      {dummyStudents
+                        .filter(
+                          (st) =>
+                            st.name.toLowerCase().includes(feeSearchQuery.toLowerCase()) ||
+                            st.studentNumber.toString().includes(feeSearchQuery)
+                        )
+                        .map((student) => (
+                          <button
+                            key={student.id}
+                            type="button"
+                            onClick={() => {
+                              setFeeSelectedStudent(student);
+                              setFeeAmount(student.outstanding.toString());
+                            }}
+                            className="w-full text-left flex items-center justify-between p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer text-xs"
+                          >
+                            <div>
+                              <p className="font-bold text-zinc-900 dark:text-zinc-100">{student.name}</p>
+                              <p className="text-[10px] text-zinc-400 dark:text-zinc-500">ID: {student.studentNumber} · {student.activePlan}</p>
+                            </div>
+                            <span className="text-[10px] font-bold text-rose-500">
+                              Dues: ₹{student.outstanding}
+                            </span>
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3.5 rounded-xl border border-brand-orange-500/20 bg-brand-orange-500/5 flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] font-bold text-brand-orange-500 dark:text-brand-orange-400 uppercase tracking-wider">
+                        Selected Student
+                      </p>
+                      <p className="font-bold text-zinc-900 dark:text-zinc-100 text-sm mt-0.5">
+                        {feeSelectedStudent.name} (ID: {feeSelectedStudent.studentNumber})
+                      </p>
+                      <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">
+                        Plan Outstanding Dues: ₹{feeSelectedStudent.outstanding}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setFeeSelectedStudent(null)}
+                      className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-800 text-[10px] font-bold text-zinc-500 hover:text-rose-500 transition-colors cursor-pointer"
+                    >
+                      Change
+                    </button>
+                  </div>
+                )}
+
+                {/* Amount, Method and Date */}
+                <div className="grid grid-cols-2 gap-3.5">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                      Amount Collected (INR) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      value={feeAmount}
+                      onChange={(e) => setFeeAmount(e.target.value)}
+                      placeholder="e.g. 8640"
+                      className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 font-bold"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                      Payment Method
+                    </label>
+                    <select
+                      value={feeMethod}
+                      onChange={(e) => setFeeMethod(e.target.value)}
+                      className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50"
+                    >
+                      <option value="UPI">UPI / GPay / PhonePe</option>
+                      <option value="CASH">Cash Payment</option>
+                      <option value="BANK_TRANSFER">Bank Transfer / NEFT</option>
+                      <option value="OTHER">Other Method</option>
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col gap-1 col-span-2">
+                    <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                      Payment Notes
+                    </label>
+                    <textarea
+                      value={feeNotes}
+                      onChange={(e) => setFeeNotes(e.target.value)}
+                      placeholder="Enter optional payment details, bank reference, etc..."
+                      rows={2}
+                      className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 border-t border-zinc-100 dark:border-zinc-850 pt-4 mt-4">
+                  <button
+                    type="button"
+                    onClick={() => setFeeOpen(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!feeSelectedStudent}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold text-white shadow-sm transition-colors cursor-pointer ${
+                      feeSelectedStudent
+                        ? "bg-brand-orange-500 hover:bg-brand-orange-655"
+                        : "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-600 cursor-not-allowed"
+                    }`}
+                  >
+                    Record Payment
+                  </button>
+                </div>
+              </form>
+            )}
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
