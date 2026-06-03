@@ -92,7 +92,7 @@ export default function PricingRatesPanel({
               editMode
             />
             <RatesTable
-              title="1-to-1 private classes"
+              title="1-to-1 personal classes"
               planType="ONE_TO_ONE"
               prices={pricingMaps.ONE_TO_ONE}
               isAdmin
@@ -125,7 +125,7 @@ export default function PricingRatesPanel({
               editMode={false}
             />
             <RatesTable
-              title="1-to-1 private classes"
+              title="1-to-1 personal classes"
               planType="ONE_TO_ONE"
               prices={pricingMaps.ONE_TO_ONE}
               isAdmin={false}

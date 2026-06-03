@@ -7,6 +7,7 @@ type StudentLike = {
   id: string;
   name: string;
   studentNumber: number;
+  gender?: string | null;
   avatarUrl?: string | null;
 };
 

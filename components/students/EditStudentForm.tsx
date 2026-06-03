@@ -52,6 +52,7 @@ type StudentData = {
 export default function EditStudentForm({ student }: { student: StudentData }) {
   const today = toDateInputValue(new Date());
   const [name, setName] = useState(student.name);
+  const [gender, setGender] = useState(student.gender);
 
   // Bind studentId into the action
   const boundAction = updateStudentAction.bind(null, student.id);
@@ -82,7 +83,7 @@ export default function EditStudentForm({ student }: { student: StudentData }) {
           <FormSection title="Student information">
             {/* Avatar */}
             <div className="flex flex-col items-center justify-center pt-2 pb-4">
-              <StudentAvatarPicker name={name} currentAvatarUrl={student.avatarUrl} />
+              <StudentAvatarPicker name={name} gender={gender} currentAvatarUrl={student.avatarUrl} />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -125,7 +126,8 @@ export default function EditStudentForm({ student }: { student: StudentData }) {
                 <select
                   name="gender"
                   required
-                  defaultValue={student.gender}
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
                   className={inputClass}
                 >
                   <option value="" disabled>Select gender</option>

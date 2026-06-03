@@ -9,11 +9,13 @@ export default function StudentCreatedSuccess({
   studentName,
   studentNumber,
   avatarUrl,
+  gender,
 }: {
   studentId: string;
   studentName: string;
   studentNumber: number;
   avatarUrl?: string | null;
+  gender?: string | null;
 }) {
   return (
     <div className="space-y-4">
@@ -47,6 +49,7 @@ export default function StudentCreatedSuccess({
                 name: studentName,
                 studentNumber,
                 avatarUrl,
+                gender,
               }}
               size={80}
               className="ring-4 ring-white shadow-md"

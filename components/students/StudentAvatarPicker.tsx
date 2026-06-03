@@ -2,7 +2,6 @@
 
 import { useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { buildDiceBearAvatarUrl } from "@/lib/utils/avatar";
 
 const MAX_SIZE_MB = 2;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
@@ -15,11 +14,11 @@ function formatFileSize(bytes: number): string {
 
 export default function StudentAvatarPicker({
   name,
-  defaultSeed = "new-student",
+  gender,
   currentAvatarUrl,
 }: {
   name: string;
-  defaultSeed?: string;
+  gender?: string | null;
   currentAvatarUrl?: string | null;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -27,13 +26,16 @@ export default function StudentAvatarPicker({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(null);
 
-  const dicebearSrc = useMemo(() => {
-    const seed = name.trim() || defaultSeed;
-    return buildDiceBearAvatarUrl(seed, 160);
-  }, [name, defaultSeed]);
+  const defaultSrc = useMemo(() => {
+    const genderLower = (gender || "").toLowerCase();
+    if (genderLower === "female") {
+      return "/female.PNG";
+    }
+    return "/male.PNG";
+  }, [gender]);
 
-  // Priority: user-selected file > existing avatar > dicebear
-  const displaySrc = previewFile ?? currentAvatarUrl ?? dicebearSrc;
+  // Priority: user-selected file > existing avatar > local default
+  const displaySrc = previewFile ?? currentAvatarUrl ?? defaultSrc;
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

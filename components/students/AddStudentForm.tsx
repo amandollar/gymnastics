@@ -54,6 +54,7 @@ export default function AddStudentForm() {
   }
 
   const [name, setName] = useState(defaultChildName);
+  const [gender, setGender] = useState(defaultGender);
   const [state, action, pending] = useActionState(createStudentAction, null);
 
   if (
@@ -69,6 +70,7 @@ export default function AddStudentForm() {
         studentName={state.studentName}
         studentNumber={state.studentNumber}
         avatarUrl={state.avatarUrl}
+        gender={state.gender}
       />
     );
   }
@@ -107,7 +109,7 @@ export default function AddStudentForm() {
             <FormSection title="Student information">
               {/* Profile image centered below the title */}
               <div className="flex flex-col items-center justify-center pt-2 pb-4">
-                <StudentAvatarPicker name={name} />
+                <StudentAvatarPicker name={name} gender={gender} />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -146,7 +148,13 @@ export default function AddStudentForm() {
                   <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
                     Gender *
                   </label>
-                  <select name="gender" required className={inputClass} defaultValue={defaultGender}>
+                  <select
+                    name="gender"
+                    required
+                    className={inputClass}
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                  >
                     <option value="" disabled>Select gender</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>

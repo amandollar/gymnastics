@@ -30,17 +30,21 @@ export function isCloudinaryUrl(url: string): boolean {
   return url.includes("res.cloudinary.com");
 }
 
-/** Real photo URL in DB, or DiceBear when none uploaded */
+/** Real photo URL in DB, or local default avatar when none uploaded */
 export function getStudentAvatarUrl(student: {
   id: string;
   name: string;
   studentNumber: number;
+  gender?: string | null;
   avatarUrl?: string | null;
 }): string {
   if (student.avatarUrl && !isDiceBearUrl(student.avatarUrl)) {
     return student.avatarUrl;
   }
-  return buildDiceBearAvatarUrl(
-    avatarSeedFromStudent(student.studentNumber, student.name, student.id)
-  );
+  
+  const genderLower = (student.gender || "").toLowerCase();
+  if (genderLower === "female") {
+    return "/female.PNG";
+  }
+  return "/male.PNG";
 }

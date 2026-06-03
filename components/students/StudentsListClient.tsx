@@ -21,6 +21,7 @@ export type StudentListItem = {
   parentName: string;
   contactNumber: string;
   admissionDate: Date;
+  gender: string;
   avatarUrl?: string | null;
   status: StudentStatus;
   activePlan: {
@@ -161,8 +162,7 @@ function RowMenu({
             role="menuitem"
             onClick={() => {
               setOpen(false);
-              window.open(`/students/${student.id}`, "_blank");
-              setTimeout(() => window.print(), 500);
+              window.open(`/students/${student.id}/id-card`, "_blank");
             }}
             className={itemClass}
           >

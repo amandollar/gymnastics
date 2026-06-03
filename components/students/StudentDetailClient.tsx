@@ -478,10 +478,10 @@ export default function StudentDetailClient({
           <StudentStatusBadge status={student.status} />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Print ID card */}
-          <button
-            type="button"
-            onClick={() => window.print()}
+          <a
+            href={`/students/${student.id}/id-card`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
           >
             <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -491,7 +491,7 @@ export default function StudentDetailClient({
               <circle cx="18" cy="13" r="1" fill="currentColor" />
             </svg>
             Print ID card
-          </button>
+          </a>
           {/* Edit profile */}
           {canManage && (
             <a

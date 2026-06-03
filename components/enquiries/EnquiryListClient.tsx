@@ -32,13 +32,12 @@ const SOURCE_LABELS: Record<string, string> = {
   OTHER: "Other",
 };
 
-function getWhatsAppUrl(contactNumber: string, childName: string) {
+function getWhatsAppCleanUrl(contactNumber: string, messageText: string) {
   let cleanNumber = contactNumber.replace(/\D/g, "");
   if (cleanNumber.length === 10) {
     cleanNumber = "91" + cleanNumber;
   }
-  const text = `Hello! This is TAG Academy. We are following up on your enquiry for ${childName}. Please let us know if you have any questions!`;
-  return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(text)}`;
+  return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(messageText)}`;
 }
 
 // ─── Row Menu Dropdown ─────────────────────────────────────────────────────────
@@ -49,12 +48,14 @@ function RowMenu({
   onDelete,
   onStatusChange,
   isMutating,
+  onWhatsAppFollowUp,
 }: {
   enquiry: EnquiryListItem;
   canManage: boolean;
   onDelete: () => void;
   onStatusChange: (status: EnquiryStatus) => void;
   isMutating: boolean;
+  onWhatsAppFollowUp: (contactNumber: string, childName: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [coords, setCoords] = useState({ top: 0, right: 0 });
@@ -146,18 +147,19 @@ function RowMenu({
           )}
 
           {/* WhatsApp Follow-up */}
-          <a
-            href={getWhatsAppUrl(enquiry.contactNumber, enquiry.childName)}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => setOpen(false)}
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              onWhatsAppFollowUp(enquiry.contactNumber, enquiry.childName);
+            }}
             className={itemClass}
           >
             <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12.016 2a10 10 0 0 0-8.77 14.77l-1.45 5.31 5.43-1.42A10 10 0 1 0 12.016 2zm0 18.18a8.18 8.18 0 0 1-4.23-1.16l-.3-.18-3.1.81.82-3.01-.19-.31a8.18 8.18 0 1 1 7 3.85zm4.49-5.96c-.25-.12-1.46-.72-1.69-.8-.22-.08-.39-.12-.55.12-.16.24-.62.8-.76.96-.14.16-.28.18-.53.06-.25-.12-1.07-.39-2.03-1.25-.75-.67-1.25-1.5-1.4-1.74-.15-.24-.01-.37.11-.49.11-.11.25-.28.37-.42.12-.14.16-.24.24-.4.08-.16.04-.31-.02-.44-.06-.13-.55-1.32-.75-1.81-.2-.48-.4-.41-.55-.42-.14-.01-.3-.01-.46-.01s-.42.06-.64.29c-.22.23-.85.83-.85 2.03s.87 2.35 1 2.51c.12.16 1.7 2.6 4.12 3.64.57.24 1.02.39 1.37.5.58.18 1.11.16 1.53.1.47-.07 1.45-.59 1.65-1.16.2-.57.2-1.06.14-1.16-.06-.1-.23-.16-.48-.28z" />
             </svg>
             WhatsApp Follow up
-          </a>
+          </button>
 
           {/* Convert to Student */}
           {canManage && enquiry.status !== "CONVERTED" && (
@@ -244,6 +246,34 @@ export default function EnquiryListClient({
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<EnquiryStatus | "ALL">("ALL");
   const [isPending, startTransition] = useTransition();
+
+  const [followUpEnquiry, setFollowUpEnquiry] = useState<{ contactNumber: string; childName: string } | null>(null);
+  const [messageText, setMessageText] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const triggerWhatsAppFollowUp = (contactNumber: string, childName: string) => {
+    const defaultText = `Hello! This is TAG Academy 🤸. We are following up on your enquiry for ${childName}. Please let us know if you have any questions!`;
+    setFollowUpEnquiry({ contactNumber, childName });
+    setMessageText(defaultText);
+  };
+
+  const insertEmoji = (emoji: string) => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setMessageText((prev) => prev + emoji);
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const before = text.substring(0, start);
+    const after = text.substring(end, text.length);
+    setMessageText(before + emoji + after);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + emoji.length, start + emoji.length);
+    }, 0);
+  };
 
   // Stats calculation
   const stats = useMemo(() => {
@@ -425,20 +455,20 @@ export default function EnquiryListClient({
                     Edit
                   </Link>
                 )}
-                <a
-                  href={getWhatsAppUrl(e.contactNumber, e.childName)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-450 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors"
+                <button
+                  type="button"
+                  onClick={() => triggerWhatsAppFollowUp(e.contactNumber, e.childName)}
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-450 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors cursor-pointer"
                 >
                   WhatsApp
-                </a>
+                </button>
                 <RowMenu
                   enquiry={e}
                   canManage={canManage}
                   onDelete={() => handleDelete(e.id)}
                   onStatusChange={(status) => handleStatusChange(e.id, status)}
                   isMutating={isPending}
+                  onWhatsAppFollowUp={triggerWhatsAppFollowUp}
                 />
               </div>
             </div>
@@ -556,17 +586,16 @@ export default function EnquiryListClient({
                       )}
 
                       {/* WhatsApp Follow-up */}
-                      <a
-                        href={getWhatsAppUrl(e.contactNumber, e.childName)}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        type="button"
+                        onClick={() => triggerWhatsAppFollowUp(e.contactNumber, e.childName)}
                         title="Follow up on WhatsApp"
-                        className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-emerald-605 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors"
+                        className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-emerald-605 hover:text-emerald-700 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-colors cursor-pointer"
                       >
                         <svg className="w-4.5 h-4.5" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M12.016 2a10 10 0 0 0-8.77 14.77l-1.45 5.31 5.43-1.42A10 10 0 1 0 12.016 2zm0 18.18a8.18 8.18 0 0 1-4.23-1.16l-.3-.18-3.1.81.82-3.01-.19-.31a8.18 8.18 0 1 1 7 3.85zm4.49-5.96c-.25-.12-1.46-.72-1.69-.8-.22-.08-.39-.12-.55.12-.16.24-.62.8-.76.96-.14.16-.28.18-.53.06-.25-.12-1.07-.39-2.03-1.25-.75-.67-1.25-1.5-1.4-1.74-.15-.24-.01-.37.11-.49.11-.11.25-.28.37-.42.12-.14.16-.24.24-.4.08-.16.04-.31-.02-.44-.06-.13-.55-1.32-.75-1.81-.2-.48-.4-.41-.55-.42-.14-.01-.3-.01-.46-.01s-.42.06-.64.29c-.22.23-.85.83-.85 2.03s.87 2.35 1 2.51c.12.16 1.7 2.6 4.12 3.64.57.24 1.02.39 1.37.5.58.18 1.11.16 1.53.1.47-.07 1.45-.59 1.65-1.16.2-.57.2-1.06.14-1.16-.06-.1-.23-.16-.48-.28z" />
                         </svg>
-                      </a>
+                      </button>
 
                       {/* Row Menu */}
                       <RowMenu
@@ -575,6 +604,7 @@ export default function EnquiryListClient({
                         onDelete={() => handleDelete(e.id)}
                         onStatusChange={(status) => handleStatusChange(e.id, status)}
                         isMutating={isPending}
+                        onWhatsAppFollowUp={triggerWhatsAppFollowUp}
                       />
                     </div>
                   </td>
@@ -584,6 +614,95 @@ export default function EnquiryListClient({
           </tbody>
         </table>
       </div>
+
+      {/* WhatsApp Custom Modal */}
+      {followUpEnquiry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl border border-zinc-200 dark:border-zinc-800/80 overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-800">
+              <div>
+                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-50">
+                  Follow up with WhatsApp
+                </h3>
+                <p className="text-xs text-zinc-505 mt-0.5">
+                  Send a follow-up message to {followUpEnquiry.childName}'s parent
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFollowUpEnquiry(null)}
+                className="h-8 w-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 dark:text-zinc-500 hover:text-zinc-650 dark:hover:text-zinc-300 transition-colors flex items-center justify-center cursor-pointer"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-zinc-450 dark:text-zinc-500 uppercase tracking-wider">
+                  Message Content
+                </label>
+                <textarea
+                  ref={textareaRef}
+                  rows={5}
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                  className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-4 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-450 dark:placeholder-zinc-650 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 focus:border-brand-orange-500 transition-all resize-none"
+                  placeholder="Type your follow-up message..."
+                />
+              </div>
+
+              {/* Emoji Bar */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                  Quick Emojis
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["🤸", "🤸‍♀️", "🤸‍♂️", "📞", "👍", "😊", "🤸", "📝", "👋", "🌟", "✨", "❤️"].map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => insertEmoji(emoji)}
+                      className="h-8 w-8 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-brand-orange-500/50 hover:bg-brand-orange-50/20 dark:hover:bg-brand-orange-950/20 transition-all flex items-center justify-center text-base cursor-pointer"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/10">
+              <button
+                type="button"
+                onClick={() => setFollowUpEnquiry(null)}
+                className="px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-sm font-semibold text-zinc-600 dark:text-zinc-405 hover:bg-zinc-100 dark:hover:bg-zinc-850 cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const url = getWhatsAppCleanUrl(followUpEnquiry.contactNumber, messageText);
+                  window.open(url, "_blank");
+                  setFollowUpEnquiry(null);
+                }}
+                className="inline-flex items-center gap-2 rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+              >
+                <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12.016 2a10 10 0 0 0-8.77 14.77l-1.45 5.31 5.43-1.42A10 10 0 1 0 12.016 2zm0 18.18a8.18 8.18 0 0 1-4.23-1.16l-.3-.18-3.1.81.82-3.01-.19-.31a8.18 8.18 0 1 1 7 3.85zm4.49-5.96c-.25-.12-1.46-.72-1.69-.8-.22-.08-.39-.12-.55.12-.16.24-.62.8-.76.96-.14.16-.28.18-.53.06-.25-.12-1.07-.39-2.03-1.25-.75-.67-1.25-1.5-1.4-1.74-.15-.24-.01-.37.11-.49.11-.11.25-.28.37-.42.12-.14.16-.24.24-.4.08-.16.04-.31-.02-.44-.06-.13-.55-1.32-.75-1.81-.2-.48-.4-.41-.55-.42-.14-.01-.3-.01-.46-.01s-.42.06-.64.29c-.22.23-.85.83-.85 2.03s.87 2.35 1 2.51c.12.16 1.7 2.6 4.12 3.64.57.24 1.02.39 1.37.5.58.18 1.11.16 1.53.1.47-.07 1.45-.59 1.65-1.16.2-.57.2-1.06.14-1.16-.06-.1-.23-.16-.48-.28z" />
+                </svg>
+                Send via WhatsApp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

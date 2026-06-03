@@ -32,6 +32,7 @@ export async function createStudentAction(
   studentName?: string;
   studentNumber?: number;
   avatarUrl?: string | null;
+  gender?: string;
   errors?: Record<string, string[]>;
 }> {
   try {
@@ -93,6 +94,7 @@ export async function createStudentAction(
       studentName: student.name,
       studentNumber: student.studentNumber,
       avatarUrl: student.avatarUrl,
+      gender: student.gender,
     };
   } catch (e) {
     if (e && typeof e === "object" && "digest" in e) throw e;

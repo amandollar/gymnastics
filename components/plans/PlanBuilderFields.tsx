@@ -76,7 +76,7 @@ export default function PlanBuilderFields({
                   : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
               }`}
             >
-              {t === "REGULAR" ? "Regular group" : "1-to-1 private"}
+              {t === "REGULAR" ? "Regular group" : "1-to-1 personal classes"}
             </button>
           ))}
         </div>
