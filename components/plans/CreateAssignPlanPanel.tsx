@@ -35,10 +35,26 @@ export default function CreateAssignPlanPanel({
   const [selectedDays, setSelectedDays] = useState<WeekdayName[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [studentError, setStudentError] = useState<string | undefined>();
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     if (preselectId) setStudentId(preselectId);
   }, [preselectId]);
+
+  useEffect(() => {
+    if (state?.success) setShowSuccess(true);
+  }, [state?.success]);
+
+  function resetForm() {
+    setShowSuccess(false);
+    setStudentId(preselectId);
+    setPlanType("REGULAR");
+    setStartDate(today);
+    setEndDate("");
+    setSelectedDays([]);
+    setDiscountPercent(0);
+    setStudentError(undefined);
+  }
 
   const [state, action, pending] = useActionState(
     assignPlanFromPlansPageAction,
@@ -72,7 +88,7 @@ export default function CreateAssignPlanPanel({
 
   const selectedStudent = students.find((s) => s.id === studentId);
 
-  if (state?.success && selectedStudent) {
+  if (showSuccess && selectedStudent) {
     return (
       <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 sm:p-8 text-center space-y-4">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
@@ -91,12 +107,13 @@ export default function CreateAssignPlanPanel({
           >
             View student profile
           </Link>
-          <Link
-            href="/plans"
+          <button
+            type="button"
+            onClick={resetForm}
             className="inline-flex justify-center rounded-xl border border-emerald-300 bg-white px-5 py-2.5 text-sm font-medium text-emerald-800 hover:bg-emerald-100/50"
           >
             Assign another plan
-          </Link>
+          </button>
         </div>
       </div>
     );

@@ -52,15 +52,6 @@ export default function DashboardNav({
         {!isCollapsed && "Students"}
       </Link>
       <Link
-        href="/mentors"
-        onClick={close}
-        className={navLinkClass(pathname.startsWith("/mentors"), isCollapsed)}
-        title={isCollapsed ? "Mentors" : undefined}
-      >
-        <GymIcon className={iconClass} />
-        {!isCollapsed && "Mentors"}
-      </Link>
-      <Link
         href="/plans"
         onClick={close}
         className={navLinkClass(pathname === "/plans", isCollapsed)}
@@ -68,6 +59,15 @@ export default function DashboardNav({
       >
         <DocIcon className={iconClass} />
         {!isCollapsed && "Plans"}
+      </Link>
+      <Link
+        href="/mentors"
+        onClick={close}
+        className={navLinkClass(pathname.startsWith("/mentors"), isCollapsed)}
+        title={isCollapsed ? "Mentors" : undefined}
+      >
+        <GymIcon className={iconClass} />
+        {!isCollapsed && "Mentors"}
       </Link>
       <DisabledItem icon={<CheckIcon className={disabledIconClass} />} label="Attendance" isCollapsed={isCollapsed} />
       <DisabledItem icon={<CurrencyIcon className={disabledIconClass} />} label="Fees" isCollapsed={isCollapsed} />
