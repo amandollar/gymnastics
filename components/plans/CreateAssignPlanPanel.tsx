@@ -37,6 +37,11 @@ export default function CreateAssignPlanPanel({
   const [studentError, setStudentError] = useState<string | undefined>();
   const [showSuccess, setShowSuccess] = useState(false);
 
+  const [state, action, pending] = useActionState(
+    assignPlanFromPlansPageAction,
+    null
+  );
+
   useEffect(() => {
     if (preselectId) setStudentId(preselectId);
   }, [preselectId]);
@@ -55,11 +60,6 @@ export default function CreateAssignPlanPanel({
     setDiscountPercent(0);
     setStudentError(undefined);
   }
-
-  const [state, action, pending] = useActionState(
-    assignPlanFromPlansPageAction,
-    null
-  );
 
   const preview = useMemo(() => {
     if (!startDate || !endDate || selectedDays.length === 0) return null;
@@ -97,7 +97,7 @@ export default function CreateAssignPlanPanel({
         <div>
           <h2 className="text-lg font-semibold text-emerald-900">Plan saved</h2>
           <p className="mt-1 text-sm text-emerald-800">
-            {selectedStudent.name} now has an active plan. {state.message}
+            {selectedStudent.name} now has an active plan. {state?.message}
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
