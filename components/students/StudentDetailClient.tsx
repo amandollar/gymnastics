@@ -477,7 +477,7 @@ export default function StudentDetailClient({
           </h1>
           <StudentStatusBadge status={student.status} />
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Print ID card */}
           <button
             type="button"
@@ -508,10 +508,10 @@ export default function StudentDetailClient({
       </div>
 
       {/* Two-column layout */}
-      <div className="grid gap-5 lg:grid-cols-[300px_1fr]">
+      <div className="grid gap-5 lg:grid-cols-[300px_1fr] min-w-0">
 
         {/* ── Left column ── */}
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-0">
 
           {/* Avatar + name card */}
           <div className="rounded-3xl bg-white dark:bg-zinc-900 p-6 shadow-sm flex flex-col items-center text-center gap-3">
@@ -603,7 +603,7 @@ export default function StudentDetailClient({
         </div>
 
         {/* ── Right column ── */}
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-0">
           <AttendanceCard attendances={student.attendances} />
 
           <PlanCard
@@ -624,7 +624,8 @@ export default function StudentDetailClient({
               <h2 className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider p-5 pb-3">
                 Plan History
               </h2>
-              <div className="overflow-x-auto">
+              {/* Desktop Table View */}
+              <div className="hidden sm:block overflow-x-auto">
                 <table className="w-full text-sm min-w-[420px]">
                   <thead>
                     <tr className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider bg-zinc-50 dark:bg-zinc-800/60">
@@ -661,6 +662,47 @@ export default function StudentDetailClient({
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="block sm:hidden divide-y divide-zinc-100 dark:divide-zinc-800">
+                {student.plans.map((p) => (
+                  <div key={p.id} className="p-4 space-y-3.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-orange-50 dark:bg-brand-orange-950/40 text-brand-orange-700 dark:text-brand-orange-400 uppercase tracking-wider">
+                        {p.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular"}
+                      </span>
+                      {p.isActive ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
+                          Active
+                        </span>
+                      ) : (
+                        <span className="text-zinc-400 text-xs font-medium">Archived</span>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div className="col-span-2">
+                        <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block mb-0.5">Period</span>
+                        <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                          {toDateInputValue(new Date(p.startDate))} → {toDateInputValue(new Date(p.endDate))}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block mb-0.5">Sessions</span>
+                        <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                          {p.sessionsCompleted} / {p.totalSessions}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider block mb-0.5">Fee</span>
+                        <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                          {formatINR(p.fee)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}

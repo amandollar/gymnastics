@@ -255,43 +255,43 @@ export default function DashboardOverview({
             setQrOpen(true);
             setScanMethod("camera");
           }}
-          className="group flex flex-col sm:flex-row items-center gap-2.5 sm:gap-4.5 py-4.5 px-3 sm:py-5.5 sm:px-4.5 rounded-3xl border-0 bg-orange-200/90 dark:bg-orange-950/60 hover:bg-orange-300/80 dark:hover:bg-orange-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center sm:text-left w-full"
+          className="group flex flex-col lg:flex-row items-center gap-2.5 lg:gap-4.5 py-4.5 px-3 lg:py-5.5 lg:px-4.5 rounded-3xl border-0 bg-orange-200/90 dark:bg-orange-950/60 hover:bg-orange-300/80 dark:hover:bg-orange-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center lg:text-left w-full"
         >
           <img 
             src="/attendance.webp" 
             alt="Attendance" 
-            className="h-12 w-12 sm:h-16 sm:w-16 object-cover rounded-xl shrink-0 shadow-3xs" 
+            className="h-12 w-12 lg:h-16 lg:w-16 object-cover rounded-xl shrink-0 shadow-3xs" 
           />
           <div className="flex flex-col justify-center min-w-0">
-            <span className="font-bold text-xs sm:text-[14px] text-orange-955 dark:text-orange-100 leading-tight">
+            <span className="font-bold text-xs lg:text-[14px] text-orange-955 dark:text-orange-100 leading-tight">
               Take Attendance
             </span>
-            <span className="hidden sm:block text-[10px] sm:text-xs text-orange-855 dark:text-orange-200/70 mt-1 leading-normal">
+            <span className="hidden lg:block text-[10px] lg:text-xs text-orange-855 dark:text-orange-200/70 mt-1 leading-normal">
               Scan via QR or type ID
             </span>
           </div>
-          <ChevronRight className="hidden sm:block h-5 w-5 ml-auto text-orange-955 dark:text-orange-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" strokeWidth={2.5} />
+          <ChevronRight className="hidden lg:block h-5 w-5 ml-auto text-orange-955 dark:text-orange-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" strokeWidth={2.5} />
         </button>
 
         {/* Action 2: New Admission (Emerald Green) */}
         <Link
           href="/students/new"
-          className="group flex flex-col sm:flex-row items-center gap-2.5 sm:gap-4.5 py-4.5 px-3 sm:py-5.5 sm:px-4.5 rounded-3xl border-0 bg-emerald-200/90 dark:bg-emerald-950/60 hover:bg-emerald-300/80 dark:hover:bg-emerald-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center sm:text-left w-full"
+          className="group flex flex-col lg:flex-row items-center gap-2.5 lg:gap-4.5 py-4.5 px-3 lg:py-5.5 lg:px-4.5 rounded-3xl border-0 bg-emerald-200/90 dark:bg-emerald-950/60 hover:bg-emerald-300/80 dark:hover:bg-emerald-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center lg:text-left w-full"
         >
           <img 
             src="/newAdmission.webp" 
             alt="New Admission" 
-            className="h-12 w-12 sm:h-16 sm:w-16 object-cover rounded-xl shrink-0 shadow-3xs" 
+            className="h-12 w-12 lg:h-16 lg:w-16 object-cover rounded-xl shrink-0 shadow-3xs" 
           />
           <div className="flex flex-col justify-center min-w-0">
-            <span className="font-bold text-xs sm:text-[14px] text-emerald-955 dark:text-emerald-100 leading-tight">
+            <span className="font-bold text-xs lg:text-[14px] text-emerald-955 dark:text-emerald-100 leading-tight">
               New Admission
             </span>
-            <span className="hidden sm:block text-[10px] sm:text-xs text-emerald-855 dark:text-emerald-200/70 mt-1 leading-normal">
+            <span className="hidden lg:block text-[10px] lg:text-xs text-emerald-855 dark:text-emerald-200/70 mt-1 leading-normal">
               Enroll student to a plan
             </span>
           </div>
-          <ChevronRight className="hidden sm:block h-5 w-5 ml-auto text-emerald-955 dark:text-emerald-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" strokeWidth={2.5} />
+          <ChevronRight className="hidden lg:block h-5 w-5 ml-auto text-emerald-955 dark:text-emerald-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" strokeWidth={2.5} />
         </Link>
 
         {/* Action 3: Collect Fee (Charcoal / Zinc grey) */}
@@ -304,22 +304,22 @@ export default function DashboardOverview({
             setFeeAmount("");
             setFeeNotes("");
           }}
-          className="group flex flex-col sm:flex-row items-center gap-2.5 sm:gap-4.5 py-4.5 px-3 sm:py-5.5 sm:px-4.5 rounded-3xl border-0 bg-zinc-300/95 dark:bg-zinc-800/80 hover:bg-zinc-400/85 dark:hover:bg-zinc-700/80 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center sm:text-left w-full"
+          className="group flex flex-col lg:flex-row items-center gap-2.5 lg:gap-4.5 py-4.5 px-3 lg:py-5.5 lg:px-4.5 rounded-3xl border-0 bg-zinc-300/95 dark:bg-zinc-800/80 hover:bg-zinc-400/85 dark:hover:bg-zinc-700/80 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center lg:text-left w-full"
         >
           <img 
             src="/fee.webp" 
             alt="Collect Fee" 
-            className="h-12 w-12 sm:h-16 sm:w-16 object-cover rounded-xl shrink-0 shadow-3xs" 
+            className="h-12 w-12 lg:h-16 lg:w-16 object-cover rounded-xl shrink-0 shadow-3xs" 
           />
           <div className="flex flex-col justify-center min-w-0">
-            <span className="font-bold text-xs sm:text-[14px] text-zinc-955 dark:text-zinc-100 leading-tight">
+            <span className="font-bold text-xs lg:text-[14px] text-zinc-955 dark:text-zinc-100 leading-tight">
               Collect Fee
             </span>
-            <span className="hidden sm:block text-[10px] sm:text-xs text-zinc-850 dark:text-zinc-200/70 mt-1 leading-normal">
+            <span className="hidden lg:block text-[10px] lg:text-xs text-zinc-850 dark:text-zinc-200/70 mt-1 leading-normal">
               Record student payment
             </span>
           </div>
-          <ChevronRight className="hidden sm:block h-5 w-5 ml-auto text-zinc-955 dark:text-zinc-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" strokeWidth={2.5} />
+          <ChevronRight className="hidden lg:block h-5 w-5 ml-auto text-zinc-955 dark:text-zinc-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" strokeWidth={2.5} />
         </button>
       </div>
 

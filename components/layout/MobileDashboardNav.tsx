@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import DashboardNav, { HomeIcon, SettingsIcon, UsersIcon, EnquiryIcon } from "./DashboardNav";
-import { Menu, X, LogOut } from "lucide-react";
+import DashboardNav, { HomeIcon, SettingsIcon, UsersIcon, EnquiryIcon, GymIcon } from "./DashboardNav";
+import { Menu, X } from "lucide-react";
 
 export function MobileMenuButton({ onOpen }: { onOpen: () => void }) {
   return (
@@ -118,6 +118,17 @@ export function MobileBottomNav({
           Students
         </Link>
         <Link
+          href="/mentors"
+          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
+            pathname.startsWith("/mentors")
+              ? "text-brand-orange-500"
+              : "text-zinc-500 dark:text-zinc-400"
+          }`}
+        >
+          <GymIcon />
+          Mentors
+        </Link>
+        <Link
           href="/enquiries"
           className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
             pathname.startsWith("/enquiries")
@@ -139,15 +150,6 @@ export function MobileBottomNav({
             Settings
           </Link>
         )}
-        <form action={signOutAction} className="flex flex-col items-center justify-center">
-          <button
-            type="submit"
-            className="flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium text-zinc-500 dark:text-zinc-400 w-full h-full cursor-pointer hover:text-brand-orange-500 transition-colors"
-          >
-            <LogOut className="h-5 w-5" strokeWidth={2} />
-            Sign Out
-          </button>
-        </form>
       </div>
     </nav>
   );
