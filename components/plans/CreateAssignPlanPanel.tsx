@@ -124,19 +124,12 @@ export default function CreateAssignPlanPanel({
     <form action={action} onSubmit={handleSubmit} className="space-y-4">
       <input type="hidden" name="studentId" value={studentId} readOnly />
       <section className="rounded-2xl border-0 bg-white dark:bg-zinc-900 p-4 sm:p-6 shadow-sm space-y-4">
-        <div className="flex items-start gap-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-sm font-bold text-white">
+        <div className="flex items-center gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 dark:bg-zinc-100 text-sm font-bold text-white dark:text-zinc-950">
             1
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="text-base font-semibold text-zinc-900">Who is this plan for?</h2>
-            <p className="text-sm text-zinc-500 mt-0.5">
-              Pick the student. New child?{" "}
-              <Link href="/students/new" className="text-brand-orange-600 font-medium hover:underline">
-                Add student
-              </Link>{" "}
-              first, then come back here.
-            </p>
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">Who is this plan for?</h2>
           </div>
         </div>
         <StudentPicker
@@ -151,15 +144,12 @@ export default function CreateAssignPlanPanel({
       </section>
 
       <section className="rounded-2xl border-0 bg-white dark:bg-zinc-900 p-4 sm:p-6 shadow-sm space-y-4">
-        <div className="flex items-start gap-3">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-sm font-bold text-white">
+        <div className="flex items-center gap-3">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-900 dark:bg-zinc-100 text-sm font-bold text-white dark:text-zinc-950">
             2
           </span>
           <div className="min-w-0 flex-1">
-            <h2 className="text-base font-semibold text-zinc-900">Build the plan</h2>
-            <p className="text-sm text-zinc-500 mt-0.5">
-              Set class type, dates, and weekly days. Fee updates automatically — no spreadsheet needed.
-            </p>
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">Build the plan</h2>
           </div>
         </div>
         <PlanBuilderFields
@@ -179,11 +169,11 @@ export default function CreateAssignPlanPanel({
         />
       </section>
 
-      <section className="rounded-2xl border-2 border-brand-orange-200 bg-gradient-to-br from-orange-50/80 to-white p-4 sm:p-6">
+      <section className="rounded-2xl border-2 border-brand-orange-200 dark:border-brand-orange-500/20 bg-gradient-to-br from-orange-50/80 to-white dark:from-zinc-900/50 dark:to-zinc-900 p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-base font-semibold text-zinc-900">Ready to save?</h2>
-            <p className="text-sm text-zinc-600 mt-0.5">
+            <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">Ready to save?</h2>
+            <p className="text-sm text-zinc-650 dark:text-zinc-400 mt-0.5">
               {selectedStudent
                 ? `This will assign the plan to ${selectedStudent.name}. Any current active plan will be replaced.`
                 : "Select a student and complete the plan details above."}
@@ -197,7 +187,7 @@ export default function CreateAssignPlanPanel({
               !preview ||
               preview.totalSessions === 0
             }
-            className="shrink-0 rounded-xl bg-brand-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-orange-600 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+            className="shrink-0 rounded-xl bg-brand-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-orange-655 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
           >
             {pending ? "Saving…" : "Save plan to student"}
           </button>
