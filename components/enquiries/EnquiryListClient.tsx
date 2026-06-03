@@ -662,7 +662,7 @@ export default function EnquiryListClient({
                   Quick Emojis
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {["🤸", "🤸‍♀️", "🤸‍♂️", "📞", "👍", "😊", "🤸", "📝", "👋", "🌟", "✨", "❤️"].map((emoji) => (
+                  {["🤸", "🤸‍♀️", "🤸‍♂️", "🏆", "📞", "👍", "😊", "📝", "👋", "🌟", "✨", "❤️"].map((emoji) => (
                     <button
                       key={emoji}
                       type="button"

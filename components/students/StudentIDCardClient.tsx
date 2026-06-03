@@ -287,7 +287,7 @@ export default function StudentIDCardClient({ student }: { student: StudentData 
       </footer>
 
       {/* Custom Styles for Clamping and Printing */}
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         /* Limit Student & Parent Name length to 2 lines without truncating words abruptly */
         .clamp-name-text {
           display: -webkit-box;
@@ -375,7 +375,7 @@ export default function StudentIDCardClient({ student }: { student: StudentData 
             display: none;
           }
         }
-      `}</style>
+      `}} />
     </div>
   );
 }
