@@ -113,6 +113,23 @@ export default function StudentIDCardClient({ student }: { student: StudentData 
     });
   }, [student.admissionDate]);
 
+  const dateOfBirthText = useMemo(() => {
+    return new Date(student.dateOfBirth).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  }, [student.dateOfBirth]);
+
+  const planTypeText = useMemo(() => {
+    if (!student.activePlan?.planType) return "N/A";
+    return student.activePlan.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular";
+  }, [student.activePlan]);
+
+  const statusText = useMemo(() => {
+    return String(student.status).replace(/_/g, " ");
+  }, [student.status]);
+
   const isMemberActive = student.status === "ACTIVE" || student.status === "GRACE" || student.status === "FREEZE";
   const footerText = isMemberActive ? "ACTIVE MEMBER" : "ACADEMY MEMBER";
 
@@ -166,11 +183,16 @@ export default function StudentIDCardClient({ student }: { student: StudentData 
             </div>
 
             {/* 2. Student Name & 3. Student ID (Middle Position) */}
-            <div className="flex flex-col items-center text-center px-6 mt-1 flex-1 justify-center gap-3">
+            <div className="flex flex-col items-center text-center px-6 mt-1 flex-1 justify-center gap-2">
+              <span className="text-[9px] font-semibold tracking-[0.3em] uppercase text-zinc-400">
+                Student ID Card
+              </span>
               <h2 className="text-[20px] font-black text-white leading-snug tracking-wide uppercase clamp-name-text">
                 {student.name}
               </h2>
-              
+              <div className="text-[13px] font-semibold tracking-[0.18em] text-zinc-300 uppercase">
+                {statusText}
+              </div>
               <div className="text-[15px] font-black tracking-wider text-brand-orange-500">
                 ID: {formatStudentId(student.studentNumber)}
               </div>
@@ -228,12 +250,22 @@ export default function StudentIDCardClient({ student }: { student: StudentData 
                 <dd className="font-semibold text-zinc-200 mt-0.5 tabular-nums">{student.contactNumber}</dd>
               </div>
               <div>
-                <dt className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Level</dt>
-                <dd className="font-semibold text-zinc-205 mt-0.5">Beginner</dd>
+                <dt className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Date of Birth</dt>
+                <dd className="font-semibold text-zinc-200 mt-0.5 tabular-nums">{dateOfBirthText}</dd>
               </div>
               <div>
-                <dt className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Batch</dt>
-                <dd className="font-semibold text-zinc-205 mt-0.5">Evening</dd>
+                <dt className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Gender</dt>
+                <dd className="font-semibold text-zinc-200 mt-0.5">{student.gender}</dd>
+              </div>
+              <div>
+                <dt className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Plan</dt>
+                <dd className="font-semibold text-zinc-200 mt-0.5">{planTypeText}</dd>
+              </div>
+              <div>
+                <dt className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Status</dt>
+                <dd className={`font-semibold mt-0.5 tabular-nums ${isMemberActive ? "text-emerald-400" : "text-zinc-200"}`}>
+                  {statusText}
+                </dd>
               </div>
               <div>
                 <dt className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Valid Till</dt>
@@ -245,14 +277,6 @@ export default function StudentIDCardClient({ student }: { student: StudentData 
                 <dt className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Member Since</dt>
                 <dd className="font-semibold text-zinc-200 mt-0.5 tabular-nums">{memberSinceText}</dd>
               </div>
-              {student.medicalHistory && (
-                <div className="col-span-2">
-                  <dt className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Medical Info</dt>
-                  <dd className="text-amber-400 text-[11px] font-medium leading-normal mt-0.5 clamp-medical-info">
-                    ⚠️ {student.medicalHistory}
-                  </dd>
-                </div>
-              )}
             </div>
 
             {/* Barcode & Footer Notice */}

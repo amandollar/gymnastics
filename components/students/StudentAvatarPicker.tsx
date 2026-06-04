@@ -29,9 +29,9 @@ export default function StudentAvatarPicker({
   const defaultSrc = useMemo(() => {
     const genderLower = (gender || "").toLowerCase();
     if (genderLower === "female") {
-      return "/female.PNG";
+      return "/women.png";
     }
-    return "/male.PNG";
+    return "/man.png";
   }, [gender]);
 
   // Priority: user-selected file > existing avatar > local default

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AssignPlanForm from "./AssignPlanForm";
 import StudentStatusBadge from "./StudentStatusBadge";
@@ -189,6 +189,11 @@ function PlanCard({
   onPlanAssigned: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [waMessage, setWaMessage] = useState(
+    plan
+      ? `Hi ${student.parentName}, 🙏\n\n${student.name}'s gymnastics plan (${plan.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular"}) ${status === "FREEZE" ? "has expired" : "is expiring soon"} on ${new Date(plan.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.\n\nYou have a 6-day grace period until ${new Date(new Date(plan.expiryDate).getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}. Please renew the plan soon to avoid any break in sessions.\n\nThank you! 🤸`
+      : ""
+  );
   const msgRef = useRef<HTMLTextAreaElement>(null);
 
   const isGraceOrFreeze = status === "GRACE" || status === "FREEZE";
@@ -197,9 +202,13 @@ function PlanCard({
     ? new Date(new Date(plan.expiryDate).getTime() + 6 * 24 * 60 * 60 * 1000)
     : null;
 
-  const waMessage = plan
-    ? `Hi ${student.parentName}, 🙏\n\n${student.name}'s gymnastics plan (${plan.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular"}) ${status === "FREEZE" ? "has expired" : "is expiring soon"} on ${new Date(plan.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.\n\nYou have a 6-day grace period until ${graceDeadline?.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}. Please renew the plan soon to avoid any break in sessions.\n\nThank you! 🤸`
-    : "";
+  useEffect(() => {
+    setWaMessage(
+      plan
+        ? `Hi ${student.parentName}, 🙏\n\n${student.name}'s gymnastics plan (${plan.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular"}) ${status === "FREEZE" ? "has expired" : "is expiring soon"} on ${new Date(plan.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.\n\nYou have a 6-day grace period until ${graceDeadline?.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}. Please renew the plan soon to avoid any break in sessions.\n\nThank you! 🤸`
+        : ""
+    );
+  }, [plan, student.parentName, student.name, status, graceDeadline]);
 
   function copyMessage() {
     navigator.clipboard.writeText(waMessage).then(() => {
@@ -240,7 +249,7 @@ function PlanCard({
         <>
           {/* Plan type pill */}
           <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-orange-50 text-brand-orange-700 dark:bg-brand-orange-950/40 dark:text-brand-orange-400">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100">
               {plan.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular"}
             </span>
             <span className="text-xs text-zinc-400 dark:text-zinc-500">
@@ -304,8 +313,8 @@ function PlanCard({
                 </p>
                 <textarea
                   ref={msgRef}
-                  readOnly
                   value={waMessage}
+                  onChange={(event) => setWaMessage(event.target.value)}
                   rows={5}
                   className="w-full text-xs rounded-xl border border-amber-200 dark:border-amber-800/60 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 px-3 py-2 resize-none focus:outline-none"
                 />

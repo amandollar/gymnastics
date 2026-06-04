@@ -83,35 +83,9 @@ export default function PlanBuilderFields({
       </div>
 
       <div>
-        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-2">How long is the plan?</p>
-        <div className="flex flex-wrap gap-2 mb-3">
-          {(
-            [
-              { label: "1 month", months: 1 as const },
-              { label: "3 months", months: 3 as const },
-            ] as const
-          ).map(({ label, months }) => {
-            const isActive = activePlanMonths === months;
-            return (
-              <button
-                key={label}
-                type="button"
-                onClick={() => applyDuration(months)}
-                disabled={!startDate}
-                className={`rounded-full px-5 py-2 text-sm font-semibold transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                  isActive
-                    ? "bg-brand-orange-500 text-white shadow-sm"
-                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-sm text-zinc-600 dark:text-zinc-400 mb-1">Start date</label>
+            <label className="block text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-1">Start date</label>
             <input
               name={formMode ? "startDate" : undefined}
               type="date"
@@ -122,7 +96,7 @@ export default function PlanBuilderFields({
             />
           </div>
           <div>
-            <label className="block text-sm text-zinc-600 dark:text-zinc-400 mb-1">End date</label>
+            <label className="block text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-1">End date</label>
             <input
               name={formMode ? "endDate" : undefined}
               type="date"
