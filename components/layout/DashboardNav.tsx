@@ -69,7 +69,15 @@ export default function DashboardNav({
         <GymIcon className={iconClass} />
         {!isCollapsed && "Mentors"}
       </Link>
-      <DisabledItem icon={<CheckIcon className={disabledIconClass} />} label="Attendance" isCollapsed={isCollapsed} />
+      <Link
+        href="/attendance"
+        onClick={close}
+        className={navLinkClass(pathname.startsWith("/attendance"), isCollapsed)}
+        title={isCollapsed ? "Attendance" : undefined}
+      >
+        <CheckIcon className={iconClass} />
+        {!isCollapsed && "Attendance"}
+      </Link>
       <DisabledItem icon={<CurrencyIcon className={disabledIconClass} />} label="Fees" isCollapsed={isCollapsed} />
       <Link
         href="/enquiries"

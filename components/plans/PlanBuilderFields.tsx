@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { Calendar } from "lucide-react";
 import type { PlanComputeResult, PlanTypeKey, WeekdayName } from "@/lib/plan/calculations";
 import { endDateForPlanMonths } from "@/lib/plan/plan-period";
 import { parseDateInput } from "@/lib/utils/student";
@@ -57,46 +58,77 @@ export default function PlanBuilderFields({
   }, [startDate, endDate]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       {formMode && (
         <input type="hidden" name="planType" value={planType} readOnly />
       )}
 
-      <div>
-        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-2">Class type</p>
-        <div className="inline-flex rounded-full p-1 bg-zinc-100 dark:bg-zinc-800">
+      {/* Plan type toggle */}
+      <div className="space-y-3">
+        <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+          Plan type
+        </label>
+        <div className="inline-flex rounded-2xl p-1 bg-zinc-100 dark:bg-zinc-800">
           {(["REGULAR", "ONE_TO_ONE"] as const).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => onPlanTypeChange(t)}
-              className={`px-5 py-2 text-sm font-semibold rounded-full transition-colors cursor-pointer ${
+              className={`px-5 py-2 text-sm font-semibold rounded-xl transition-all cursor-pointer ${
                 planType === t
-                  ? "bg-brand-orange-500 text-white shadow-xs"
-                  : "text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                  ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-xs"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
               }`}
             >
-              {t === "REGULAR" ? "Regular group" : "1-to-1 personal classes"}
+              {t === "REGULAR" ? "Group class" : "1-to-1 personal"}
             </button>
           ))}
         </div>
       </div>
 
-      <div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-1">Start date</label>
+      {/* Date range grid */}
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div className="space-y-3">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+            Start date
+          </label>
+          <div className="relative">
             <input
               name={formMode ? "startDate" : undefined}
               type="date"
               required={formMode}
               value={startDate}
               onChange={(e) => onStartDateChange(e.target.value)}
-              className={planInputClass}
+              className={`${planInputClass} pr-9 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
             />
+            <Calendar className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-500" strokeWidth={1.5} />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-1">End date</label>
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+              End date
+            </label>
+            {/* Quick-pick duration shortcuts */}
+            <div className="flex items-center gap-1.5">
+              {([1, 3] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => applyDuration(m)}
+                  className={`px-3 py-1 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                    activePlanMonths === m
+                      ? "bg-brand-orange-500 text-white"
+                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                  }`}
+                >
+                  {m}mo
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="relative">
             <input
               name={formMode ? "endDate" : undefined}
               type="date"
@@ -104,20 +136,25 @@ export default function PlanBuilderFields({
               min={startDate}
               value={endDate}
               onChange={(e) => onEndDateChange(e.target.value)}
-              className={planInputClass}
+              className={`${planInputClass} pr-9 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full [&::-webkit-calendar-picker-indicator]:cursor-pointer`}
             />
+            <Calendar className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400 dark:text-zinc-500" strokeWidth={1.5} />
           </div>
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-zinc-900 dark:text-zinc-100 mb-2">
-          Which days do they attend?
-          <span className="font-normal text-zinc-500 dark:text-zinc-400">
-            {" "}
-            — {selectedDays.length} day{selectedDays.length === 1 ? "" : "s"} per week
-          </span>
-        </label>
+      {/* Day picker */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+            Class days
+          </label>
+          {selectedDays.length > 0 && (
+            <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-500">
+              {selectedDays.length}× per week
+            </span>
+          )}
+        </div>
         <div className="flex flex-wrap gap-2">
           {PLAN_DAY_OPTIONS.map(({ short, name }) => {
             const on = selectedDays.includes(name);
@@ -126,9 +163,9 @@ export default function PlanBuilderFields({
                 key={name}
                 type="button"
                 onClick={() => onToggleDay(name)}
-                className={`min-w-[2.75rem] rounded-full px-3.5 py-2.5 text-sm font-semibold transition-colors cursor-pointer ${
+                className={`min-w-[3.25rem] rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
                   on
-                    ? "bg-zinc-950 dark:bg-zinc-100 text-white dark:text-zinc-950 shadow-sm"
+                    ? "bg-brand-orange-500 text-white shadow-xs"
                     : "bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
                 }`}
               >
@@ -142,31 +179,46 @@ export default function PlanBuilderFields({
             <input key={d} type="hidden" name="selectedDays" value={d} />
           ))}
         {selectedDaysError && (
-          <p className="mt-1 text-xs text-rose-600">{selectedDaysError}</p>
+          <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400">{selectedDaysError}</p>
         )}
       </div>
 
-      <div>
-        <label className="block text-sm text-zinc-600 dark:text-zinc-400 mb-1">Discount (optional)</label>
-        <div className="flex items-center gap-2">
-          <input
-            name={formMode ? "discountPercent" : undefined}
-            type="number"
-            min={0}
-            max={100}
-            value={discountPercent}
-            onChange={(e) => onDiscountChange(Number(e.target.value) || 0)}
-            className={`${planInputClass} max-w-[100px]`}
-          />
-          <span className="text-sm text-zinc-500 dark:text-zinc-450">%</span>
+      {/* Discount */}
+      <div className="space-y-3">
+        <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+          Discount
+        </label>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <input
+              name={formMode ? "discountPercent" : undefined}
+              type="number"
+              min={0}
+              max={100}
+              value={discountPercent}
+              onChange={(e) => onDiscountChange(Number(e.target.value) || 0)}
+              className={`${planInputClass} max-w-[96px] pr-7`}
+            />
+            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-medium text-zinc-400 dark:text-zinc-500 pointer-events-none">%</span>
+          </div>
+          {discountPercent > 0 && (
+            <button
+              type="button"
+              onClick={() => onDiscountChange(0)}
+              className="text-xs font-semibold text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+            >
+              Clear
+            </button>
+          )}
         </div>
       </div>
 
+      {/* Fee preview */}
       {preview ? (
-        <PlanFeePreview preview={preview} title="Total fee for this plan" />
+        <PlanFeePreview preview={preview} title="Fee summary" />
       ) : (
-        <div className="rounded-xl border border-dashed border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-950/40 px-4 py-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
-          Choose dates and at least one class day to see sessions and total fee.
+        <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 px-4 py-6 text-center text-xs text-zinc-400 dark:text-zinc-500 leading-relaxed">
+          Pick dates and at least one class day to see sessions & total fee
         </div>
       )}
     </div>

@@ -4,8 +4,10 @@
 
 @theme {
   --color-brand-orange-50: #fff7ed;
+  --color-brand-orange-200: #fed7aa;
   --color-brand-orange-500: #f16d28;
   --color-brand-orange-600: #d95312;
+  --color-brand-orange-950: #431407;
 }
 
 :root {
@@ -19,6 +21,7 @@
   --chart-tooltip-border: #e4e4e7;
   --chart-tooltip-text: #09090b;
   --tick-color: #71717a;
+  color-scheme: light;
 }
 
 .dark {
@@ -32,6 +35,17 @@
   --chart-tooltip-border: #27272a;
   --chart-tooltip-text: #f4f4f5;
   --tick-color: #a1a1aa;
+  color-scheme: dark;
+}
+
+.dark input[type="date"] {
+  color-scheme: dark;
+}
+
+.dark input::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.5);
+  opacity: 1;
+  cursor: pointer;
 }
 
 html {

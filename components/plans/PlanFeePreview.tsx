@@ -10,47 +10,56 @@ export default function PlanFeePreview({
   preview: PlanComputeResult;
   title?: string;
 }) {
+  const expiryStr = preview.expiryDate.toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
   return (
-    <div className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 p-4 text-sm space-y-2">
-      <p className="font-medium text-zinc-900 dark:text-zinc-100">{title}</p>
-      <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-        <dt className="text-zinc-500 dark:text-zinc-400">Sessions/week</dt>
-        <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
-          {preview.sessionsPerWeek}
-        </dd>
-        <dt className="text-zinc-500 dark:text-zinc-400">Total sessions</dt>
-        <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
-          {preview.totalSessions}
-        </dd>
-        <dt className="text-zinc-500 dark:text-zinc-400">Price per class</dt>
-        <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
-          {formatINR(preview.pricePerSession)}
-        </dd>
-        <dt className="text-zinc-500 dark:text-zinc-400">Gross fees</dt>
-        <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
-          {formatINR(preview.grossFees)}
-        </dd>
-        <dt className="text-zinc-500 dark:text-zinc-400">Discount</dt>
-        <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
-          {preview.discountPercent}%
-        </dd>
-        <dt className="text-zinc-500 dark:text-zinc-400">Final price</dt>
-        <dd className="font-semibold text-brand-orange-655 dark:text-brand-orange-500 text-right">
-          {formatINR(preview.fee)}
-        </dd>
-        <dt className="text-zinc-500 dark:text-zinc-400">Grace days</dt>
-        <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
-          {preview.validityDays}
-        </dd>
-        <dt className="text-zinc-500 dark:text-zinc-400">Expiry date</dt>
-        <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
-          {preview.expiryDate.toLocaleDateString("en-IN", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          })}
-        </dd>
-      </dl>
+    <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 overflow-hidden">
+      {/* Header row */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-zinc-800">
+        <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+          {title}
+        </p>
+        <div className="flex items-center gap-2 text-[11px] text-zinc-400 dark:text-zinc-500">
+          <span>{preview.validityDays}d grace</span>
+          <span className="text-zinc-300 dark:text-zinc-700">·</span>
+          <span>Expires {expiryStr}</span>
+        </div>
+      </div>
+
+      {/* Line items */}
+      <div className="px-4 py-3 space-y-2 text-sm">
+        <div className="flex justify-between items-center text-zinc-500 dark:text-zinc-400">
+          <span>Per class</span>
+          <span className="font-medium text-zinc-700 dark:text-zinc-300">{formatINR(preview.pricePerSession)}</span>
+        </div>
+        <div className="flex justify-between items-center text-zinc-500 dark:text-zinc-400">
+          <span>Classes</span>
+          <span className="font-medium text-zinc-700 dark:text-zinc-300">{preview.totalSessions}</span>
+        </div>
+
+        {preview.discountPercent > 0 && (
+          <>
+            <div className="flex justify-between items-center text-zinc-500 dark:text-zinc-400">
+              <span>Subtotal</span>
+              <span className="font-medium text-zinc-700 dark:text-zinc-300">{formatINR(preview.grossFees)}</span>
+            </div>
+            <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400">
+              <span>Discount ({preview.discountPercent}%)</span>
+              <span className="font-medium">−{formatINR(preview.grossFees - preview.fee)}</span>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Total */}
+      <div className="flex justify-between items-center px-4 py-3 border-t border-zinc-100 dark:border-zinc-800">
+        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Total</span>
+        <span className="text-xl font-bold text-brand-orange-500">{formatINR(preview.fee)}</span>
+      </div>
     </div>
   );
 }

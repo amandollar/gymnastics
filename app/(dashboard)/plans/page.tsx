@@ -22,6 +22,8 @@ export default async function PlansPage() {
     studentNumber: s.studentNumber,
     status: s.status,
     parentName: s.parentName,
+    gender: s.gender,
+    avatarUrl: s.avatarUrl,
   }));
 
   return (

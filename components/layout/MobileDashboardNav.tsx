@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import DashboardNav, { HomeIcon, SettingsIcon, UsersIcon, EnquiryIcon, GymIcon } from "./DashboardNav";
-import { Menu, X } from "lucide-react";
+import { Menu, X, CheckCircle } from "lucide-react";
 
 export function MobileMenuButton({ onOpen }: { onOpen: () => void }) {
   return (
@@ -94,7 +94,7 @@ export function MobileBottomNav({
     >
       <div
         className={`grid h-14 ${
-          isAdmin ? "grid-cols-5" : "grid-cols-4"
+          isAdmin ? "grid-cols-6" : "grid-cols-5"
         }`}
       >
         <Link
@@ -116,6 +116,17 @@ export function MobileBottomNav({
         >
           <UsersIcon />
           Students
+        </Link>
+        <Link
+          href="/attendance"
+          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
+            pathname.startsWith("/attendance")
+              ? "text-brand-orange-500"
+              : "text-zinc-500 dark:text-zinc-400"
+          }`}
+        >
+          <CheckCircle className="h-4.5 w-4.5" strokeWidth={2} />
+          Attendance
         </Link>
         <Link
           href="/mentors"
