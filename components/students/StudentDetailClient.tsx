@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useActionState } from "react";
 import { useRouter } from "next/navigation";
 import AssignPlanForm from "./AssignPlanForm";
 import StudentStatusBadge from "./StudentStatusBadge";
@@ -15,6 +15,7 @@ import {
 } from "@/lib/utils/student";
 import { computeDaysLeft } from "@/lib/plan/calculations";
 import type { PricingMaps } from "@/lib/plan/pricing-defaults";
+import { freezePlanAction, unfreezePlanAction } from "@/lib/actions/plans";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,9 +28,13 @@ type PlanRow = {
   sessionsCompleted: number;
   fee: number;
   expiryDate: Date;
+  /** Grace days stored at plan creation. */
+  graceDays: number;
   isActive: boolean;
   selectedDays: unknown;
   discountPercent: number;
+  freezeStartDate: Date | null;
+  freezeEndDate: Date | null;
 };
 
 type AttendanceRow = {
@@ -165,6 +170,168 @@ function CalendarPopup({
   );
 }
 
+// ─── Grace WhatsApp Block ─────────────────────────────────────────────────────
+
+function GraceWhatsAppBlock({
+  student,
+  plan,
+  graceDeadline,
+}: {
+  student: { name: string; parentName: string; contactNumber: string };
+  plan: PlanRow;
+  graceDeadline: Date;
+}) {
+  const [copied, setCopied] = useState(false);
+  const msgRef = useRef<HTMLTextAreaElement>(null);
+  const [waMessage, setWaMessage] = useState(
+    `Hi ${student.parentName}, 🙏\n\n${student.name}'s gymnastics plan (${plan.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular"}) has ended.\n\nYou have a ${plan.graceDays}-day grace period until ${graceDeadline.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}. Please renew the plan soon to avoid any break in sessions.\n\nThank you! 🤸`
+  );
+
+  function copyMessage() {
+    navigator.clipboard.writeText(waMessage).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  function openWhatsApp() {
+    const encoded = encodeURIComponent(waMessage);
+    const phone = student.contactNumber.replace(/\D/g, "");
+    window.open(`https://wa.me/91${phone}?text=${encoded}`, "_blank");
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
+        Auto-generated message
+      </p>
+      <textarea
+        ref={msgRef}
+        value={waMessage}
+        onChange={(event) => setWaMessage(event.target.value)}
+        rows={5}
+        className="w-full text-xs rounded-xl border border-amber-200 dark:border-amber-800/60 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 px-3 py-2 resize-none focus:outline-none"
+      />
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={copyMessage}
+          className="flex-1 rounded-xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-zinc-900 px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer"
+        >
+          {copied ? "✓ Copied!" : "Copy message"}
+        </button>
+        <button
+          type="button"
+          onClick={openWhatsApp}
+          className="flex-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-colors cursor-pointer"
+        >
+          Open WhatsApp
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Unfreeze Button ───────────────────────────────────────────────────────────
+
+function UnfreezeButton({ planId, studentId }: { planId: string; studentId: string }) {
+  const [state, action, pending] = useActionState(unfreezePlanAction, null);
+  return (
+    <form action={action}>
+      <input type="hidden" name="studentPlanId" value={planId} />
+      <input type="hidden" name="studentId" value={studentId} />
+      <button
+        type="submit"
+        disabled={pending}
+        className="shrink-0 rounded-xl border border-sky-300 dark:border-sky-700 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-sky-700 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/30 transition-colors cursor-pointer disabled:opacity-50"
+      >
+        {pending ? "Removing…" : "Unfreeze"}
+      </button>
+      {state?.message && !state.success && (
+        <p className="text-xs text-rose-600 mt-1">{state.message}</p>
+      )}
+    </form>
+  );
+}
+
+// ─── Freeze Plan Form ──────────────────────────────────────────────────────────
+
+function FreezePlanForm({ planId, studentId }: { planId: string; studentId: string }) {
+  const [open, setOpen] = useState(false);
+  const today = toDateInputValue(new Date());
+  const [state, action, pending] = useActionState(freezePlanAction, null);
+
+  useEffect(() => {
+    if (state?.success) setOpen(false);
+  }, [state?.success]);
+
+  return (
+    <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3">
+      {!open ? (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline cursor-pointer"
+        >
+          ❄️ Freeze plan (holiday break)
+        </button>
+      ) : (
+        <form action={action} className="space-y-3">
+          <input type="hidden" name="studentPlanId" value={planId} />
+          <input type="hidden" name="studentId" value={studentId} />
+          <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+            Freeze dates (holiday break)
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 uppercase tracking-wider">Start</label>
+              <input
+                name="freezeStartDate"
+                type="date"
+                required
+                defaultValue={today}
+                className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-zinc-400 uppercase tracking-wider">End</label>
+              <input
+                name="freezeEndDate"
+                type="date"
+                required
+                defaultValue={today}
+                className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
+              />
+            </div>
+          </div>
+          <p className="text-[10px] text-zinc-400 dark:text-zinc-500">
+            The plan end date and grace deadline will be extended by the freeze duration.
+          </p>
+          {state?.message && !state.success && (
+            <p className="text-xs text-rose-600 dark:text-rose-400">{state.message}</p>
+          )}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="flex-1 rounded-xl border border-zinc-200 dark:border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={pending}
+              className="flex-1 rounded-xl bg-sky-600 hover:bg-sky-700 px-3 py-2 text-xs font-semibold text-white transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {pending ? "Freezing…" : "Apply freeze"}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
+  );
+}
+
 // ─── Plan Package Card ────────────────────────────────────────────────────────
 
 function PlanCard({
@@ -188,40 +355,8 @@ function PlanCard({
   pricingMaps: PricingMaps;
   onPlanAssigned: () => void;
 }) {
-  const [copied, setCopied] = useState(false);
-  const [waMessage, setWaMessage] = useState(
-    plan
-      ? `Hi ${student.parentName}, 🙏\n\n${student.name}'s gymnastics plan (${plan.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular"}) ${status === "FREEZE" ? "has expired" : "is expiring soon"} on ${new Date(plan.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.\n\nYou have a 6-day grace period until ${new Date(new Date(plan.expiryDate).getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}. Please renew the plan soon to avoid any break in sessions.\n\nThank you! 🤸`
-      : ""
-  );
-  const msgRef = useRef<HTMLTextAreaElement>(null);
-
-  const isGraceOrFreeze = status === "GRACE" || status === "FREEZE";
+  // daysLeft relative to grace deadline (expiryDate)
   const daysLeft = plan ? computeDaysLeft(new Date(plan.expiryDate)) : 0;
-  const graceDeadline = plan
-    ? new Date(new Date(plan.expiryDate).getTime() + 6 * 24 * 60 * 60 * 1000)
-    : null;
-
-  useEffect(() => {
-    setWaMessage(
-      plan
-        ? `Hi ${student.parentName}, 🙏\n\n${student.name}'s gymnastics plan (${plan.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular"}) ${status === "FREEZE" ? "has expired" : "is expiring soon"} on ${new Date(plan.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}.\n\nYou have a 6-day grace period until ${graceDeadline?.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}. Please renew the plan soon to avoid any break in sessions.\n\nThank you! 🤸`
-        : ""
-    );
-  }, [plan, student.parentName, student.name, status, graceDeadline]);
-
-  function copyMessage() {
-    navigator.clipboard.writeText(waMessage).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
-
-  function openWhatsApp() {
-    const encoded = encodeURIComponent(waMessage);
-    const phone = student.contactNumber.replace(/\D/g, "");
-    window.open(`https://wa.me/91${phone}?text=${encoded}`, "_blank");
-  }
 
   // Progress bar
   const progress = plan
@@ -280,7 +415,9 @@ function PlanCard({
               <dd className="font-semibold text-zinc-900 dark:text-zinc-100">{formatINR(plan.fee)}</dd>
             </div>
             <div className={`rounded-2xl px-3 py-2.5 ${daysLeft <= 7 ? "bg-amber-50 dark:bg-amber-950/40" : "bg-zinc-50 dark:bg-zinc-800/60"}`}>
-              <dt className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-0.5">Expires</dt>
+              <dt className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-0.5">
+                {plan.graceDays > 0 ? "Grace deadline" : "Expires"}
+              </dt>
               <dd className={`font-semibold text-sm ${daysLeft <= 7 ? "text-amber-700 dark:text-amber-400" : "text-zinc-900 dark:text-zinc-100"}`}>
                 {new Date(plan.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                 {daysLeft > 0 && <span className="text-xs font-normal ml-1 opacity-70">({daysLeft}d left)</span>}
@@ -289,54 +426,31 @@ function PlanCard({
           </dl>
 
           {/* Grace period banner */}
-          {isGraceOrFreeze && (
+          {status === "GRACE" && plan.graceDays > 0 && (
             <div className="rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-950/30 px-4 py-3 space-y-3">
               <div className="flex items-start gap-2">
                 <span className="text-amber-500 text-lg leading-none">⚠️</span>
                 <div>
                   <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                    {status === "FREEZE" ? "Plan expired — Grace period active" : "Expiring soon — Grace period"}
+                    Plan ended — Grace period active
                   </p>
                   <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
-                    6-day grace period until{" "}
+                    {plan.graceDays}-day grace period until{" "}
                     <strong>
-                      {graceDeadline?.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                      {new Date(plan.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
                     </strong>
                   </p>
                 </div>
               </div>
 
-              {/* WhatsApp message box */}
-              <div className="space-y-2">
-                <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
-                  Auto-generated message
-                </p>
-                <textarea
-                  ref={msgRef}
-                  value={waMessage}
-                  onChange={(event) => setWaMessage(event.target.value)}
-                  rows={5}
-                  className="w-full text-xs rounded-xl border border-amber-200 dark:border-amber-800/60 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 px-3 py-2 resize-none focus:outline-none"
-                />
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={copyMessage}
-                    className="flex-1 rounded-xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-zinc-900 px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors cursor-pointer"
-                  >
-                    {copied ? "✓ Copied!" : "Copy message"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={openWhatsApp}
-                    className="flex-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-colors cursor-pointer"
-                  >
-                    Open WhatsApp
-                  </button>
-                </div>
-              </div>
+              <GraceWhatsAppBlock
+                student={student}
+                plan={plan}
+                graceDeadline={new Date(plan.expiryDate)}
+              />
             </div>
           )}
+
         </>
       ) : (
         <p className="text-sm text-zinc-400 dark:text-zinc-500">No plan assigned yet.</p>
@@ -361,9 +475,39 @@ function PlanCard({
           />
         </div>
       )}
+
+      {/* Freeze plan form — shown when plan is active/grace and not already frozen */}
+      {canManage && plan && status !== "FREEZE" && status !== "INACTIVE" && status !== "NO_PLAN" && (
+        <FreezePlanForm planId={plan.id} studentId={student.id} />
+      )}
+
+      {/* Freeze status banner */}
+      {status === "FREEZE" && plan && plan.freezeStartDate && plan.freezeEndDate && (
+        <div className="rounded-2xl border border-sky-200 dark:border-sky-800/60 bg-sky-50 dark:bg-sky-950/30 px-4 py-3">
+          <div className="flex items-start gap-2">
+            <span className="text-sky-500 text-lg leading-none">❄️</span>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-sky-800 dark:text-sky-300">
+                Plan frozen — Holiday break
+              </p>
+              <p className="text-xs text-sky-700 dark:text-sky-400 mt-0.5">
+                Frozen from{" "}
+                <strong>{new Date(plan.freezeStartDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</strong>
+                {" to "}
+                <strong>{new Date(plan.freezeEndDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</strong>.
+                End date extended accordingly.
+              </p>
+            </div>
+            {canManage && (
+              <UnfreezeButton planId={plan.id} studentId={student.id} />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
 // ─── Attendance Card ──────────────────────────────────────────────────────────
 

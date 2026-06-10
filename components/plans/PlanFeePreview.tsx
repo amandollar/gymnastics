@@ -10,11 +10,13 @@ export default function PlanFeePreview({
   preview: PlanComputeResult;
   title?: string;
 }) {
-  const expiryStr = preview.expiryDate.toLocaleDateString("en-IN", {
+  const endDateStr = preview.expiryDate.toLocaleDateString("en-IN", {
     day: "numeric",
     month: "short",
     year: "numeric",
   });
+
+  const graceDays = preview.graceDays;
 
   return (
     <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 overflow-hidden">
@@ -24,9 +26,19 @@ export default function PlanFeePreview({
           {title}
         </p>
         <div className="flex items-center gap-2 text-[11px] text-zinc-400 dark:text-zinc-500">
-          <span>{preview.validityDays}d grace</span>
-          <span className="text-zinc-300 dark:text-zinc-700">·</span>
-          <span>Expires {expiryStr}</span>
+          {graceDays > 0 ? (
+            <>
+              <span>{graceDays}d grace</span>
+              <span className="text-zinc-300 dark:text-zinc-700">·</span>
+              <span>Grace deadline {endDateStr}</span>
+            </>
+          ) : (
+            <>
+              <span className="text-zinc-400 dark:text-zinc-500">No grace period</span>
+              <span className="text-zinc-300 dark:text-zinc-700">·</span>
+              <span>Expires {endDateStr}</span>
+            </>
+          )}
         </div>
       </div>
 

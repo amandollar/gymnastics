@@ -80,18 +80,39 @@ model StudentPlan {
   discountPercent   Float        @default(0)
   totalSessions     Int
   validityDays      Int
+  /// Grace-period deadline = endDate + graceDays (stored at plan creation).
+  /// Use this to derive GRACE vs INACTIVE status.
   expiryDate        DateTime
+  /// Number of grace days granted when this plan was created.
+  graceDays         Int          @default(0)
   fee               Int
   pricePerSession   Int
   sessionsCompleted Int          @default(0)
   planMonths        Int?
   isActive          Boolean      @default(true)
+  /// When set, the plan is frozen (holiday). Status = FREEZE.
+  freezeStartDate   DateTime?
+  /// End of the current freeze window.
+  freezeEndDate     DateTime?
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
   attendances       Attendance[]
 
   @@index([studentId])
   @@index([studentId, isActive])
+}
+
+/// Admin-configurable grace period days per (sessionsPerWeek × planMonths) combination.
+/// Falls back to formula (sessionsPerWeek × planMonths × 2) if no row exists.
+model GracePeriodSettings {
+  id              String   @id @default(cuid())
+  sessionsPerWeek Int
+  /// 1 = 1-month plan, 3 = 3-month plan, 0 = catch-all / no grace
+  planMonths      Int
+  graceDays       Int      @default(0)
+  updatedAt       DateTime @updatedAt
+
+  @@unique([sessionsPerWeek, planMonths])
 }
 
 model Attendance {

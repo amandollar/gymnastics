@@ -18,6 +18,8 @@ import {
 import {
   kpiStats,
   revenueByMonth,
+  admissionsByMonth,
+  renewalsByMonth,
   weeklyAttendance,
   recentActivity,
   formatINR,
@@ -364,8 +366,8 @@ export default function DashboardOverview({
                   dataKey="revenue"
                   stroke="#f16d28"
                   strokeWidth={3}
-                  dot={{ fill: "#f16d28", r: 4, strokeWidth: 0 }}
-                  activeDot={{ r: 6, stroke: "var(--background)", strokeWidth: 2 }}
+                  dot={false}
+                  activeDot={{ fill: "#f16d28", r: 6, stroke: "var(--background)", strokeWidth: 2 }}
                 />
               </LineChart>
             </ChartBox>
@@ -413,6 +415,98 @@ export default function DashboardOverview({
                   maxBarSize={isMobile ? 28 : 42}
                 />
               </BarChart>
+            </ChartBox>
+          </div>
+        </div>
+
+        {/* Chart 3: Monthly Admissions (Line Chart) */}
+        <div className="rounded-3xl border-0 bg-white dark:bg-zinc-900 p-5 shadow-xs min-w-0 overflow-hidden transition-all duration-300">
+          <h3 className="text-sm font-bold text-zinc-955 dark:text-zinc-50 uppercase tracking-wider">
+            Monthly Admissions
+          </h3>
+          <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
+            New student enrollments per month
+          </p>
+          <div className="mt-4">
+            <ChartBox height={chartH}>
+              <LineChart data={admissionsByMonth} margin={chartMargin}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--chart-grid)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: isMobile ? 10 : 11, fill: "var(--tick-color)", fontWeight: 500 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  width={isMobile ? 36 : 48}
+                  tick={{ fontSize: isMobile ? 10 : 11, fill: "var(--tick-color)", fontWeight: 500 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => `${v}`}
+                />
+                <Tooltip
+                  contentStyle={chartTooltipStyle}
+                  formatter={(value) => [`${value} students`, "Admissions"]}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="admissions"
+                  stroke="#f16d28"
+                  strokeWidth={3}
+                  dot={false}
+                  activeDot={{ fill: "#f16d28", r: 6, stroke: "var(--background)", strokeWidth: 2 }}
+                />
+              </LineChart>
+            </ChartBox>
+          </div>
+        </div>
+
+        {/* Chart 4: Monthly Renewals (Line Chart) */}
+        <div className="rounded-3xl border-0 bg-white dark:bg-zinc-900 p-5 shadow-xs min-w-0 overflow-hidden transition-all duration-300">
+          <h3 className="text-sm font-bold text-zinc-955 dark:text-zinc-50 uppercase tracking-wider">
+            Monthly Renewals
+          </h3>
+          <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
+            Members renewing their subscription plans
+          </p>
+          <div className="mt-4">
+            <ChartBox height={chartH}>
+              <LineChart data={renewalsByMonth} margin={chartMargin}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--chart-grid)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fontSize: isMobile ? 10 : 11, fill: "var(--tick-color)", fontWeight: 500 }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  width={isMobile ? 36 : 48}
+                  tick={{ fontSize: isMobile ? 10 : 11, fill: "var(--tick-color)", fontWeight: 500 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v) => `${v}`}
+                />
+                <Tooltip
+                  contentStyle={chartTooltipStyle}
+                  formatter={(value) => [`${value} renewals`, "Renewals"]}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="renewals"
+                  stroke="#f16d28"
+                  strokeWidth={3}
+                  dot={false}
+                  activeDot={{ fill: "#f16d28", r: 6, stroke: "var(--background)", strokeWidth: 2 }}
+                />
+              </LineChart>
             </ChartBox>
           </div>
         </div>

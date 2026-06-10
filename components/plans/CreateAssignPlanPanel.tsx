@@ -11,6 +11,7 @@ import {
   type WeekdayName,
 } from "@/lib/plan/calculations";
 import type { PricingMaps } from "@/lib/plan/pricing-defaults";
+import type { GracePeriodMap } from "@/lib/plan/grace-period-utils";
 import { parseDateInput, toDateInputValue } from "@/lib/utils/student";
 import PlanBuilderFields from "./PlanBuilderFields";
 import StudentPicker, { type PlanStudentOption } from "./StudentPicker";
@@ -18,10 +19,12 @@ import StudentPicker, { type PlanStudentOption } from "./StudentPicker";
 export default function CreateAssignPlanPanel({
   students,
   pricingMaps,
+  gracePeriodMap,
   canManage,
 }: {
   students: PlanStudentOption[];
   pricingMaps: PricingMaps;
+  gracePeriodMap: GracePeriodMap;
   canManage: boolean;
 }) {
   const searchParams = useSearchParams();
@@ -74,11 +77,12 @@ export default function CreateAssignPlanPanel({
         selectedDays,
         discountPercent,
         pricingMaps,
+        gracePeriodMap,
       });
     } catch {
       return null;
     }
-  }, [planType, startDate, endDate, selectedDays, discountPercent, pricingMaps]);
+  }, [planType, startDate, endDate, selectedDays, discountPercent, pricingMaps, gracePeriodMap]);
 
   function toggleDay(day: WeekdayName) {
     setSelectedDays((prev) =>

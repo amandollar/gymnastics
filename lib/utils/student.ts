@@ -1,4 +1,4 @@
-import { computeDaysLeft } from "@/lib/plan/calculations";
+import { startOfDay } from "@/lib/plan/calculations";
 
 export type StudentStatus =
   | "ACTIVE"
@@ -10,7 +10,17 @@ export type StudentStatus =
 export interface ActivePlanSnapshot {
   sessionsCompleted: number;
   totalSessions: number;
+  /** Last day of the plan window (inclusive). */
+  endDate: Date;
+  /**
+   * Grace-period deadline = endDate + graceDays.
+   * Status is GRACE between endDate+1 and expiryDate (inclusive).
+   * Status is INACTIVE after expiryDate.
+   */
   expiryDate: Date;
+  /** When set (and today is within the window), status is FREEZE. */
+  freezeStartDate?: Date | null;
+  freezeEndDate?: Date | null;
 }
 
 export function computeStudentAge(
@@ -70,23 +80,54 @@ export function formatTenure(admissionDate: Date): string {
   return `${years} year${years !== 1 ? "s" : ""} ${rem} month${rem !== 1 ? "s" : ""}`;
 }
 
-/** Status logic from plan.md (master) — never stored in DB */
+/**
+ * Computes the student's current plan status.
+ *
+ * Status priority (highest → lowest):
+ * 1. NO_PLAN  — no active plan record
+ * 2. INACTIVE — sessions exhausted (sessionsCompleted >= totalSessions)
+ * 3. FREEZE   — admin has applied a holiday freeze that covers today
+ * 4. INACTIVE — today > expiryDate (grace period also exhausted)
+ * 5. GRACE    — today > endDate but today <= expiryDate
+ * 6. ACTIVE   — today <= endDate (within plan window)
+ *
+ * Status is NEVER stored in the database — always computed at query time.
+ */
 export function computeStudentStatus(
   activePlan: ActivePlanSnapshot | null | undefined
 ): StudentStatus {
   if (!activePlan) return "NO_PLAN";
 
-  const { sessionsCompleted, totalSessions, expiryDate } = activePlan;
+  const {
+    sessionsCompleted,
+    totalSessions,
+    endDate,
+    expiryDate,
+    freezeStartDate,
+    freezeEndDate,
+  } = activePlan;
+
+  // 1. Sessions exhausted → always INACTIVE regardless of dates
   if (sessionsCompleted >= totalSessions) return "INACTIVE";
 
-  const daysLeft = computeDaysLeft(expiryDate);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const expiry = new Date(expiryDate);
-  expiry.setHours(0, 0, 0, 0);
+  const today = startOfDay(new Date());
+  const end = startOfDay(new Date(endDate));
+  const expiry = startOfDay(new Date(expiryDate));
 
-  if (expiry < today) return "FREEZE";
-  if (daysLeft <= 7) return "GRACE";
+  // 2. Check active freeze window
+  if (freezeStartDate && freezeEndDate) {
+    const fStart = startOfDay(new Date(freezeStartDate));
+    const fEnd = startOfDay(new Date(freezeEndDate));
+    if (today >= fStart && today <= fEnd) return "FREEZE";
+  }
+
+  // 3. Grace period completely exhausted
+  if (today > expiry) return "INACTIVE";
+
+  // 4. Within grace window (after end date but before expiry)
+  if (today > end) return "GRACE";
+
+  // 5. Still within the active plan window
   return "ACTIVE";
 }
 

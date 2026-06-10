@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import PlansPageClient from "@/components/plans/PlansPageClient";
 import { getPricingMaps } from "@/lib/services/pricing";
+import { getGracePeriodMap } from "@/lib/services/grace-periods";
 import { listStudents } from "@/lib/services/students";
 
 export default async function PlansPage() {
@@ -11,9 +12,10 @@ export default async function PlansPage() {
   const role = (session.user as { role?: string })?.role;
   const canManage = role === "ADMIN" || role === "MANAGER";
 
-  const [students, pricingMaps] = await Promise.all([
+  const [students, pricingMaps, gracePeriodMap] = await Promise.all([
     listStudents(),
     getPricingMaps(),
+    getGracePeriodMap(),
   ]);
 
   const studentOptions = students.map((s) => ({
@@ -32,6 +34,7 @@ export default async function PlansPage() {
         isAdmin={role === "ADMIN"}
         canManage={canManage}
         pricingMaps={pricingMaps}
+        gracePeriodMap={gracePeriodMap}
         students={JSON.parse(JSON.stringify(studentOptions))}
       />
     </div>

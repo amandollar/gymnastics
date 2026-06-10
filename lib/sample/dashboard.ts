@@ -23,6 +23,24 @@ export const revenueByMonth = [
   { month: "Jun", revenue: 4.85 },
 ];
 
+export const admissionsByMonth = [
+  { month: "Jan", admissions: 8 },
+  { month: "Feb", admissions: 10 },
+  { month: "Mar", admissions: 14 },
+  { month: "Apr", admissions: 11 },
+  { month: "May", admissions: 15 },
+  { month: "Jun", admissions: 12 },
+];
+
+export const renewalsByMonth = [
+  { month: "Jan", renewals: 15 },
+  { month: "Feb", renewals: 18 },
+  { month: "Mar", renewals: 22 },
+  { month: "Apr", renewals: 20 },
+  { month: "May", renewals: 25 },
+  { month: "Jun", renewals: 28 },
+];
+
 export const weeklyAttendance = [
   { day: "Mon", present: 186 },
   { day: "Tue", present: 192 },

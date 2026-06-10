@@ -10,6 +10,7 @@ import {
   type StudentStatus,
 } from "@/lib/utils/student";
 import { uploadStudentAvatarToCloudinary } from "@/lib/avatar/cloudinary";
+import { getGracePeriodMap } from "@/lib/services/grace-periods";
 
 export async function getNextStudentNumber(): Promise<number> {
   const result = await prisma.student.aggregate({
@@ -35,7 +36,10 @@ function mapStudentRow(
       ? {
           sessionsCompleted: activePlan.sessionsCompleted,
           totalSessions: activePlan.totalSessions,
+          endDate: activePlan.endDate,
           expiryDate: activePlan.expiryDate,
+          freezeStartDate: activePlan.freezeStartDate,
+          freezeEndDate: activePlan.freezeEndDate,
         }
       : null
   );
@@ -106,7 +110,10 @@ export async function getStudentById(id: string) {
       ? {
           sessionsCompleted: activePlan.sessionsCompleted,
           totalSessions: activePlan.totalSessions,
+          endDate: activePlan.endDate,
           expiryDate: activePlan.expiryDate,
+          freezeStartDate: activePlan.freezeStartDate,
+          freezeEndDate: activePlan.freezeEndDate,
         }
       : null
   );
@@ -220,7 +227,10 @@ export async function assignPlanToStudent(
   }
 
   const { getPricingMaps } = await import("@/lib/services/pricing");
-  const pricingMaps = await getPricingMaps();
+  const [pricingMaps, gracePeriodMap] = await Promise.all([
+    getPricingMaps(),
+    getGracePeriodMap(),
+  ]);
 
   const computed = computePlanFields({
     planType: input.planType,
@@ -229,6 +239,7 @@ export async function assignPlanToStudent(
     selectedDays: input.selectedDays,
     discountPercent: input.discountPercent,
     pricingMaps,
+    gracePeriodMap,
   });
 
   if (computed.totalSessions === 0) {
@@ -251,7 +262,8 @@ export async function assignPlanToStudent(
         sessionsPerWeek: computed.sessionsPerWeek,
         discountPercent: computed.discountPercent,
         totalSessions: computed.totalSessions,
-        validityDays: computed.validityDays,
+        validityDays: computed.graceDays,
+        graceDays: computed.graceDays,
         expiryDate: computed.expiryDate,
         fee: computed.fee,
         pricePerSession: computed.pricePerSession,
@@ -259,6 +271,61 @@ export async function assignPlanToStudent(
         isActive: true,
       },
     });
+  });
+}
+
+/**
+ * Apply a holiday freeze to a student's active plan.
+ * The plan's endDate and expiryDate are extended by the freeze duration.
+ * During the freeze window, status = FREEZE.
+ */
+export async function freezeStudentPlan(
+  studentPlanId: string,
+  freezeStart: Date,
+  freezeEnd: Date
+): Promise<void> {
+  if (freezeEnd < freezeStart) {
+    throw new Error("Freeze end date must be after freeze start date");
+  }
+
+  const plan = await prisma.studentPlan.findUnique({
+    where: { id: studentPlanId },
+    select: { endDate: true, expiryDate: true, graceDays: true },
+  });
+  if (!plan) throw new Error("Plan not found");
+
+  // Compute extension duration in days
+  const freezeDurationMs = freezeEnd.getTime() - freezeStart.getTime();
+  const freezeDurationDays = Math.ceil(freezeDurationMs / 86400000);
+
+  // Extend endDate and expiryDate by the freeze duration
+  const newEndDate = new Date(plan.endDate);
+  newEndDate.setDate(newEndDate.getDate() + freezeDurationDays);
+
+  const newExpiryDate = new Date(newEndDate);
+  newExpiryDate.setDate(newExpiryDate.getDate() + plan.graceDays);
+
+  await prisma.studentPlan.update({
+    where: { id: studentPlanId },
+    data: {
+      freezeStartDate: freezeStart,
+      freezeEndDate: freezeEnd,
+      endDate: newEndDate,
+      expiryDate: newExpiryDate,
+    },
+  });
+}
+
+/** Remove an active freeze from a student plan (keeping extended dates). */
+export async function unfreezeStudentPlan(
+  studentPlanId: string
+): Promise<void> {
+  await prisma.studentPlan.update({
+    where: { id: studentPlanId },
+    data: {
+      freezeStartDate: null,
+      freezeEndDate: null,
+    },
   });
 }
 
@@ -319,20 +386,24 @@ export async function bulkImportStudents(students: BulkStudentPayload[]) {
 
     if (data.plan) {
       const planId = randomUUID();
-      const validityDays = Math.ceil((data.plan.endDate.getTime() - data.plan.startDate.getTime()) / (1000 * 60 * 60 * 24));
-      const pricePerSession = data.plan.totalSessions > 0 ? Math.round(data.plan.fee / data.plan.totalSessions) : 0;
-      
+      // For bulk imports, compute validityDays as 0 (no grace for historical data)
+      const pricePerSession =
+        data.plan.totalSessions > 0
+          ? Math.round(data.plan.fee / data.plan.totalSessions)
+          : 0;
+
       plansToCreate.push({
         id: planId,
         studentId: studentId,
         planType: data.plan.planType,
         startDate: data.plan.startDate,
         endDate: data.plan.endDate,
-        selectedDays: [], // Historical data might not specify selected days
+        selectedDays: [],
         sessionsPerWeek: 0,
         discountPercent: 0,
         totalSessions: data.plan.totalSessions,
-        validityDays,
+        validityDays: 0,
+        graceDays: 0,
         expiryDate: data.plan.endDate,
         fee: data.plan.fee,
         pricePerSession,
@@ -341,25 +412,39 @@ export async function bulkImportStudents(students: BulkStudentPayload[]) {
       });
 
       if (data.attendances && data.attendances.length > 0) {
-        const uniqueDates = Array.from(new Set(data.attendances.map(d => d.toISOString().split('T')[0])));
+        const uniqueDates = Array.from(
+          new Set(data.attendances.map((d) => d.toISOString().split("T")[0]))
+        );
         for (const dateStr of uniqueDates) {
-           attendancesToCreate.push({
-              studentId: studentId,
-              studentPlanId: planId,
-              date: new Date(dateStr)
-           });
+          attendancesToCreate.push({
+            studentId: studentId,
+            studentPlanId: planId,
+            date: new Date(dateStr),
+          });
         }
       }
     }
   }
 
-  // Blazing fast array-based transaction with exactly 3 bulk queries total
   await prisma.$transaction([
     prisma.student.createMany({ data: studentsToCreate, skipDuplicates: true }),
-    ...(plansToCreate.length > 0 ? [prisma.studentPlan.createMany({ data: plansToCreate, skipDuplicates: true })] : []),
-    ...(attendancesToCreate.length > 0 ? [prisma.attendance.createMany({ data: attendancesToCreate, skipDuplicates: true })] : [])
+    ...(plansToCreate.length > 0
+      ? [
+          prisma.studentPlan.createMany({
+            data: plansToCreate,
+            skipDuplicates: true,
+          }),
+        ]
+      : []),
+    ...(attendancesToCreate.length > 0
+      ? [
+          prisma.attendance.createMany({
+            data: attendancesToCreate,
+            skipDuplicates: true,
+          }),
+        ]
+      : []),
   ]);
-  
+
   return results;
 }
-

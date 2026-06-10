@@ -6,6 +6,10 @@ import {
   DEFAULT_REGULAR_PRICING,
   getDefaultPricingMaps,
 } from "./pricing-defaults";
+import {
+  lookupGraceDays,
+  type GracePeriodMap,
+} from "./grace-period-utils";
 
 export type { PricingMaps } from "./pricing-defaults";
 
@@ -34,6 +38,11 @@ export interface PlanComputeInput {
   selectedDays: WeekdayName[];
   discountPercent?: number;
   pricingMaps?: PricingMaps;
+  /**
+   * Grace period map from DB (see lib/services/grace-periods.ts).
+   * If omitted the formula (sessionsPerWeek × planMonths × 2) is used.
+   */
+  gracePeriodMap?: GracePeriodMap;
 }
 
 export interface PlanComputeResult {
@@ -43,18 +52,24 @@ export interface PlanComputeResult {
   grossFees: number;
   fee: number;
   discountPercent: number;
-  validityDays: number;
+  /** Number of grace days added after endDate before plan becomes INACTIVE. */
+  graceDays: number;
+  /**
+   * Grace-period deadline = endDate + graceDays.
+   * Status is GRACE between endDate+1 and expiryDate (inclusive).
+   * Status is INACTIVE after expiryDate.
+   */
   expiryDate: Date;
   planMonths: 1 | 3 | null;
 }
 
-function startOfDay(d: Date): Date {
+export function startOfDay(d: Date): Date {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
   return x;
 }
 
-function differenceInDays(a: Date, b: Date): number {
+export function differenceInDays(a: Date, b: Date): number {
   const ms = startOfDay(a).getTime() - startOfDay(b).getTime();
   return Math.round(ms / 86400000);
 }
@@ -77,13 +92,6 @@ export function countSessions(
     current.setDate(current.getDate() + 1);
   }
   return count;
-}
-
-function graceFactor(sessionsPerWeek: number): number {
-  if (sessionsPerWeek === 2) return 4;
-  if (sessionsPerWeek === 3 || sessionsPerWeek === 4) return 6;
-  if (sessionsPerWeek >= 5) return 8;
-  return 0;
 }
 
 export function getPricePerSession(
@@ -112,19 +120,26 @@ export function computePlanFields(input: PlanComputeInput): PlanComputeResult {
   const grossFees = Math.round(totalSessions * pricePerSession);
   const fee = Math.round(grossFees - (grossFees * discountPercent) / 100);
 
-  const rangeDays = Math.max(
-    0,
-    differenceInDays(input.endDate, input.startDate)
-  );
-  const planWeeks = Math.round(rangeDays / 30);
-  const validityDays = planWeeks * graceFactor(sessionsPerWeek);
-
-  const expiryDate = new Date(input.startDate);
-  expiryDate.setDate(expiryDate.getDate() + validityDays);
-
   const diffDays = differenceInDays(input.endDate, input.startDate);
   const planMonths: 1 | 3 | null =
     diffDays <= 31 ? 1 : diffDays <= 93 ? 3 : null;
+
+  // Grace days: from DB map, or formula fallback
+  const graceDays =
+    planMonths !== null
+      ? lookupGraceDays(
+          input.gracePeriodMap ?? {},
+          sessionsPerWeek,
+          planMonths
+        )
+      : 0;
+
+  // expiryDate = endDate + graceDays
+  const expiryDate = new Date(input.endDate);
+  expiryDate.setDate(expiryDate.getDate() + graceDays);
+
+  // validityDays kept for DB column compat — equals graceDays
+  const validityDays = graceDays;
 
   return {
     sessionsPerWeek,
@@ -133,10 +148,12 @@ export function computePlanFields(input: PlanComputeInput): PlanComputeResult {
     grossFees,
     fee,
     discountPercent,
-    validityDays,
+    graceDays,
     expiryDate,
     planMonths,
-  };
+    // keep validityDays accessible via spread — not in interface but stored in DB
+    ...({ validityDays } as object),
+  } as PlanComputeResult & { validityDays: number };
 }
 
 export function computeDaysLeft(expiryDate: Date, today = new Date()): number {
