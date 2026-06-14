@@ -35,6 +35,7 @@ type PlanRow = {
   discountPercent: number;
   freezeStartDate: Date | null;
   freezeEndDate: Date | null;
+  batch?: { id: string; name: string; timing: string } | null;
 };
 
 type AttendanceRow = {
@@ -184,7 +185,7 @@ function GraceWhatsAppBlock({
   const [copied, setCopied] = useState(false);
   const msgRef = useRef<HTMLTextAreaElement>(null);
   const [waMessage, setWaMessage] = useState(
-    `Hi ${student.parentName}, 🙏\n\n${student.name}'s gymnastics plan (${plan.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular"}) has ended.\n\nYou have a ${plan.graceDays}-day grace period until ${graceDeadline.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}. Please renew the plan soon to avoid any break in sessions.\n\nThank you! 🤸`
+    `Hi ${student.parentName}, 🙏\n\n${student.name}'s gymnastics plan (${plan.planType === "ONE_TO_ONE" ? "Personal training" : "Group class"}) has ended.\n\nYou have a ${plan.graceDays}-day grace period until ${graceDeadline.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}. Please renew the plan soon to avoid any break in sessions.\n\nThank you! 🤸`
   );
 
   function copyMessage() {
@@ -256,14 +257,23 @@ function UnfreezeButton({ planId, studentId }: { planId: string; studentId: stri
 
 // ─── Freeze Plan Form ──────────────────────────────────────────────────────────
 
-function FreezePlanForm({ planId, studentId }: { planId: string; studentId: string }) {
-  const [open, setOpen] = useState(false);
+function FreezePlanForm({
+  planId,
+  studentId,
+  open,
+  setOpen,
+}: {
+  planId: string;
+  studentId: string;
+  open: boolean;
+  setOpen: (v: boolean) => void;
+}) {
   const today = toDateInputValue(new Date());
   const [state, action, pending] = useActionState(freezePlanAction, null);
 
   useEffect(() => {
     if (state?.success) setOpen(false);
-  }, [state?.success]);
+  }, [state?.success, setOpen]);
 
   return (
     <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3">
@@ -342,6 +352,10 @@ function PlanCard({
   canManage,
   showAssign,
   setShowAssign,
+  showFreeze,
+  setShowFreeze,
+  assignSectionRef,
+  freezeSectionRef,
   pricingMaps,
   onPlanAssigned,
 }: {
@@ -352,6 +366,10 @@ function PlanCard({
   canManage: boolean;
   showAssign: boolean;
   setShowAssign: (v: boolean) => void;
+  showFreeze: boolean;
+  setShowFreeze: (v: boolean) => void;
+  assignSectionRef: React.RefObject<HTMLDivElement | null>;
+  freezeSectionRef: React.RefObject<HTMLDivElement | null>;
   pricingMaps: PricingMaps;
   onPlanAssigned: () => void;
 }) {
@@ -385,7 +403,7 @@ function PlanCard({
           {/* Plan type pill */}
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100">
-              {plan.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular"}
+              {plan.planType === "ONE_TO_ONE" ? "Personal training" : "Group class"}
             </span>
             <span className="text-xs text-zinc-400 dark:text-zinc-500">
               {new Date(plan.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
@@ -467,7 +485,7 @@ function PlanCard({
       )}
 
       {canManage && showAssign && (
-        <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800">
+        <div ref={assignSectionRef} className="pt-2 border-t border-zinc-100 dark:border-zinc-800">
           <AssignPlanForm
             studentId={student.id}
             pricingMaps={pricingMaps}
@@ -478,7 +496,14 @@ function PlanCard({
 
       {/* Freeze plan form — shown when plan is active/grace and not already frozen */}
       {canManage && plan && status !== "FREEZE" && status !== "INACTIVE" && status !== "NO_PLAN" && (
-        <FreezePlanForm planId={plan.id} studentId={student.id} />
+        <div ref={freezeSectionRef}>
+          <FreezePlanForm
+            planId={plan.id}
+            studentId={student.id}
+            open={showFreeze}
+            setOpen={setShowFreeze}
+          />
+        </div>
       )}
 
       {/* Freeze status banner */}
@@ -781,6 +806,15 @@ export default function StudentDetailClient({
   const [showAssign, setShowAssign] = useState(
     showAssignInitially || !student.activePlan
   );
+  const [showFreeze, setShowFreeze] = useState(false);
+
+  const assignSectionRef = useRef<HTMLDivElement>(null);
+  const freezeSectionRef = useRef<HTMLDivElement>(null);
+
+  const [unfreezeState, unfreezeAction, unfreezePending] = useActionState(
+    unfreezePlanAction,
+    null
+  );
 
   function onPlanAssigned() {
     setShowAssign(false);
@@ -812,6 +846,60 @@ export default function StudentDetailClient({
             </svg>
             Print ID card
           </a>
+
+          {/* Change plan */}
+          {canManage && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowAssign(true);
+                setTimeout(() => {
+                  assignSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }, 100);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
+            >
+              <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              </svg>
+              Change plan
+            </button>
+          )}
+
+          {/* Freeze plan */}
+          {canManage && student.activePlan && student.status !== "FREEZE" && student.status !== "INACTIVE" && student.status !== "NO_PLAN" && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowFreeze(true);
+                setTimeout(() => {
+                  freezeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                }, 100);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
+            >
+              <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18M3 12h18M12 9l-3-3M12 15l-3 3M12 9l3-3M12 15l3 3M9 12L6 9M15 12l3-3M9 12l-3 3M15 12l3 3" />
+              </svg>
+              Freeze plan
+            </button>
+          )}
+
+          {/* Unfreeze plan */}
+          {canManage && student.activePlan && student.status === "FREEZE" && (
+            <form action={unfreezeAction}>
+              <input type="hidden" name="studentPlanId" value={student.activePlan.id} />
+              <input type="hidden" name="studentId" value={student.id} />
+              <button
+                type="submit"
+                disabled={unfreezePending}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-sky-200 dark:border-sky-850 bg-sky-50 dark:bg-sky-950/20 px-3.5 py-2 text-sm font-semibold text-sky-700 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-950/40 transition-colors cursor-pointer shadow-sm disabled:opacity-50"
+              >
+                ☀️ Unfreeze plan
+              </button>
+            </form>
+          )}
+
           {/* Edit profile */}
           {canManage && (
             <a
@@ -870,6 +958,12 @@ export default function StudentDetailClient({
                   {new Date(student.dateOfBirth).toLocaleDateString("en-IN", {
                     day: "numeric", month: "short", year: "numeric",
                   })}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">Batch</dt>
+                <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
+                  {student.activePlan?.batch?.name ?? "no batch assigned"}
                 </dd>
               </div>
               <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
@@ -937,6 +1031,10 @@ export default function StudentDetailClient({
             canManage={canManage}
             showAssign={showAssign}
             setShowAssign={setShowAssign}
+            showFreeze={showFreeze}
+            setShowFreeze={setShowFreeze}
+            assignSectionRef={assignSectionRef}
+            freezeSectionRef={freezeSectionRef}
             pricingMaps={pricingMaps}
             onPlanAssigned={onPlanAssigned}
           />
@@ -962,8 +1060,8 @@ export default function StudentDetailClient({
                   <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
                     {student.plans.map((p) => (
                       <tr key={p.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
-                        <td className="px-5 py-3">
-                          {p.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular"}
+                        <td className="px-5 py-3 capitalize">
+                          {p.planType === "ONE_TO_ONE" ? "personal" : "grouped"}
                         </td>
                         <td className="px-5 py-3 text-xs text-zinc-500">
                           {toDateInputValue(new Date(p.startDate))} → {toDateInputValue(new Date(p.endDate))}
@@ -993,7 +1091,7 @@ export default function StudentDetailClient({
                   <div key={p.id} className="p-4 space-y-3.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors">
                     <div className="flex items-center justify-between">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-orange-50 dark:bg-brand-orange-950/40 text-brand-orange-700 dark:text-brand-orange-400 uppercase tracking-wider">
-                        {p.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular"}
+                        {p.planType === "ONE_TO_ONE" ? "personal" : "grouped"}
                       </span>
                       {p.isActive ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">

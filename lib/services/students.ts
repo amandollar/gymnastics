@@ -94,6 +94,9 @@ export async function getStudentById(id: string) {
     include: {
       plans: {
         orderBy: { createdAt: "desc" },
+        include: {
+          batch: true,
+        },
       },
       attendances: {
         orderBy: { date: "asc" },
@@ -220,6 +223,7 @@ export async function assignPlanToStudent(
     endDate: Date;
     selectedDays: WeekdayName[];
     discountPercent: number;
+    batchId?: string | null;
   }
 ) {
   if (input.endDate < input.startDate) {
@@ -255,6 +259,7 @@ export async function assignPlanToStudent(
     return tx.studentPlan.create({
       data: {
         studentId,
+        batchId: input.batchId ?? null,
         planType: input.planType,
         startDate: input.startDate,
         endDate: input.endDate,
@@ -328,6 +333,24 @@ export async function unfreezeStudentPlan(
     },
   });
 }
+
+/** Update the active plan's batch for a student. */
+export async function updateStudentActivePlanBatch(
+  studentId: string,
+  batchId: string | null
+) {
+  const activePlan = await prisma.studentPlan.findFirst({
+    where: { studentId, isActive: true },
+  });
+  if (!activePlan) {
+    throw new Error("No active plan found for this student. Please assign a plan first.");
+  }
+  return prisma.studentPlan.update({
+    where: { id: activePlan.id },
+    data: { batchId },
+  });
+}
+
 
 export function parsePlanFormDates(start: string, end: string) {
   return {

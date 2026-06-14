@@ -123,7 +123,7 @@ export default function StudentIDCardClient({ student }: { student: StudentData 
 
   const planTypeText = useMemo(() => {
     if (!student.activePlan?.planType) return "N/A";
-    return student.activePlan.planType === "ONE_TO_ONE" ? "1-to-1" : "Regular";
+    return student.activePlan.planType === "ONE_TO_ONE" ? "Personal training" : "Group class";
   }, [student.activePlan]);
 
   const statusText = useMemo(() => {

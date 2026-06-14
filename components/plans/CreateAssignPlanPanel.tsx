@@ -12,20 +12,26 @@ import {
 } from "@/lib/plan/calculations";
 import type { PricingMaps } from "@/lib/plan/pricing-defaults";
 import type { GracePeriodMap } from "@/lib/plan/grace-period-utils";
+import type { BatchWithCount } from "@/lib/services/batches";
 import { parseDateInput, toDateInputValue } from "@/lib/utils/student";
 import PlanBuilderFields from "./PlanBuilderFields";
 import StudentPicker, { type PlanStudentOption } from "./StudentPicker";
+import BatchPicker from "./BatchPicker";
 
 export default function CreateAssignPlanPanel({
   students,
   pricingMaps,
   gracePeriodMap,
+  batches,
   canManage,
+  onOpenBatchesModal,
 }: {
   students: PlanStudentOption[];
   pricingMaps: PricingMaps;
   gracePeriodMap: GracePeriodMap;
+  batches: BatchWithCount[];
   canManage: boolean;
+  onOpenBatchesModal?: () => void;
 }) {
   const searchParams = useSearchParams();
   const preselectId = searchParams.get("student") ?? "";
@@ -37,7 +43,9 @@ export default function CreateAssignPlanPanel({
   const [endDate, setEndDate] = useState("");
   const [selectedDays, setSelectedDays] = useState<WeekdayName[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [selectedBatchId, setSelectedBatchId] = useState("");
   const [studentError, setStudentError] = useState<string | undefined>();
+  const [batchError, setBatchError] = useState<string | undefined>();
   const [showSuccess, setShowSuccess] = useState(false);
 
   const [state, action, pending] = useActionState(
@@ -61,7 +69,9 @@ export default function CreateAssignPlanPanel({
     setEndDate("");
     setSelectedDays([]);
     setDiscountPercent(0);
+    setSelectedBatchId("");
     setStudentError(undefined);
+    setBatchError(undefined);
   }
 
   const preview = useMemo(() => {
@@ -134,17 +144,31 @@ export default function CreateAssignPlanPanel({
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    let hasError = false;
+
     if (!studentId) {
       e.preventDefault();
       setStudentError("Please select a student first");
-      return;
+      hasError = true;
+    } else {
+      setStudentError(undefined);
     }
-    setStudentError(undefined);
+
+    if (!selectedBatchId) {
+      e.preventDefault();
+      setBatchError("Please select a batch");
+      hasError = true;
+    } else {
+      setBatchError(undefined);
+    }
+
+    if (hasError) return;
   }
 
   return (
     <form action={action} onSubmit={handleSubmit}>
       <input type="hidden" name="studentId" value={studentId} readOnly />
+      <input type="hidden" name="batchId" value={selectedBatchId} readOnly />
 
       <div className="rounded-3xl bg-white dark:bg-zinc-900 overflow-hidden">
         {/* Student selection */}
@@ -163,8 +187,46 @@ export default function CreateAssignPlanPanel({
           />
         </div>
 
+        {/* Divider */}
+        {batches.length > 0 && (
+          <div className="border-t border-zinc-100 dark:border-zinc-800" />
+        )}
+
+        {/* Batch selection */}
+        <div className="px-5 py-4 sm:px-6">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+              {batches.length === 0 ? "No batches added" : "Batch"}
+            </p>
+            {batches.length === 0 && onOpenBatchesModal && (
+              <button
+                type="button"
+                onClick={onOpenBatchesModal}
+                className="inline-flex items-center justify-center rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 text-white px-3.5 py-1.5 text-xs font-semibold transition-colors cursor-pointer shadow-sm"
+              >
+                Create Batch
+              </button>
+            )}
+          </div>
+          <BatchPicker
+            batches={batches}
+            value={selectedBatchId}
+            onChange={(id) => {
+              setSelectedBatchId(id);
+              setBatchError(undefined);
+            }}
+            error={batchError}
+            onManageBatches={onOpenBatchesModal}
+          />
+        </div>
+
+        {/* Divider */}
+        {batches.length > 0 && (
+          <div className="border-t border-zinc-100 dark:border-zinc-800" />
+        )}
+
         {/* Plan builder */}
-        <div className="px-5 pb-5 sm:px-6 sm:pb-6">
+        <div className="px-5 pb-5 sm:px-6 sm:pb-6 pt-4">
           <PlanBuilderFields
             formMode
             planType={planType}
@@ -194,6 +256,7 @@ export default function CreateAssignPlanPanel({
             disabled={
               pending ||
               !studentId ||
+              !selectedBatchId ||
               !preview ||
               preview.totalSessions === 0
             }

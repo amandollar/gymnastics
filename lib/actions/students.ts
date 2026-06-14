@@ -8,6 +8,7 @@ import {
   createStudent,
   updateStudent,
   parsePlanFormDates,
+  updateStudentActivePlanBatch,
 } from "@/lib/services/students";
 import { createStudentSchema, updateStudentSchema, assignPlanSchema } from "@/lib/validations/student";
 import type { WeekdayName } from "@/lib/plan/calculations";
@@ -200,6 +201,7 @@ export async function assignPlanAction(
       endDate: formData.get("endDate"),
       selectedDays,
       discountPercent: formData.get("discountPercent") || "0",
+      batchId: formData.get("batchId") || "",
     };
 
     const parsed = assignPlanSchema.safeParse(raw);
@@ -218,6 +220,7 @@ export async function assignPlanAction(
       endDate,
       selectedDays: selectedDays as WeekdayName[],
       discountPercent: parsed.data.discountPercent,
+      batchId: parsed.data.batchId || null,
     });
 
     revalidatePath(`/students/${studentId}`);
@@ -259,3 +262,26 @@ export async function bulkImportStudentsAction(
     };
   }
 }
+
+export async function updateStudentActivePlanBatchAction(
+  studentId: string,
+  batchId: string | null
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    await assertCanManageStudents();
+
+    await updateStudentActivePlanBatch(studentId, batchId);
+
+    revalidatePath("/students");
+    revalidatePath(`/students/${studentId}`);
+    revalidatePath("/dashboard");
+
+    return { success: true, message: "Batch updated successfully" };
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Failed to update batch",
+    };
+  }
+}
+

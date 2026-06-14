@@ -80,7 +80,7 @@ export default function PlanBuilderFields({
                   : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
               }`}
             >
-              {t === "REGULAR" ? "Group class" : "1-to-1 personal"}
+              {t === "REGULAR" ? "Group class" : "Personal training"}
             </button>
           ))}
         </div>

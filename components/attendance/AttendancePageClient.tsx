@@ -229,7 +229,7 @@ function PresentRow({ student }: { student: PresentStudent }) {
                   : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
                 }`}
             >
-              {student.planType === "ONE_TO_ONE" ? "1:1" : "Reg"}
+              {student.planType === "ONE_TO_ONE" ? "personal" : "grouped"}
             </span>
           )}
           {student.planName && (

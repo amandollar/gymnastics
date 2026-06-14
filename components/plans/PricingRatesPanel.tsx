@@ -222,7 +222,7 @@ export default function PricingRatesPanel({
                   editMode
                 />
                 <RatesTable
-                  title="1-to-1 personal classes"
+                  title="Personal training classes"
                   planType="ONE_TO_ONE"
                   prices={pricingMaps.ONE_TO_ONE}
                   isAdmin
@@ -259,14 +259,14 @@ export default function PricingRatesPanel({
             <>
               <div className="grid gap-4 lg:grid-cols-2">
                 <RatesTable
-                  title="Regular group classes"
+                  title="Group classes"
                   planType="REGULAR"
                   prices={pricingMaps.REGULAR}
                   isAdmin={false}
                   editMode={false}
                 />
                 <RatesTable
-                  title="1-to-1 personal classes"
+                  title="Personal training classes"
                   planType="ONE_TO_ONE"
                   prices={pricingMaps.ONE_TO_ONE}
                   isAdmin={false}

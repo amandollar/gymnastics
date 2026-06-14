@@ -3,13 +3,76 @@
 import { useMemo, useRef, useState } from "react";
 import Image from "next/image";
 
-const MAX_SIZE_MB = 2;
-const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
-
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function compressImage(
+  file: File,
+  maxWidth: number,
+  maxHeight: number,
+  quality: number
+): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Failed to get 2D canvas context"));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("Failed to compress image to Blob"));
+              return;
+            }
+            const compressedFile = new File(
+              [blob],
+              file.name.replace(/\.[^/.]+$/, "") + ".jpg",
+              {
+                type: "image/jpeg",
+                lastModified: Date.now(),
+              }
+            );
+            resolve(compressedFile);
+          },
+          "image/jpeg",
+          quality
+        );
+      };
+      img.onerror = () => reject(new Error("Failed to load image into element"));
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
 }
 
 export default function StudentAvatarPicker({
@@ -37,7 +100,7 @@ export default function StudentAvatarPicker({
   // Priority: user-selected file > existing avatar > local default
   const displaySrc = previewFile ?? currentAvatarUrl ?? defaultSrc;
 
-  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     setUploadError(null);
     setFileInfo(null);
@@ -55,17 +118,29 @@ export default function StudentAvatarPicker({
       return;
     }
 
-    // Validate file size
-    if (file.size > MAX_SIZE_BYTES) {
-      setUploadError(
-        `File is ${formatFileSize(file.size)} — exceeds the ${MAX_SIZE_MB} MB limit. Try a smaller photo or compress it.`
-      );
-      e.target.value = "";
-      return;
+    let fileToUse = file;
+    // Automatically compress if image is larger than 100KB to optimize request payload sizes
+    if (file.size > 100 * 1024) {
+      try {
+        setUploadError("Compressing photo...");
+        fileToUse = await compressImage(file, 800, 800, 0.85);
+        setUploadError(null);
+
+        // Update the file input using DataTransfer
+        if (inputRef.current) {
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(fileToUse);
+          inputRef.current.files = dataTransfer.files;
+        }
+      } catch (err) {
+        console.error("Compression failed:", err);
+        // Fall back to original file if compression fails
+        setUploadError(null);
+      }
     }
 
-    setFileInfo({ name: file.name, size: file.size });
-    setPreviewFile(URL.createObjectURL(file));
+    setFileInfo({ name: fileToUse.name, size: fileToUse.size });
+    setPreviewFile(URL.createObjectURL(fileToUse));
   }
 
   function clearUpload() {

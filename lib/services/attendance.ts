@@ -129,7 +129,7 @@ export async function getPresentStudentsOnDate(
     avatarUrl: r.student.avatarUrl,
     gender: r.student.gender,
     // PlanTemplate name is not directly on StudentPlan — use planType as label
-    planName: r.studentPlan?.planType === "ONE_TO_ONE" ? "1-on-1 Session" : "Regular Plan",
+    planName: r.studentPlan?.planType === "ONE_TO_ONE" ? "Personal training" : "Group class",
     planType: r.studentPlan?.planType ?? null,
     attendanceId: r.id,
   }));
@@ -376,8 +376,8 @@ export async function getMonthlyAttendanceData(
       gender: r.student.gender,
       planName:
         r.studentPlan?.planType === "ONE_TO_ONE"
-          ? "1-on-1 Session"
-          : "Regular Plan",
+          ? "Personal training"
+          : "Group class",
       planType: r.studentPlan?.planType ?? null,
       attendanceId: r.id,
     });

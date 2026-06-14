@@ -34,6 +34,7 @@ export const assignPlanSchema = z.object({
     .array(z.string())
     .min(1, "Select at least one day of the week"),
   discountPercent: z.coerce.number().min(0).max(100).default(0),
+  batchId: z.string().optional(),
 });
 
 export const planTemplateSchema = z.object({

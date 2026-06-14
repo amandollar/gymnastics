@@ -4,6 +4,7 @@ import PlansPageClient from "@/components/plans/PlansPageClient";
 import { getPricingMaps } from "@/lib/services/pricing";
 import { getGracePeriodMap } from "@/lib/services/grace-periods";
 import { listStudents } from "@/lib/services/students";
+import { listBatches } from "@/lib/services/batches";
 
 export default async function PlansPage() {
   const session = await auth();
@@ -12,10 +13,11 @@ export default async function PlansPage() {
   const role = (session.user as { role?: string })?.role;
   const canManage = role === "ADMIN" || role === "MANAGER";
 
-  const [students, pricingMaps, gracePeriodMap] = await Promise.all([
+  const [students, pricingMaps, gracePeriodMap, batches] = await Promise.all([
     listStudents(),
     getPricingMaps(),
     getGracePeriodMap(),
+    listBatches(),
   ]);
 
   const studentOptions = students.map((s) => ({
@@ -36,6 +38,7 @@ export default async function PlansPage() {
         pricingMaps={pricingMaps}
         gracePeriodMap={gracePeriodMap}
         students={JSON.parse(JSON.stringify(studentOptions))}
+        batches={JSON.parse(JSON.stringify(batches))}
       />
     </div>
   );

@@ -68,10 +68,23 @@ model PlanTemplate {
   updatedAt      DateTime @updatedAt
 }
 
+model Batch {
+  id           String        @id @default(cuid())
+  name         String
+  /// Human-readable timing string, e.g. "7:00 AM – 8:00 AM"
+  timing       String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  studentPlans StudentPlan[]
+}
+
 model StudentPlan {
   id                String       @id @default(cuid())
   studentId         String
   student           Student      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  /// Optional batch assignment. SetNull on batch deletion.
+  batchId           String?
+  batch             Batch?       @relation(fields: [batchId], references: [id], onDelete: SetNull)
   planType          PlanType
   startDate         DateTime
   endDate           DateTime
@@ -100,6 +113,7 @@ model StudentPlan {
 
   @@index([studentId])
   @@index([studentId, isActive])
+  @@index([batchId])
 }
 
 /// Admin-configurable grace period days per (sessionsPerWeek × planMonths) combination.
