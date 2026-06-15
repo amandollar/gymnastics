@@ -54,6 +54,17 @@ function formatSessionDate(date: Date) {
   });
 }
 
+function getFreezeDaysCount(start: Date | string, end: Date | string) {
+  const s = new Date(start);
+  const e = new Date(end);
+  s.setHours(0, 0, 0, 0);
+  e.setHours(0, 0, 0, 0);
+  const diffTime = e.getTime() - s.getTime();
+  if (diffTime < 0) return 0;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  return diffDays;
+}
+
 /** Returns YYYY-MM-DD string for a date (no timezone shift) */
 function toYMD(date: Date) {
   const d = new Date(date);
@@ -255,89 +266,121 @@ function UnfreezeButton({ planId, studentId }: { planId: string; studentId: stri
   );
 }
 
-// ─── Freeze Plan Form ──────────────────────────────────────────────────────────
+// ─── Freeze Plan Popup ────────────────────────────────────────────────────────
 
-function FreezePlanForm({
+function FreezePlanPopup({
   planId,
   studentId,
-  open,
-  setOpen,
+  onClose,
 }: {
   planId: string;
   studentId: string;
-  open: boolean;
-  setOpen: (v: boolean) => void;
+  onClose: () => void;
 }) {
   const today = toDateInputValue(new Date());
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(today);
   const [state, action, pending] = useActionState(freezePlanAction, null);
 
   useEffect(() => {
-    if (state?.success) setOpen(false);
-  }, [state?.success, setOpen]);
+    if (state?.success) onClose();
+  }, [state?.success, onClose]);
+
+  // Compute duration (inclusive of start and end dates)
+  const days = useMemo(() => {
+    if (!startDate || !endDate) return 0;
+    const s = new Date(startDate);
+    const e = new Date(endDate);
+    if (isNaN(s.getTime()) || isNaN(e.getTime())) return 0;
+    s.setHours(0, 0, 0, 0);
+    e.setHours(0, 0, 0, 0);
+    const diffTime = e.getTime() - s.getTime();
+    if (diffTime < 0) return 0;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays;
+  }, [startDate, endDate]);
 
   return (
-    <div className="border-t border-zinc-100 dark:border-zinc-800 pt-3">
-      {!open ? (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline cursor-pointer"
-        >
-          ❄️ Freeze plan (holiday break)
-        </button>
-      ) : (
-        <form action={action} className="space-y-3">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-sm bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl overflow-hidden p-6 space-y-4">
+        <div className="flex justify-between items-center pb-2 border-b border-zinc-100 dark:border-zinc-800">
+          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+            ❄️ Freeze Plan
+          </h3>
+          <button
+            onClick={onClose}
+            type="button"
+            className="p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-400"
+          >
+            ✕
+          </button>
+        </div>
+
+        <form action={action} className="space-y-4">
           <input type="hidden" name="studentPlanId" value={planId} />
           <input type="hidden" name="studentId" value={studentId} />
-          <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-            Freeze dates (holiday break)
-          </p>
-          <div className="grid grid-cols-2 gap-2">
+          
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-[10px] text-zinc-400 uppercase tracking-wider">Start</label>
+              <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Start Date</label>
               <input
                 name="freezeStartDate"
                 type="date"
                 required
-                defaultValue={today}
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
                 className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] text-zinc-400 uppercase tracking-wider">End</label>
+              <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">End Date</label>
               <input
                 name="freezeEndDate"
                 type="date"
                 required
-                defaultValue={today}
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
                 className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
               />
             </div>
           </div>
-          <p className="text-[10px] text-zinc-400 dark:text-zinc-500">
+
+          <div className="rounded-xl bg-sky-50/50 dark:bg-sky-950/20 px-3.5 py-2 border border-sky-100/50 dark:border-sky-900/20 flex justify-between items-center text-xs">
+            <span className="text-zinc-500 dark:text-zinc-400 font-medium">Duration:</span>
+            <span className="font-bold text-sky-700 dark:text-sky-400">
+              {days > 0 ? `${days} day${days > 1 ? "s" : ""}` : "Invalid range"}
+            </span>
+          </div>
+
+          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 leading-relaxed">
             The plan end date and grace deadline will be extended by the freeze duration.
           </p>
+
           {state?.message && !state.success && (
             <p className="text-xs text-rose-600 dark:text-rose-400">{state.message}</p>
           )}
-          <div className="flex gap-2">
+
+          <div className="flex gap-2 pt-2">
             <button
               type="button"
-              onClick={() => setOpen(false)}
-              className="flex-1 rounded-xl border border-zinc-200 dark:border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              onClick={onClose}
+              className="flex-1 rounded-xl border border-zinc-200 dark:border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-650 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={pending}
+              disabled={pending || days <= 0}
               className="flex-1 rounded-xl bg-sky-600 hover:bg-sky-700 px-3 py-2 text-xs font-semibold text-white transition-colors cursor-pointer disabled:opacity-50"
             >
               {pending ? "Freezing…" : "Apply freeze"}
             </button>
           </div>
         </form>
-      )}
+      </div>
     </div>
   );
 }
@@ -387,61 +430,156 @@ function PlanCard({
         <h2 className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
           Plan Package
         </h2>
-        {canManage && plan && (
-          <button
-            type="button"
-            onClick={() => setShowAssign(!showAssign)}
-            className="text-xs font-medium text-brand-orange-500 hover:underline cursor-pointer"
-          >
-            {showAssign ? "Cancel" : "Change plan"}
-          </button>
-        )}
       </div>
 
       {plan ? (
         <>
-          {/* Plan type pill */}
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100">
+          {/* Top row: plan type + batch */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-900 text-zinc-100 dark:bg-zinc-100 dark:text-zinc-900">
               {plan.planType === "ONE_TO_ONE" ? "Personal training" : "Group class"}
             </span>
-            <span className="text-xs text-zinc-400 dark:text-zinc-500">
-              {new Date(plan.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-              {" – "}
+            {plan.batch && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-brand-orange-50 text-brand-orange-700 dark:bg-brand-orange-950/30 dark:text-brand-orange-400 border border-brand-orange-100 dark:border-brand-orange-900/50">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {plan.batch.name}
+                {plan.batch.timing && (
+                  <span className="opacity-70">· {plan.batch.timing}</span>
+                )}
+              </span>
+            )}
+          </div>
+
+          {/* Class days */}
+          {Array.isArray(plan.selectedDays) && (plan.selectedDays as string[]).length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                Class days
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {(["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const).map((short) => {
+                  const fullMap: Record<string, string> = {
+                    Mon: "Monday", Tue: "Tuesday", Wed: "Wednesday",
+                    Thu: "Thursday", Fri: "Friday", Sat: "Saturday", Sun: "Sunday",
+                  };
+                  const active = (plan.selectedDays as string[]).includes(fullMap[short]);
+                  return (
+                    <span
+                      key={short}
+                      className={`text-[11px] font-semibold rounded-lg px-2.5 py-1 ${
+                        active
+                          ? "bg-brand-orange-500 text-white"
+                          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-600"
+                      }`}
+                    >
+                      {short}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Date range */}
+          <div className="space-y-1">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+              Duration
+            </p>
+            <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+              {new Date(plan.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+              <span className="text-zinc-400 dark:text-zinc-500 font-normal mx-1.5">→</span>
               {new Date(plan.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-            </span>
+            </p>
           </div>
 
-          {/* Sessions progress bar */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400">
-              <span>{plan.sessionsCompleted} sessions done</span>
-              <span>{sessionsPending ?? 0} left of {plan.totalSessions}</span>
+          {/* Fee */}
+          <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 px-4 py-3 space-y-2">
+            <div className="flex items-baseline justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-0.5">
+                  Total fee
+                </p>
+                <p className="text-xl font-bold text-zinc-900 dark:text-zinc-100">
+                  {formatINR(plan.fee)}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-0.5">
+                  Per session
+                </p>
+                <p className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                  {plan.totalSessions > 0
+                    ? formatINR(Math.round(plan.fee / plan.totalSessions))
+                    : "—"}
+                </p>
+              </div>
             </div>
-            <div className="h-2 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-brand-orange-500 transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
+            {plan.discountPercent > 0 && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                {plan.discountPercent}% discount applied
+              </span>
+            )}
           </div>
 
-          {/* Key details */}
-          <dl className="grid grid-cols-2 gap-2 text-sm">
-            <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 px-3 py-2.5">
-              <dt className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-0.5">Fee</dt>
-              <dd className="font-semibold text-zinc-900 dark:text-zinc-100">{formatINR(plan.fee)}</dd>
+          {/* Sessions progress & Expiry grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {/* Sessions progress */}
+            <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-800/60 px-3 py-2.5 space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                Sessions Progress
+              </p>
+              <div className="flex items-center justify-between gap-2 mt-0.5">
+                <span className="text-sm font-semibold text-zinc-850 dark:text-zinc-200">
+                  {plan.sessionsCompleted} / {plan.totalSessions}
+                </span>
+                <span className="text-xs text-zinc-400 dark:text-zinc-500 font-medium">
+                  {sessionsPending ?? 0} left
+                </span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-zinc-200/80 dark:bg-zinc-700/80 overflow-hidden mt-1">
+                <div
+                  className="h-full rounded-full bg-brand-orange-500 transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
             </div>
+
+            {/* Expiry info */}
             <div className={`rounded-2xl px-3 py-2.5 ${daysLeft <= 7 ? "bg-amber-50 dark:bg-amber-950/40" : "bg-zinc-50 dark:bg-zinc-800/60"}`}>
-              <dt className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wide mb-0.5">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-0.5">
                 {plan.graceDays > 0 ? "Grace deadline" : "Expires"}
-              </dt>
-              <dd className={`font-semibold text-sm ${daysLeft <= 7 ? "text-amber-700 dark:text-amber-400" : "text-zinc-900 dark:text-zinc-100"}`}>
+              </p>
+              <p className={`text-sm font-semibold ${daysLeft <= 7 ? "text-amber-700 dark:text-amber-400" : "text-zinc-800 dark:text-zinc-200"}`}>
                 {new Date(plan.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                {daysLeft > 0 && <span className="text-xs font-normal ml-1 opacity-70">({daysLeft}d left)</span>}
-              </dd>
+                {daysLeft > 0 && (
+                  <span className="text-xs font-normal ml-1.5 opacity-70">({daysLeft}d left)</span>
+                )}
+              </p>
             </div>
-          </dl>
+          </div>
+
+          {/* Freeze Period */}
+          {plan.freezeStartDate && plan.freezeEndDate && (
+            <div className="rounded-2xl bg-sky-50/80 dark:bg-sky-950/20 px-3.5 py-2.5 border border-sky-100 dark:border-sky-900/30 space-y-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
+                ❄️ Freeze Period
+              </p>
+              <p className="text-xs font-semibold text-sky-800 dark:text-sky-300 flex items-center flex-wrap gap-y-0.5">
+                <span>
+                  {new Date(plan.freezeStartDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                </span>
+                <span className="text-sky-400 dark:text-sky-600 font-normal mx-1.5">→</span>
+                <span>
+                  {new Date(plan.freezeEndDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                </span>
+                <span className="text-[11px] text-sky-600 dark:text-sky-400 font-semibold ml-1.5">
+                  ({getFreezeDaysCount(plan.freezeStartDate, plan.freezeEndDate)} days)
+                </span>
+              </p>
+            </div>
+          )}
 
           {/* Grace period banner */}
           {status === "GRACE" && plan.graceDays > 0 && (
@@ -494,15 +632,16 @@ function PlanCard({
         </div>
       )}
 
-      {/* Freeze plan form — shown when plan is active/grace and not already frozen */}
+      {/* Freeze plan trigger — shown when plan is active/grace and not already frozen */}
       {canManage && plan && status !== "FREEZE" && status !== "INACTIVE" && status !== "NO_PLAN" && (
-        <div ref={freezeSectionRef}>
-          <FreezePlanForm
-            planId={plan.id}
-            studentId={student.id}
-            open={showFreeze}
-            setOpen={setShowFreeze}
-          />
+        <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800">
+          <button
+            type="button"
+            onClick={() => setShowFreeze(true)}
+            className="text-xs font-semibold text-sky-650 dark:text-sky-400 hover:underline cursor-pointer flex items-center gap-1.5"
+          >
+            ❄️ Freeze plan (holiday break)
+          </button>
         </div>
       )}
 
@@ -608,13 +747,46 @@ function AttendanceCard({
     return map;
   }, [attendances]);
 
-  // Check if a specific date is within range
-  const isDateInPlanRange = (year: number, month: number, day: number) => {
-    if (!planStart && !earliestAttendance) return false;
+  // Check if a date is within active plan duration
+  const isDateInActivePlanDuration = (year: number, month: number, day: number) => {
+    if (!planStart || !planEnd) return false;
     const current = new Date(year, month, day).getTime();
-    const start = new Date(calendarStart.getFullYear(), calendarStart.getMonth(), calendarStart.getDate()).getTime();
-    const end = new Date(calendarEnd.getFullYear(), calendarEnd.getMonth(), calendarEnd.getDate()).getTime();
+    const start = new Date(planStart.getFullYear(), planStart.getMonth(), planStart.getDate()).getTime();
+    const end = new Date(planEnd.getFullYear(), planEnd.getMonth(), planEnd.getDate()).getTime();
     return current >= start && current <= end;
+  };
+
+  // Check if a date is a scheduled class day of the week
+  const isClassDayOfWeek = (year: number, month: number, day: number) => {
+    if (!activePlan || !Array.isArray(activePlan.selectedDays)) return false;
+    const d = new Date(year, month, day);
+    const dayName = d.toLocaleDateString("en-US", { weekday: "long" });
+    return (activePlan.selectedDays as string[]).includes(dayName);
+  };
+
+  // Check if a date is in freeze period
+  const isDateInFreezePeriod = (year: number, month: number, day: number) => {
+    if (!activePlan || !activePlan.freezeStartDate || !activePlan.freezeEndDate) return false;
+    const current = new Date(year, month, day).getTime();
+    const start = new Date(activePlan.freezeStartDate);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(activePlan.freezeEndDate);
+    end.setHours(0, 0, 0, 0);
+    return current >= start.getTime() && current <= end.getTime();
+  };
+
+  // Check if a date is in grace period
+  const isDateInGracePeriod = (year: number, month: number, day: number) => {
+    if (!activePlan || !planEnd || !activePlan.expiryDate) return false;
+    const current = new Date(year, month, day).getTime();
+    
+    const graceStartLimit = new Date(planEnd);
+    graceStartLimit.setHours(23, 59, 59, 999);
+    
+    const graceEnd = new Date(activePlan.expiryDate);
+    graceEnd.setHours(23, 59, 59, 999);
+    
+    return current > graceStartLimit.getTime() && current <= graceEnd.getTime();
   };
 
   const todayYMD = toYMD(new Date());
@@ -681,13 +853,19 @@ function AttendanceCard({
                       const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
                       const sessionNum = attendanceMap.get(dateKey);
                       const isPresent = sessionNum !== undefined;
-                      const inPlanRange = isDateInPlanRange(year, month, day);
+                      const isFreeze = isDateInFreezePeriod(year, month, day);
+                      const isGrace = isDateInGracePeriod(year, month, day);
+                      const isClassDay = isDateInActivePlanDuration(year, month, day) && isClassDayOfWeek(year, month, day);
                       const isToday = dateKey === todayYMD;
 
                       let cellStyle = "text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800/40";
                       if (isPresent) {
                         cellStyle = "bg-brand-orange-500 text-white font-bold shadow-xs";
-                      } else if (inPlanRange) {
+                      } else if (isFreeze) {
+                        cellStyle = "bg-sky-50/60 dark:bg-sky-950/20 text-sky-700 dark:text-sky-400 font-semibold border border-sky-500/10";
+                      } else if (isGrace) {
+                        cellStyle = "bg-purple-50/60 dark:bg-purple-950/20 text-purple-700 dark:text-purple-400 font-semibold border border-purple-500/10";
+                      } else if (isClassDay) {
                         cellStyle = "bg-brand-orange-50/60 dark:bg-brand-orange-950/20 text-brand-orange-700 dark:text-brand-orange-400 font-semibold border border-brand-orange-500/10";
                       }
 
@@ -721,11 +899,27 @@ function AttendanceCard({
               <span className="inline-block w-2.5 h-2.5 rounded bg-brand-orange-500" />
               <span>Attended</span>
             </div>
-            {(activePlan || earliestAttendance) && (
-              <div className="flex items-center gap-1.5">
-                <span className="inline-block w-2.5 h-2.5 rounded bg-brand-orange-50 dark:bg-brand-orange-950/30 border border-brand-orange-500/20" />
-                <span>Plan duration</span>
-              </div>
+            {activePlan && (
+              <>
+                {Array.isArray(activePlan.selectedDays) && activePlan.selectedDays.length > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-block w-2.5 h-2.5 rounded bg-brand-orange-200 dark:bg-brand-orange-800" />
+                    <span>Class days</span>
+                  </div>
+                )}
+                {activePlan.freezeStartDate && activePlan.freezeEndDate && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-block w-2.5 h-2.5 rounded bg-sky-400 dark:bg-sky-600" />
+                    <span>Frozen period</span>
+                  </div>
+                )}
+                {activePlan.graceDays > 0 && (
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-block w-2.5 h-2.5 rounded bg-purple-400 dark:bg-purple-600" />
+                    <span>Grace period</span>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -847,35 +1041,11 @@ export default function StudentDetailClient({
             Print ID card
           </a>
 
-          {/* Change plan */}
-          {canManage && (
-            <button
-              type="button"
-              onClick={() => {
-                setShowAssign(true);
-                setTimeout(() => {
-                  assignSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-                }, 100);
-              }}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
-            >
-              <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-              </svg>
-              Change plan
-            </button>
-          )}
-
           {/* Freeze plan */}
           {canManage && student.activePlan && student.status !== "FREEZE" && student.status !== "INACTIVE" && student.status !== "NO_PLAN" && (
             <button
               type="button"
-              onClick={() => {
-                setShowFreeze(true);
-                setTimeout(() => {
-                  freezeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-                }, 100);
-              }}
+              onClick={() => setShowFreeze(true)}
               className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
             >
               <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -900,7 +1070,7 @@ export default function StudentDetailClient({
             </form>
           )}
 
-          {/* Edit profile */}
+          {/* Edit profile / plan */}
           {canManage && (
             <a
               href={`/students/${student.id}/edit`}
@@ -909,7 +1079,7 @@ export default function StudentDetailClient({
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-1.414.94l-3.414 1.137 1.137-3.414A4 4 0 019 13z" />
               </svg>
-              Edit profile
+              Update details
             </a>
           )}
         </div>
@@ -1039,7 +1209,7 @@ export default function StudentDetailClient({
             onPlanAssigned={onPlanAssigned}
           />
 
-          {/* Plan history */}
+        {/* Plan history */}
           {student.plans.length > 0 && (
             <div className="rounded-3xl bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
               <h2 className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider p-5 pb-3">
@@ -1094,7 +1264,7 @@ export default function StudentDetailClient({
                         {p.planType === "ONE_TO_ONE" ? "personal" : "grouped"}
                       </span>
                       {p.isActive ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-55 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
                           Active
                         </span>
                       ) : (
@@ -1129,6 +1299,14 @@ export default function StudentDetailClient({
           )}
         </div>
       </div>
+
+      {showFreeze && student.activePlan && (
+        <FreezePlanPopup
+          planId={student.activePlan.id}
+          studentId={student.id}
+          onClose={() => setShowFreeze(false)}
+        />
+      )}
     </div>
   );
 }

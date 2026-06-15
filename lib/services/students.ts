@@ -478,3 +478,47 @@ export async function bulkImportStudents(students: BulkStudentPayload[]) {
 
   return results;
 }
+
+export async function updateStudentActivePlan(
+  studentPlanId: string,
+  data: {
+    planType: PlanType;
+    startDate: Date;
+    endDate: Date;
+    selectedDays: WeekdayName[];
+    discountPercent: number;
+    batchId?: string | null;
+    pricingMaps: any;
+    gracePeriodMap: any;
+  }
+) {
+  const computed = computePlanFields({
+    planType: data.planType,
+    startDate: data.startDate,
+    endDate: data.endDate,
+    selectedDays: data.selectedDays,
+    discountPercent: data.discountPercent,
+    pricingMaps: data.pricingMaps,
+    gracePeriodMap: data.gracePeriodMap,
+  });
+
+  return prisma.studentPlan.update({
+    where: { id: studentPlanId },
+    data: {
+      planType: data.planType,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      selectedDays: data.selectedDays,
+      sessionsPerWeek: computed.sessionsPerWeek,
+      discountPercent: computed.discountPercent,
+      totalSessions: computed.totalSessions,
+      validityDays: computed.graceDays,
+      graceDays: computed.graceDays,
+      expiryDate: computed.expiryDate,
+      fee: computed.fee,
+      pricePerSession: computed.pricePerSession,
+      planMonths: computed.planMonths,
+      ...(data.batchId !== undefined ? { batchId: data.batchId } : {}),
+    },
+  });
+}

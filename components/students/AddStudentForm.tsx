@@ -18,18 +18,20 @@ function FormSection({
   description,
   children,
 }: {
-  title: string;
+  title?: string;
   description?: string;
   children: React.ReactNode;
 }) {
   return (
     <section className="space-y-3.5">
-      <div>
-        <h2 className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">{title}</h2>
-        {description && (
-          <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-550">{description}</p>
-        )}
-      </div>
+      {title && (
+        <div>
+          <h2 className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">{title}</h2>
+          {description && (
+            <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-550">{description}</p>
+          )}
+        </div>
+      )}
       {children}
     </section>
   );
@@ -103,7 +105,7 @@ export default function AddStudentForm() {
       </div>
 
       <form action={action} className="space-y-6 max-w-3xl mx-auto">
-        <div className="rounded-3xl border-0 bg-white dark:bg-zinc-900 p-6 shadow-xs space-y-6 transition-colors">
+        <div className="rounded-3xl border-0 bg-white dark:bg-zinc-900 p-6 shadow-xs space-y-8 transition-colors">
           {/* Section 1: Student information */}
           <div>
             <FormSection title="Student information">
@@ -112,7 +114,7 @@ export default function AddStudentForm() {
                 <StudentAvatarPicker name={name} gender={gender} />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-x-4 gap-y-7 sm:grid-cols-2">
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
                     Full name *
@@ -186,8 +188,8 @@ export default function AddStudentForm() {
           </div>
 
           {/* Section 3: Parent / guardian */}
-          <div className="border-t border-zinc-100 dark:border-zinc-800/80 pt-6">
-            <FormSection title="Parent / guardian">
+          <div>
+            <FormSection>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
@@ -226,7 +228,7 @@ export default function AddStudentForm() {
           </div>
 
           {/* Medical history */}
-          <div className="border-t border-zinc-100 dark:border-zinc-800/80 pt-6">
+          <div>
             <FormSection title="Medical history" description="Allergies, conditions, etc.">
               <textarea
                 name="medicalHistory"
@@ -241,7 +243,7 @@ export default function AddStudentForm() {
           </div>
 
           {/* Notes */}
-          <div className="border-t border-zinc-100 dark:border-zinc-800/80 pt-6">
+          <div>
             <FormSection title="Notes" description="Optional details about student">
               <textarea
                 name="notes"

@@ -9,10 +9,12 @@ import {
   updateStudent,
   parsePlanFormDates,
   updateStudentActivePlanBatch,
+  updateStudentActivePlan,
 } from "@/lib/services/students";
 import { createStudentSchema, updateStudentSchema, assignPlanSchema } from "@/lib/validations/student";
 import type { WeekdayName } from "@/lib/plan/calculations";
 import { parseDateInput } from "@/lib/utils/student";
+import type { PlanType } from "@prisma/client";
 
 async function assertCanManageStudents() {
   const session = await auth();
@@ -297,3 +299,76 @@ export async function updateStudentActivePlanBatchAction(
   }
 }
 
+export async function updateStudentActivePlanAction(
+  studentId: string,
+  _prev: unknown,
+  formData: FormData
+): Promise<{
+  success: boolean;
+  message?: string;
+  errors?: Record<string, string[]>;
+}> {
+  try {
+    await assertCanManageStudents();
+
+    const studentPlanId = formData.get("studentPlanId");
+    if (typeof studentPlanId !== "string" || !studentPlanId) {
+      return { success: false, message: "No active plan found to update." };
+    }
+
+    const planType = formData.get("planType") as PlanType;
+    const startDateRaw = formData.get("startDate") as string;
+    const endDateRaw = formData.get("endDate") as string;
+    const selectedDays = formData.getAll("selectedDays") as WeekdayName[];
+    const discountPercent = parseFloat(formData.get("discountPercent") as string || "0") || 0;
+    const batchId = (formData.get("batchId") as string) || null;
+
+    if (!startDateRaw || !endDateRaw) {
+      return { success: false, message: "Start date and End date are required." };
+    }
+
+    const startDate = parseDateInput(startDateRaw);
+    const endDate = parseDateInput(endDateRaw);
+
+    if (endDate < startDate) {
+      return { success: false, message: "End date must be after start date" };
+    }
+
+    if (selectedDays.length === 0) {
+      return { success: false, message: "Please select at least one class day." };
+    }
+
+    // Fetch maps server-side for safe computation
+    const { getPricingMaps } = await import("@/lib/services/pricing");
+    const { getGracePeriodMap } = await import("@/lib/services/grace-periods");
+    const [pricingMaps, gracePeriodMap] = await Promise.all([
+      getPricingMaps(),
+      getGracePeriodMap(),
+    ]);
+
+    await updateStudentActivePlan(studentPlanId, {
+      planType,
+      startDate,
+      endDate,
+      selectedDays,
+      discountPercent,
+      batchId: batchId || null,
+      pricingMaps,
+      gracePeriodMap,
+    });
+
+    revalidatePath(`/students/${studentId}`);
+    revalidatePath("/students");
+    revalidatePath("/dashboard");
+    updateTag("students");
+    updateTag("attendance");
+    updateTag("batches");
+
+    return { success: true, message: "Plan updated successfully" };
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Failed to update plan",
+    };
+  }
+}

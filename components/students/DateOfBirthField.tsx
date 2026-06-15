@@ -172,9 +172,6 @@ export default function DateOfBirthField({
           </select>
         </div>
       </div>
-      <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-        Pick day, month, and year — no calendar scrolling.
-      </p>
       {displayError && (
         <p className="text-xs text-rose-600">{displayError}</p>
       )}
