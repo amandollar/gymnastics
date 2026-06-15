@@ -1,16 +1,19 @@
-import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { getSession, getSessionUser } from "@/lib/auth-session";
 import PlansPageClient from "@/components/plans/PlansPageClient";
-import { getPricingMaps } from "@/lib/services/pricing";
-import { getGracePeriodMap } from "@/lib/services/grace-periods";
-import { listStudents } from "@/lib/services/students";
-import { listBatches } from "@/lib/services/batches";
+import {
+  listStudents,
+  getPricingMaps,
+  getGracePeriodMap,
+  listBatches,
+} from "@/lib/services/cached";
 
 export default async function PlansPage() {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect("/login");
 
-  const role = (session.user as { role?: string })?.role;
+  const user = await getSessionUser();
+  const role = user?.role;
   const canManage = role === "ADMIN" || role === "MANAGER";
 
   const [students, pricingMaps, gracePeriodMap, batches] = await Promise.all([

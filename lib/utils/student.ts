@@ -46,9 +46,7 @@ export function computeStudentAge(
 export function formatAge(dateOfBirth: Date): string {
   const age = computeStudentAge(dateOfBirth);
   const years = Math.floor(age);
-  const months = Math.round((age - years) * 10);
-  if (months === 0) return `${years} yrs`;
-  return `${years}.${months} yrs`;
+  return `${years}`;
 }
 
 export function computeTenureMonths(

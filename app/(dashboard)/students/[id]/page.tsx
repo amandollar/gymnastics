@@ -1,8 +1,7 @@
-import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
+import { getSession, getSessionUser } from "@/lib/auth-session";
 import StudentDetailClient from "@/components/students/StudentDetailClient";
-import { getStudentById } from "@/lib/services/students";
-import { getPricingMaps } from "@/lib/services/pricing";
+import { getStudentById, getPricingMaps } from "@/lib/services/cached";
 
 export default async function StudentDetailPage({
   params,
@@ -11,13 +10,16 @@ export default async function StudentDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ assignPlan?: string }>;
 }) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect("/login");
 
-  const { id } = await params;
-  const { assignPlan } = await searchParams;
-  const role = (session.user as { role?: string })?.role;
-  const canManage = role === "ADMIN" || role === "MANAGER";
+  const [{ id }, { assignPlan }, user] = await Promise.all([
+    params,
+    searchParams,
+    getSessionUser(),
+  ]);
+
+  const canManage = user?.role === "ADMIN" || user?.role === "MANAGER";
 
   const [student, pricingMaps] = await Promise.all([
     getStudentById(id),

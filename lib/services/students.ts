@@ -58,8 +58,23 @@ export async function listStudents(filters?: {
   search?: string;
   status?: StudentStatus | "ALL";
 }) {
+  const searchQuery = filters?.search?.trim();
+
   const students = await prisma.student.findMany({
     orderBy: { studentNumber: "asc" },
+    where: searchQuery
+      ? {
+          OR: [
+            { name: { contains: searchQuery, mode: "insensitive" } },
+            { parentName: { contains: searchQuery, mode: "insensitive" } },
+            { contactNumber: { contains: searchQuery } },
+            // studentNumber is Int — only add this clause when the query is numeric
+            ...(isNaN(Number(searchQuery))
+              ? []
+              : [{ studentNumber: { equals: Number(searchQuery) } }]),
+          ],
+        }
+      : undefined,
     include: {
       plans: {
         where: { isActive: true },
@@ -70,23 +85,15 @@ export async function listStudents(filters?: {
 
   let rows = students.map(mapStudentRow);
 
-  if (filters?.search) {
-    const q = filters.search.toLowerCase();
-    rows = rows.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        s.parentName.toLowerCase().includes(q) ||
-        s.contactNumber.includes(q) ||
-        String(s.studentNumber).includes(q)
-    );
-  }
-
+  // Status is computed from plan dates — keep this in-memory filter since it
+  // depends on `computeStudentStatus()` logic that runs post-query.
   if (filters?.status && filters.status !== "ALL") {
     rows = rows.filter((s) => s.status === filters.status);
   }
 
   return rows;
 }
+
 
 export async function getStudentById(id: string) {
   const student = await prisma.student.findUnique({

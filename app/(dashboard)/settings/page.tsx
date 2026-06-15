@@ -1,11 +1,12 @@
 import React from "react";
 import { auth, signOut } from "@/auth";
 import { redirect } from "next/navigation";
-import { getAllUsers } from "@/lib/services/users";
+import { getSession } from "@/lib/auth-session";
+import { getAllUsers } from "@/lib/services/cached";
 import SettingsClient from "@/components/settings/SettingsClient";
 
 export default async function SettingsPage() {
-  const session = await auth();
+  const session = await getSession();
   const user = session?.user;
 
   // Protect page: Only ADMIN role is authorized

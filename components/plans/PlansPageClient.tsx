@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import type { PricingMaps } from "@/lib/plan/pricing-defaults";
 import type { GracePeriodMap } from "@/lib/plan/grace-period-utils";
@@ -28,7 +28,24 @@ export default function PlansPageClient({
 }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [batchesOpen, setBatchesOpen] = useState(false);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const headerMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!headerMenuOpen) return;
+    function clickHandler(e: MouseEvent) {
+      if (headerMenuRef.current && !headerMenuRef.current.contains(e.target as Node)) {
+        const toggleButton = headerMenuRef.current.parentElement?.querySelector("button");
+        if (toggleButton && !toggleButton.contains(e.target as Node)) {
+          setHeaderMenuOpen(false);
+        }
+      }
+    }
+    document.addEventListener("mousedown", clickHandler);
+    return () => document.removeEventListener("mousedown", clickHandler);
+  }, [headerMenuOpen]);
 
   const showToast = (type: "success" | "error", message: string) => {
     setToast({ type, message });
@@ -36,7 +53,7 @@ export default function PlansPageClient({
   };
 
   return (
-    <div className="space-y-5 min-w-0 max-w-2xl relative">
+    <div className="space-y-5 min-w-0 w-full relative">
       {/* Toast Notification */}
       {toast && (
         <div
@@ -52,34 +69,77 @@ export default function PlansPageClient({
 
       {/* Page header */}
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-xl font-bold text-zinc-900 dark:text-zinc-100">Assign a plan</h1>
+        <h1 className="text-3xl sm:text-5xl font-light tracking-tight text-zinc-955 dark:text-zinc-50">Allot plan</h1>
         {canManage && (
-          <div className="flex items-center gap-1.5 shrink-0">
-            {/* Manage Batches button */}
-            <button
-              type="button"
-              onClick={() => setBatchesOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
-            >
-              <Layers className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Manage Batches</span>
-            </button>
+          <div className="relative">
+            {/* Desktop View: Action Buttons */}
+            <div className="hidden sm:flex items-center gap-2 shrink-0">
+              {/* Manage Batches button */}
+              <button
+                type="button"
+                onClick={() => setBatchesOpen(true)}
+                className="inline-flex items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                <span>Manage Batch</span>
+              </button>
 
-            {/* Pricing & Grace button */}
-            <button
-              type="button"
-              onClick={() => setSettingsOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
-            >
-              <Settings className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Pricing &amp; Grace</span>
-            </button>
+              {/* Pricing & Grace button */}
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(true)}
+                className="inline-flex items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              >
+                <span>Fee &amp; Grace</span>
+              </button>
+            </div>
+
+            {/* Mobile View: Three-dot menu */}
+            <div className="sm:hidden relative">
+              <button
+                type="button"
+                onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
+                className="inline-flex items-center justify-center h-10 w-10 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-500 hover:text-zinc-750 dark:hover:text-zinc-200 cursor-pointer transition-colors"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="5" r="1.5" />
+                  <circle cx="12" cy="12" r="1.5" />
+                  <circle cx="12" cy="19" r="1.5" />
+                </svg>
+              </button>
+              {headerMenuOpen && (
+                <nav
+                  ref={headerMenuRef}
+                  className="absolute right-0 mt-2 w-48 rounded-2xl border border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-2xl py-1.5 overflow-hidden z-50 animate-scale-in origin-top-right"
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHeaderMenuOpen(false);
+                      setBatchesOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer font-medium"
+                  >
+                    Manage Batches
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHeaderMenuOpen(false);
+                      setSettingsOpen(true);
+                    }}
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer font-medium"
+                  >
+                    Pricing &amp; Grace
+                  </button>
+                </nav>
+              )}
+            </div>
           </div>
         )}
       </div>
 
       {/* Main form panel */}
-      <div>
+      <div className="max-w-2xl">
         <Suspense
           fallback={
             <div className="h-64 rounded-3xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />

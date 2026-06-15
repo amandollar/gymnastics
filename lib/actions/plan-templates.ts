@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import {
   createPlanTemplate,
   deletePlanTemplate,
@@ -40,6 +40,7 @@ export async function createPlanTemplateAction(
     });
 
     revalidatePath("/plans");
+    updateTag("plan-templates");
     return { success: true, message: "Plan template created" };
   } catch (e) {
     return {
@@ -54,6 +55,7 @@ export async function deletePlanTemplateAction(id: string) {
     await assertAdmin();
     await deletePlanTemplate(id);
     revalidatePath("/plans");
+    updateTag("plan-templates");
     return { success: true };
   } catch (e) {
     return {

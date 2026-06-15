@@ -1,6 +1,6 @@
-import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
-import { getStudentById } from "@/lib/services/students";
+import { getSession, getSessionUser } from "@/lib/auth-session";
+import { getStudentById } from "@/lib/services/cached";
 import EditStudentForm from "@/components/students/EditStudentForm";
 
 export default async function EditStudentPage({
@@ -8,11 +8,11 @@ export default async function EditStudentPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect("/login");
 
-  const role = (session.user as { role?: string })?.role;
-  if (role !== "ADMIN" && role !== "MANAGER") {
+  const user = await getSessionUser();
+  if (user?.role !== "ADMIN" && user?.role !== "MANAGER") {
     redirect("/students");
   }
 

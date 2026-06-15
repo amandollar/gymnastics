@@ -1,6 +1,7 @@
 import React from "react";
-import { auth, signOut } from "@/auth";
+import { signOut } from "@/auth";
 import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth-session";
 import DashboardSidebar from "@/components/layout/DashboardSidebar";
 import { MobileBottomNav } from "@/components/layout/MobileDashboardNav";
 
@@ -9,7 +10,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth();
+  const session = await getSession();
 
   if (!session) {
     redirect("/login");

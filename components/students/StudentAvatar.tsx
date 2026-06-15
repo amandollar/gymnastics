@@ -39,7 +39,7 @@ export default function StudentAvatar({
       alt=""
       width={px}
       height={px}
-      className={`rounded-full object-cover bg-zinc-100 ring-1 ring-zinc-200/80 shrink-0 ${className}`}
+      className={`rounded-full object-cover bg-zinc-100 shrink-0 ${className}`}
       style={{ width: px, height: px }}
       unoptimized={isDiceBearUrl(src)}
     />

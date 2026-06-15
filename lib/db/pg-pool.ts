@@ -21,13 +21,29 @@ export function normalizeDatabaseUrl(connectionString: string): string {
   return url;
 }
 
+// Singleton pool cached on global so warm serverless invocations reuse the
+// same TCP connection pool instead of creating a new one per request.
+const globalForPg = global as unknown as { pgPool?: Pool };
+
 export function createPgPool(connectionString?: string): Pool {
+  if (globalForPg.pgPool) {
+    return globalForPg.pgPool;
+  }
+
   const raw = connectionString ?? process.env.DATABASE_URL;
   if (!raw) {
     throw new Error("DATABASE_URL is not set");
   }
 
-  return new Pool({
+  const pool = new Pool({
     connectionString: normalizeDatabaseUrl(raw),
+    // Keep up to 10 idle connections alive so subsequent requests don't pay
+    // the TCP + TLS handshake cost to Neon.
+    max: 10,
+    idleTimeoutMillis: 30_000,
+    connectionTimeoutMillis: 5_000,
   });
+
+  globalForPg.pgPool = pool;
+  return pool;
 }

@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { savePricingMaps } from "@/lib/services/pricing";
 import { saveGracePeriodMap } from "@/lib/services/grace-periods";
 import type { PlanType } from "@prisma/client";
@@ -45,6 +45,8 @@ export async function updateSessionPricingAction(
     await savePricingMaps(updates);
     revalidatePath("/plans");
     revalidatePath("/students", "layout");
+    updateTag("pricing");
+    updateTag("students");
 
     return { success: true, message: "Class rates updated. Calculator and new plans use these prices." };
   } catch (e) {
@@ -95,6 +97,8 @@ export async function updateGracePeriodAction(
 
     await saveGracePeriodMap(updates);
     revalidatePath("/plans");
+    updateTag("grace-periods");
+    updateTag("students");
 
     return { success: true, message: "Grace period settings saved." };
   } catch (e) {

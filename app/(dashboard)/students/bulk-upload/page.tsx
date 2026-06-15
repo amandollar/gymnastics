@@ -1,13 +1,13 @@
-import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { getSession, getSessionUser } from "@/lib/auth-session";
 import BulkUploadClient from "@/components/students/BulkUploadClient";
 
 export default async function BulkUploadPage() {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect("/login");
 
-  const role = (session.user as { role?: string })?.role;
-  const canManage = role === "ADMIN" || role === "MANAGER";
+  const user = await getSessionUser();
+  const canManage = user?.role === "ADMIN" || user?.role === "MANAGER";
 
   if (!canManage) {
     redirect("/students");

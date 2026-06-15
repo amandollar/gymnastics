@@ -1,15 +1,14 @@
-import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { getSession, getSessionUser } from "@/lib/auth-session";
 import StudentsListClient from "@/components/students/StudentsListClient";
-import { listStudents } from "@/lib/services/students";
-import { listBatches } from "@/lib/services/batches";
+import { listStudents, listBatches } from "@/lib/services/cached";
 
 export default async function StudentsPage() {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect("/login");
 
-  const role = (session.user as { role?: string })?.role;
-  const canManage = role === "ADMIN" || role === "MANAGER";
+  const user = await getSessionUser();
+  const canManage = user?.role === "ADMIN" || user?.role === "MANAGER";
 
   const [students, batches] = await Promise.all([
     listStudents(),

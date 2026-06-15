@@ -1,5 +1,5 @@
-import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
+import { getSession, getSessionUser } from "@/lib/auth-session";
 import EditEnquiryForm from "@/components/enquiries/EditEnquiryForm";
 import { getEnquiryById } from "@/lib/services/enquiries";
 
@@ -8,11 +8,12 @@ export default async function EditEnquiryPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect("/login");
-  const role = (session.user as { role?: string })?.role;
-  if (role !== "ADMIN" && role !== "MANAGER") redirect("/dashboard");
-  
+
+  const user = await getSessionUser();
+  if (user?.role !== "ADMIN" && user?.role !== "MANAGER") redirect("/dashboard");
+
   const { id } = await params;
   const enquiry = await getEnquiryById(id);
   if (!enquiry) notFound();

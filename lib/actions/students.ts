@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   assignPlanToStudent,
@@ -82,6 +82,8 @@ export async function createStudentAction(
 
     revalidatePath("/students");
     revalidatePath("/dashboard");
+    updateTag("students");
+    updateTag("attendance");
 
     const next = formData.get("next") as string | null;
     if (next === "assign-plan") {
@@ -162,6 +164,8 @@ export async function updateStudentAction(
     revalidatePath(`/students/${studentId}`);
     revalidatePath("/students");
     revalidatePath("/dashboard");
+    updateTag("students");
+    updateTag("attendance");
 
     redirect(`/students/${studentId}`);
   } catch (e) {
@@ -227,6 +231,9 @@ export async function assignPlanAction(
     revalidatePath("/students");
     revalidatePath("/dashboard");
     revalidatePath("/plans");
+    updateTag("students");
+    updateTag("attendance");
+    updateTag("batches");
 
     return { success: true, message: "Plan assigned successfully" };
   } catch (e) {
@@ -252,6 +259,9 @@ export async function bulkImportStudentsAction(
 
     revalidatePath("/students");
     revalidatePath("/dashboard");
+    updateTag("students");
+    updateTag("attendance");
+    updateTag("batches");
 
     return { success: true, message: "Bulk import completed successfully.", importedCount: results.length };
   } catch (e) {
@@ -275,6 +285,8 @@ export async function updateStudentActivePlanBatchAction(
     revalidatePath("/students");
     revalidatePath(`/students/${studentId}`);
     revalidatePath("/dashboard");
+    updateTag("students");
+    updateTag("batches");
 
     return { success: true, message: "Batch updated successfully" };
   } catch (e) {

@@ -1,11 +1,11 @@
 import React from "react";
-import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth-session";
 import AttendancePageClient from "@/components/attendance/AttendancePageClient";
 import {
   getMonthlyAttendanceData,
   getYearlyMonthlyBreakdown,
-} from "@/lib/services/attendance";
+} from "@/lib/services/cached";
 
 export const metadata = {
   title: "Attendance — TAG CRM",
@@ -17,7 +17,7 @@ interface PageProps {
 }
 
 export default async function AttendancePage({ searchParams }: PageProps) {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect("/login");
 
   const params = await searchParams;

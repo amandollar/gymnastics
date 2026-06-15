@@ -2,7 +2,7 @@
 
 import { Dumbbell } from "lucide-react";
 
-export default function MentorsPageClient() {
+export default function CoachesPageClient() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-4">
       <div className="relative mb-6">
@@ -11,7 +11,7 @@ export default function MentorsPageClient() {
         </div>
       </div>
       <h1 className="text-2xl font-black text-zinc-900 dark:text-zinc-50 tracking-tight">
-        Mentors & Coaches
+        Coaches
       </h1>
       <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400 font-semibold uppercase tracking-widest bg-zinc-100 dark:bg-zinc-800 px-3 py-1 rounded-full">
         Soon

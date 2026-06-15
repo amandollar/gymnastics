@@ -136,6 +136,7 @@ function RowMenu({
           {canManage && (
             <Link
               href={`/enquiries/${enquiry.id}/edit`}
+              prefetch={false}
               onClick={() => setOpen(false)}
               className={itemClass}
             >
@@ -165,6 +166,7 @@ function RowMenu({
           {canManage && enquiry.status !== "CONVERTED" && (
             <Link
               href={convertUrl}
+              prefetch={false}
               onClick={() => setOpen(false)}
               className={itemClass}
             >
@@ -355,6 +357,7 @@ export default function EnquiryListClient({
           <div className="flex gap-2 w-full sm:w-auto">
             <Link
               href="/enquiries/new"
+              prefetch={false}
               className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-lg bg-brand-orange-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-orange-600 transition-colors"
             >
               Add enquiry
@@ -442,6 +445,7 @@ export default function EnquiryListClient({
                     )}${e.gender ? `&gender=${encodeURIComponent(e.gender)}` : ""}${
                       e.childAge ? `&childAge=${e.childAge}` : ""
                     }`}
+                    prefetch={false}
                     className="flex-1 inline-flex items-center justify-center gap-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-brand-orange-500 hover:bg-brand-orange-50 dark:hover:bg-brand-orange-950/20 transition-colors"
                   >
                     Convert
@@ -450,6 +454,7 @@ export default function EnquiryListClient({
                 {canManage && (
                   <Link
                     href={`/enquiries/${e.id}/edit`}
+                    prefetch={false}
                     className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                   >
                     Edit
@@ -565,6 +570,7 @@ export default function EnquiryListClient({
                           )}${e.gender ? `&gender=${encodeURIComponent(e.gender)}` : ""}${
                             e.childAge ? `&childAge=${e.childAge}` : ""
                           }`}
+                          prefetch={false}
                           title="Convert to student"
                           className="inline-flex items-center justify-center h-8 px-2.5 rounded-lg text-xs font-semibold text-brand-orange-500 hover:bg-brand-orange-50 dark:hover:bg-brand-orange-950/20 transition-colors"
                         >
@@ -576,6 +582,7 @@ export default function EnquiryListClient({
                       {canManage && (
                         <Link
                           href={`/enquiries/${e.id}/edit`}
+                          prefetch={false}
                           title="Edit enquiry"
                           className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                         >

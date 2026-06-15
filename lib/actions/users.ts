@@ -4,7 +4,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import * as bcrypt from "bcryptjs";
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 
 // Validation schemas
 const CreateUserSchema = z.object({
@@ -98,6 +98,7 @@ export async function createUser(prevState: any, formData: FormData) {
     });
 
     revalidatePath("/settings");
+    updateTag("users");
     return { success: true, message: "User account created successfully." };
   } catch (error: any) {
     console.error("Error creating user:", error);
@@ -172,6 +173,7 @@ export async function updateUser(
     });
 
     revalidatePath("/settings");
+    updateTag("users");
     return { success: true, message: "User account updated successfully." };
   } catch (error: any) {
     console.error("Error updating user:", error);
@@ -208,6 +210,7 @@ export async function deleteUser(userId: string) {
     await prisma.user.delete({ where: { id: userId } });
 
     revalidatePath("/settings");
+    updateTag("users");
     return { success: true, message: "User account deleted successfully." };
   } catch (error: any) {
     console.error("Error deleting user:", error);

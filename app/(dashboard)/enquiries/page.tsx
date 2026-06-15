@@ -1,14 +1,17 @@
-import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { getSession, getSessionUser } from "@/lib/auth-session";
 import EnquiryListClient from "@/components/enquiries/EnquiryListClient";
-import { listEnquiries } from "@/lib/services/enquiries";
+import { listEnquiries } from "@/lib/services/cached";
 
 export default async function EnquiriesPage() {
-  const session = await auth();
+  const session = await getSession();
   if (!session) redirect("/login");
-  const role = (session.user as { role?: string })?.role;
-  const canManage = role === "ADMIN" || role === "MANAGER";
+
+  const user = await getSessionUser();
+  const canManage = user?.role === "ADMIN" || user?.role === "MANAGER";
+
   const enquiries = await listEnquiries();
+
   return (
     <div className="mx-auto max-w-6xl min-w-0 w-full">
       <EnquiryListClient

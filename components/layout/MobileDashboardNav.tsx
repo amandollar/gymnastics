@@ -129,15 +129,15 @@ export function MobileBottomNav({
           Attendance
         </Link>
         <Link
-          href="/mentors"
+          href="/coaches"
           className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
-            pathname.startsWith("/mentors")
+            pathname.startsWith("/coaches")
               ? "text-brand-orange-500"
               : "text-zinc-500 dark:text-zinc-400"
           }`}
         >
           <GymIcon />
-          Mentors
+          Coaches
         </Link>
         <Link
           href="/enquiries"

@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   createEnquiry,
@@ -71,6 +71,7 @@ export async function createEnquiryAction(
 
     revalidatePath("/enquiries");
     revalidatePath("/dashboard");
+    updateTag("enquiries");
 
     return {
       success: true,
@@ -139,6 +140,7 @@ export async function updateEnquiryAction(
     revalidatePath(`/enquiries/${enquiryId}`);
     revalidatePath("/enquiries");
     revalidatePath("/dashboard");
+    updateTag("enquiries");
 
     redirect("/enquiries");
   } catch (e) {
@@ -158,6 +160,7 @@ export async function deleteEnquiryAction(id: string) {
 
     revalidatePath("/enquiries");
     revalidatePath("/dashboard");
+    updateTag("enquiries");
 
     return { success: true, message: "Enquiry deleted successfully" };
   } catch (e) {
@@ -192,6 +195,7 @@ export async function updateEnquiryStatusAction(id: string, status: string) {
 
     revalidatePath("/enquiries");
     revalidatePath("/dashboard");
+    updateTag("enquiries");
 
     return { success: true, message: "Status updated successfully" };
   } catch (e) {

@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
-import { getStudentById } from "@/lib/services/students";
+import { getStudentById } from "@/lib/services/cached";
 import StudentIDCardClient from "@/components/students/StudentIDCardClient";
 
 export default async function StudentIDCardPage({

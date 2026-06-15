@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { freezeStudentPlan, unfreezeStudentPlan } from "@/lib/services/students";
 import { parseDateInput } from "@/lib/utils/student";
 
@@ -49,6 +49,8 @@ export async function freezePlanAction(
       revalidatePath(`/students/${studentId}`);
       revalidatePath("/students");
       revalidatePath("/dashboard");
+      updateTag("students");
+      updateTag("attendance");
     }
 
     return {
@@ -83,6 +85,8 @@ export async function unfreezePlanAction(
       revalidatePath(`/students/${studentId}`);
       revalidatePath("/students");
       revalidatePath("/dashboard");
+      updateTag("students");
+      updateTag("attendance");
     }
 
     return { success: true, message: "Freeze removed." };

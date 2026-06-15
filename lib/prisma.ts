@@ -50,10 +50,12 @@ function getPrisma(): PrismaClient {
 
   const client = createPrismaClient();
 
-  if (process.env.NODE_ENV !== "production") {
-    globalForPrisma.prisma = client;
-    globalForPrisma.prismaClientVersion = PRISMA_CLIENT_VERSION;
-  }
+  // Cache on global in ALL environments so warm serverless invocations reuse
+  // the existing pg connection pool instead of opening a new TCP+TLS handshake
+  // to Neon on every request. Safe because Node.js module-level globals persist
+  // across invocations in the same container / long-lived process.
+  globalForPrisma.prisma = client;
+  globalForPrisma.prismaClientVersion = PRISMA_CLIENT_VERSION;
 
   return client;
 }

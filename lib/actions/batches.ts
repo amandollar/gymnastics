@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import {
   listBatches,
   createBatch,
@@ -36,6 +36,7 @@ export async function createBatchAction(
     if (!timing) return { success: false, message: "Batch timing is required" };
     await createBatch(name, timing);
     revalidatePath("/plans");
+    updateTag("batches");
     return { success: true, message: "Batch created successfully" };
   } catch (e) {
     return {
@@ -59,6 +60,7 @@ export async function renameBatchAction(
     if (!timing) return { success: false, message: "Batch timing is required" };
     await renameBatch(id, name, timing);
     revalidatePath("/plans");
+    updateTag("batches");
     return { success: true, message: "Batch updated" };
   } catch (e) {
     return {
@@ -78,6 +80,8 @@ export async function deleteBatchAction(
     if (!id) return { success: false, message: "Batch ID is required" };
     await deleteBatch(id);
     revalidatePath("/plans");
+    updateTag("batches");
+    updateTag("students");
     return { success: true, message: "Batch deleted and students unassigned" };
   } catch (e) {
     return {

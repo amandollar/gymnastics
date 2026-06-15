@@ -131,10 +131,10 @@ function RowMenu({
         id={`student-menu-${student.id}`}
         aria-haspopup="true"
         aria-expanded={open}
-        className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+        className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
       >
         {/* Three vertical dots */}
-        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
           <circle cx="12" cy="5" r="1.5" />
           <circle cx="12" cy="12" r="1.5" />
           <circle cx="12" cy="19" r="1.5" />
@@ -142,12 +142,27 @@ function RowMenu({
       </button>
 
       {open && (
-        <div
+        <nav
           ref={menuRef}
           role="menu"
           style={{ position: "fixed", top: coords.top, right: coords.right, zIndex: 9999 }}
-          className="w-52 rounded-2xl border border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-2xl py-1 overflow-hidden"
+          className="w-52 rounded-2xl border border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-2xl py-1 overflow-hidden z-50 animate-scale-in origin-top-right"
         >
+          {/* Edit Profile */}
+          {canManage && (
+            <Link
+              href={`/students/${student.id}/edit`}
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className={itemClass}
+            >
+              <svg className="w-4 h-4 text-zinc-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-1.414.94l-3.414 1.137 1.137-3.414A4 4 0 019 13z" />
+              </svg>
+              Edit Profile
+            </Link>
+          )}
+
           {/* Mark Present */}
           <button
             type="button"
@@ -229,7 +244,7 @@ function RowMenu({
             </svg>
             Get ID Card
           </button>
-        </div>
+        </nav>
       )}
 
       {/* Update Batch Modal */}
@@ -333,7 +348,7 @@ function RowMenu({
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
-type SortOption = "NONE" | "NAME" | "AGE" | "ADMISSION" | "ROLL";
+type SortField = "NONE" | "ROLL" | "NAME" | "AGE" | "SESSIONS_LEFT" | "DAYS_LEFT" | "ADMISSION";
 
 export default function StudentsListClient({
   students,
@@ -349,7 +364,8 @@ export default function StudentsListClient({
   const [statusFilter, setStatusFilter] = useState<StudentStatus | "ALL">("ALL");
   const [batchFilter, setBatchFilter] = useState<string>("ALL");
   const [planTypeFilter, setPlanTypeFilter] = useState<string>("ALL");
-  const [sortBy, setSortBy] = useState<SortOption>("NONE");
+  const [sortField, setSortField] = useState<SortField>("NONE");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   // Popup states
   const [filterOpen, setFilterOpen] = useState(false);
@@ -389,14 +405,15 @@ export default function StudentsListClient({
   }, [headerMenuOpen]);
 
   const isFilterApplied = useMemo(() => {
-    return statusFilter !== "ALL" || batchFilter !== "ALL" || planTypeFilter !== "ALL" || sortBy !== "NONE";
-  }, [statusFilter, batchFilter, planTypeFilter, sortBy]);
+    return statusFilter !== "ALL" || batchFilter !== "ALL" || planTypeFilter !== "ALL" || sortField !== "NONE";
+  }, [statusFilter, batchFilter, planTypeFilter, sortField]);
 
   const handleClearFilters = () => {
     setStatusFilter("ALL");
     setBatchFilter("ALL");
     setPlanTypeFilter("ALL");
-    setSortBy("NONE");
+    setSortField("NONE");
+    setSortOrder("asc");
   };
 
   const filtered = useMemo(() => {
@@ -426,20 +443,55 @@ export default function StudentsListClient({
     }
 
     // Apply sorting
-    if (sortBy === "NONE") {
+    if (sortField === "NONE") {
       rows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    } else if (sortBy === "NAME") {
-      rows.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sortBy === "AGE") {
-      rows.sort((a, b) => new Date(b.dateOfBirth).getTime() - new Date(a.dateOfBirth).getTime());
-    } else if (sortBy === "ADMISSION") {
-      rows.sort((a, b) => new Date(b.admissionDate).getTime() - new Date(a.admissionDate).getTime());
-    } else if (sortBy === "ROLL") {
-      rows.sort((a, b) => a.studentNumber - b.studentNumber);
+    } else if (sortField === "NAME") {
+      rows.sort((a, b) => {
+        const cmp = a.name.localeCompare(b.name);
+        return sortOrder === "asc" ? cmp : -cmp;
+      });
+    } else if (sortField === "AGE") {
+      rows.sort((a, b) => {
+        const timeA = new Date(a.dateOfBirth).getTime();
+        const timeB = new Date(b.dateOfBirth).getTime();
+        return sortOrder === "asc" ? timeB - timeA : timeA - timeB;
+      });
+    } else if (sortField === "ADMISSION") {
+      rows.sort((a, b) => {
+        const timeA = new Date(a.admissionDate).getTime();
+        const timeB = new Date(b.admissionDate).getTime();
+        return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
+      });
+    } else if (sortField === "ROLL") {
+      rows.sort((a, b) => {
+        return sortOrder === "asc"
+          ? a.studentNumber - b.studentNumber
+          : b.studentNumber - a.studentNumber;
+      });
+    } else if (sortField === "SESSIONS_LEFT") {
+      rows.sort((a, b) => {
+        const sa = a.sessionsPending;
+        const sb = b.sessionsPending;
+        if (sa === null && sb === null) return 0;
+        if (sa === null) return 1;
+        if (sb === null) return -1;
+        return sortOrder === "asc" ? sa - sb : sb - sa;
+      });
+    } else if (sortField === "DAYS_LEFT") {
+      rows.sort((a, b) => {
+        const hasA = !!a.activePlan;
+        const hasB = !!b.activePlan;
+        if (!hasA && !hasB) return 0;
+        if (!hasA) return 1;
+        if (!hasB) return -1;
+        const daysA = computeDaysLeft(new Date(a.activePlan!.expiryDate));
+        const daysB = computeDaysLeft(new Date(b.activePlan!.expiryDate));
+        return sortOrder === "asc" ? daysA - daysB : daysB - daysA;
+      });
     }
 
     return rows;
-  }, [students, search, statusFilter, batchFilter, planTypeFilter, sortBy]);
+  }, [students, search, statusFilter, batchFilter, planTypeFilter, sortField, sortOrder]);
 
   const stats = useMemo(() => {
     return {
@@ -451,18 +503,52 @@ export default function StudentsListClient({
     };
   }, [students]);
 
+  const handleHeaderSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortOrder("asc");
+    }
+  };
+
+  const renderHeader = (label: string, field: SortField) => {
+    const isActive = sortField === field;
+    return (
+      <th
+        onClick={() => handleHeaderSort(field)}
+        className="px-4 py-3 cursor-pointer select-none group hover:bg-zinc-100/50 dark:hover:bg-zinc-800/60 transition-colors"
+      >
+        <div className="flex items-center gap-1">
+          <span>{label}</span>
+          {isActive ? (
+            sortOrder === "asc" ? (
+              <svg className="w-3.5 h-3.5 text-brand-orange-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
+              </svg>
+            ) : (
+              <svg className="w-3.5 h-3.5 text-brand-orange-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            )
+          ) : (
+            <svg className="w-3.5 h-3.5 text-zinc-450 dark:text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+            </svg>
+          )}
+        </div>
+      </th>
+    );
+  };
+
   return (
     <div className="space-y-4 min-w-0">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center justify-between w-full">
           <div>
-            <h1 className="text-xl sm:text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+            <h1 className="text-3xl sm:text-5xl font-light tracking-tight text-zinc-955 dark:text-zinc-50">
               Students
             </h1>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              {stats.total} total · {stats.active} active · {stats.noPlan} without
-              plan
-            </p>
           </div>
           {canManage && (
             <div className="relative">
@@ -537,7 +623,7 @@ export default function StudentsListClient({
         </div>
 
         {/* Mobile View: Filter Trigger Button & Popup */}
-        <div className="relative sm:hidden">
+        <div className="relative lg:hidden">
           <button
             type="button"
             onClick={() => setFilterOpen(!filterOpen)}
@@ -609,7 +695,7 @@ export default function StudentsListClient({
                   className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-850 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
                 >
                   <option value="ALL">All batches</option>
-                  <option value="UNASSIGNED">No batch assigned</option>
+                  <option value="UNASSIGNED">No batch allotted</option>
                   {batches.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}
@@ -629,8 +715,8 @@ export default function StudentsListClient({
                   className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-850 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
                 >
                   <option value="ALL">All plans</option>
-                  <option value="REGULAR">Group class</option>
-                  <option value="ONE_TO_ONE">Personal training</option>
+                  <option value="REGULAR">Grouped</option>
+                  <option value="ONE_TO_ONE">Personal</option>
                 </select>
               </div>
 
@@ -640,8 +726,11 @@ export default function StudentsListClient({
                   Sort By
                 </label>
                 <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as SortOption)}
+                  value={sortField}
+                  onChange={(e) => {
+                    setSortField(e.target.value as SortField);
+                    setSortOrder("asc");
+                  }}
                   className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-850 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
                 >
                   <option value="NONE">Sort by newest</option>
@@ -649,14 +738,16 @@ export default function StudentsListClient({
                   <option value="AGE">Sort by age</option>
                   <option value="ADMISSION">Sort by admission</option>
                   <option value="ROLL">Sort by roll</option>
+                  <option value="SESSIONS_LEFT">Sessions left</option>
+                  <option value="DAYS_LEFT">Days left</option>
                 </select>
               </div>
             </div>
           )}
         </div>
 
-        {/* Desktop View: Inline filters (visible on sm:flex, hidden on mobile) */}
-        <div className="hidden sm:flex items-center gap-2">
+        {/* Desktop View: Inline filters (visible on lg:flex, hidden on mobile/tablet) */}
+        <div className="hidden lg:flex items-center gap-2">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StudentStatus | "ALL")}
@@ -675,7 +766,7 @@ export default function StudentsListClient({
             className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
           >
             <option value="ALL">All batches</option>
-            <option value="UNASSIGNED">No batch assigned</option>
+            <option value="UNASSIGNED">No batch</option>
             {batches.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
@@ -688,19 +779,24 @@ export default function StudentsListClient({
             className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
           >
             <option value="ALL">All plans</option>
-            <option value="REGULAR">Group class</option>
-            <option value="ONE_TO_ONE">Personal training</option>
+            <option value="REGULAR">Grouped</option>
+            <option value="ONE_TO_ONE">Personal</option>
           </select>
           <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
+            value={sortField}
+            onChange={(e) => {
+              setSortField(e.target.value as SortField);
+              setSortOrder("asc");
+            }}
+            className="md:hidden rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
           >
             <option value="NONE">Sort by newest</option>
             <option value="NAME">Sort by name</option>
             <option value="AGE">Sort by age</option>
             <option value="ADMISSION">Sort by admission</option>
             <option value="ROLL">Sort by roll</option>
+            <option value="SESSIONS_LEFT">Sessions left</option>
+            <option value="DAYS_LEFT">Days left</option>
           </select>
           {isFilterApplied && (
             <button
@@ -725,52 +821,73 @@ export default function StudentsListClient({
               className="rounded-lg border-0 bg-white dark:bg-zinc-900 p-4 shadow-sm"
             >
               <div className="flex items-start justify-between gap-2">
-                <Link href={`/students/${s.id}`} className="flex items-start gap-3 min-w-0">
+                <Link href={`/students/${s.id}`} prefetch={false} className="flex items-start gap-3 min-w-0">
                   <StudentAvatar student={s} size={48} />
                   <div className="min-w-0">
-                    <p className="font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                    <p className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">
                       #{s.studentNumber} {s.name}
                     </p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                      {formatAge(new Date(s.dateOfBirth))} · {formatTenure(new Date(s.admissionDate))}
-                    </p>
+                    <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                      <span>Age: {formatAge(new Date(s.dateOfBirth))}</span>
+                      <span>·</span>
+                      <span>{s.contactNumber}</span>
+                      <span>·</span>
+                      <span className="inline-flex items-center gap-1">
+                        <span className={`h-1.5 w-1.5 rounded-full ${
+                          s.status === "ACTIVE"
+                            ? "bg-emerald-500"
+                            : s.status === "GRACE"
+                            ? "bg-amber-500"
+                            : s.status === "FREEZE"
+                            ? "bg-sky-500"
+                            : s.status === "INACTIVE"
+                            ? "bg-orange-500"
+                            : "bg-zinc-400"
+                        }`} />
+                        <span>
+                          {s.status === "ACTIVE" ? "Active" : s.status === "GRACE" ? "Grace" : s.status === "FREEZE" ? "Freeze" : s.status === "INACTIVE" ? "Inactive" : "No plan"}
+                        </span>
+                      </span>
+                    </div>
                   </div>
                 </Link>
-                <StudentStatusBadge status={s.status} />
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <RowMenu student={s} canManage={canManage} batches={batches} />
+                </div>
               </div>
-              {s.activePlan ? (
-                <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
-                  {s.activePlan.planType === "ONE_TO_ONE" ? "personal" : "grouped"}{" "}
-                  · {s.sessionsPending} sessions left ·{" "}
-                  {formatINR(s.activePlan.fee)}
-                </p>
-              ) : (
-                <p className="mt-2 text-xs text-zinc-400 dark:text-zinc-500">No plan assigned</p>
-              )}
-              {/* Mobile row actions */}
-              <div className="mt-3 flex items-center gap-2 border-t border-zinc-100 dark:border-zinc-800 pt-3">
-                <Link
-                  href={`/students/${s.id}`}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  View
-                </Link>
-                {canManage && (
-                  <Link
-                    href={`/students/${s.id}/edit`}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-1.414.94l-3.414 1.137 1.137-3.414A4 4 0 019 13z" />
-                    </svg>
-                    Edit
-                  </Link>
-                )}
-                <RowMenu student={s} canManage={canManage} batches={batches} />
+
+              {/* Details grid */}
+              <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                <div>
+                  <span className="text-zinc-400 dark:text-zinc-550">Plan:</span>{" "}
+                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                    {s.activePlan
+                      ? s.activePlan.planType === "ONE_TO_ONE"
+                        ? "personal"
+                        : "grouped"
+                      : "—"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-400 dark:text-zinc-550">Fee:</span>{" "}
+                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                    {s.activePlan ? formatINR(s.activePlan.fee) : "—"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-400 dark:text-zinc-550">Sessions left:</span>{" "}
+                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                    {s.sessionsPending ?? "—"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-400 dark:text-zinc-550">Days left:</span>{" "}
+                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                    {s.activePlan
+                      ? computeDaysLeft(new Date(s.activePlan.expiryDate))
+                      : "—"}
+                  </span>
+                </div>
               </div>
             </div>
           ))
@@ -782,15 +899,15 @@ export default function StudentsListClient({
         <table className="w-full text-left text-sm min-w-[720px]">
           <thead>
             <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-800/40 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-              <th className="px-4 py-3">Student</th>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Age</th>
+              {renderHeader("Student", "ROLL")}
+              {renderHeader("Name", "NAME")}
+              {renderHeader("Age", "AGE")}
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Plan</th>
-              <th className="px-4 py-3">Sessions left</th>
-              <th className="px-4 py-3">Days left</th>
+              {renderHeader("Sessions left", "SESSIONS_LEFT")}
+              {renderHeader("Days left", "DAYS_LEFT")}
               <th className="px-4 py-3">Fee</th>
-              <th className="px-4 py-3 text-right">Actions</th>
+              <th className="px-4 py-3 text-right"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
@@ -814,7 +931,7 @@ export default function StudentsListClient({
                   className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/30 cursor-pointer transition-colors"
                 >
                   <td className="px-4 py-3">
-                    <Link href={`/students/${s.id}`} className="flex items-center gap-3 hover:opacity-90">
+                    <Link href={`/students/${s.id}`} prefetch={false} className="flex items-center gap-3 hover:opacity-90">
                       <StudentAvatar student={s} size={40} />
                       <span className="font-medium text-zinc-500 dark:text-zinc-400 tabular-nums">
                         {s.studentNumber}
@@ -824,11 +941,12 @@ export default function StudentsListClient({
                   <td className="px-4 py-3">
                     <Link
                       href={`/students/${s.id}`}
+                      prefetch={false}
                       className="font-medium text-zinc-900 dark:text-zinc-100 hover:underline"
                     >
                       {s.name}
                     </Link>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">{s.parentName}</p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">{s.contactNumber}</p>
                   </td>
                   <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300">
                     {formatAge(new Date(s.dateOfBirth))}
@@ -858,31 +976,6 @@ export default function StudentsListClient({
                   {/* ── Actions ── */}
                   <td className="px-4 py-3" data-prevent-row-click="true">
                     <div className="flex items-center justify-end gap-1">
-                      {/* View */}
-                      <Link
-                        href={`/students/${s.id}`}
-                        title="View profile"
-                        className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                      </Link>
-
-                      {/* Edit */}
-                      {canManage && (
-                        <Link
-                          href={`/students/${s.id}/edit`}
-                          title="Edit profile"
-                          className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-                        >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-1.414.94l-3.414 1.137 1.137-3.414A4 4 0 019 13z" />
-                          </svg>
-                        </Link>
-                      )}
-
                       {/* Three-dot dropdown */}
                       <RowMenu student={s} canManage={canManage} batches={batches} />
                     </div>
