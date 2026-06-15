@@ -66,7 +66,7 @@ export const getGracePeriodMap = unstable_cache(
 export const getMonthlyAttendanceData = unstable_cache(
   async (year: number, month: number) =>
     dbGetMonthlyAttendanceData(year, month),
-  ["attendance-monthly"],
+  ["attendance-monthly-v2"],
   { tags: ["attendance"] }
 );
 

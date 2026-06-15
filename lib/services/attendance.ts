@@ -56,6 +56,13 @@ function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
 /**
@@ -148,7 +155,7 @@ export async function getAttendanceKpis(
   month: number
 ): Promise<AttendanceKpis> {
   const { start, end } = monthBounds(year, month);
-  const todayStr = toDateStr(new Date());
+  const todayStr = toLocalDateStr(new Date());
   const todayDate = new Date(todayStr + "T00:00:00.000Z");
 
   const [
@@ -297,13 +304,17 @@ export async function getMonthlyAttendanceData(
 ): Promise<{
   /** All present students grouped by "YYYY-MM-DD" */
   rollCallByDate: Record<string, PresentStudent[]>;
+  /** New admissions (registrations) grouped by "YYYY-MM-DD" */
+  registrationsByDate: Record<string, PresentStudent[]>;
+  /** Renewals grouped by "YYYY-MM-DD" */
+  renewalsByDate: Record<string, PresentStudent[]>;
   /** Daily attendance counts (only days with data) */
   calendarCounts: DayAttendanceCount[];
   /** KPIs for this month */
   kpis: AttendanceKpis;
 }> {
   const { start, end } = monthBounds(year, month);
-  const todayStr = toDateStr(new Date());
+  const todayStr = toLocalDateStr(new Date());
   const todayDate = new Date(todayStr + "T00:00:00.000Z");
 
   // ── 4 queries, all in parallel ─────────────────────────────────────────────
@@ -335,24 +346,46 @@ export async function getMonthlyAttendanceData(
       prisma.attendance.count({ where: { date: todayDate } }),
 
       // 3. New admissions this month (by admissionDate)
-      prisma.student.count({
+      prisma.student.findMany({
         where: { admissionDate: { gte: start, lte: end } },
+        select: {
+          id: true,
+          studentNumber: true,
+          name: true,
+          avatarUrl: true,
+          gender: true,
+          admissionDate: true,
+          plans: {
+            select: {
+              planType: true,
+            },
+            take: 1,
+          },
+        },
+        orderBy: { studentNumber: "asc" },
       }),
 
       // 4. Plans started this month — filter renewals in-memory
       prisma.studentPlan.findMany({
         where: { startDate: { gte: start, lte: end } },
         select: {
+          id: true,
+          startDate: true,
+          planType: true,
           student: {
             select: {
+              id: true,
+              studentNumber: true,
+              name: true,
+              avatarUrl: true,
+              gender: true,
               plans: {
-                where: { startDate: { lt: start } },
-                select: { id: true },
-                take: 1,
+                select: { id: true, startDate: true },
               },
             },
           },
         },
+        orderBy: { student: { studentNumber: "asc" } },
       }),
     ]);
 
@@ -383,15 +416,59 @@ export async function getMonthlyAttendanceData(
     });
   }
 
+  // ── Group new admissions by day ──────────────────────────────────────────
+  const registrationsByDate: Record<string, PresentStudent[]> = {};
+  for (const s of newStudents) {
+    const dateStr = toLocalDateStr(s.admissionDate);
+    if (!registrationsByDate[dateStr]) registrationsByDate[dateStr] = [];
+    
+    const plan = s.plans[0];
+    registrationsByDate[dateStr].push({
+      id: s.id,
+      studentNumber: s.studentNumber,
+      name: s.name,
+      avatarUrl: s.avatarUrl,
+      gender: s.gender,
+      planName: plan
+        ? plan.planType === "ONE_TO_ONE"
+          ? "Personal training"
+          : "Group class"
+        : null,
+      planType: plan ? plan.planType : null,
+      attendanceId: s.id,
+    });
+  }
+
+  // ── Filter and group renewals by day ─────────────────────────────────────
+  const renewalsByDate: Record<string, PresentStudent[]> = {};
+  let renewalsCount = 0;
+  for (const sp of renewalPlans) {
+    const isRenewal = sp.student.plans.some(
+      (p) => p.startDate.getTime() < sp.startDate.getTime()
+    );
+    if (!isRenewal) continue;
+
+    renewalsCount++;
+    const dateStr = toLocalDateStr(sp.startDate);
+    if (!renewalsByDate[dateStr]) renewalsByDate[dateStr] = [];
+    
+    renewalsByDate[dateStr].push({
+      id: sp.student.id,
+      studentNumber: sp.student.studentNumber,
+      name: sp.student.name,
+      avatarUrl: sp.student.avatarUrl,
+      gender: sp.student.gender,
+      planName: sp.planType === "ONE_TO_ONE" ? "Personal training" : "Group class",
+      planType: sp.planType,
+      attendanceId: sp.id,
+    });
+  }
+
   const calendarCounts: DayAttendanceCount[] = Array.from(
     countMap.entries()
   ).map(([date, count]) => ({ date, count }));
 
   // ── Compute KPIs ──────────────────────────────────────────────────────────
-  const renewalsThisMonth = renewalPlans.filter(
-    (p) => p.student.plans.length > 0
-  ).length;
-
   const totalSessionsThisMonth = allAttendances.length;
   const activeDays = countMap.size;
   const avgDailyAttendance =
@@ -399,11 +476,11 @@ export async function getMonthlyAttendanceData(
 
   const kpis: AttendanceKpis = {
     todayCount,
-    newStudentsThisMonth: newStudents,
-    renewalsThisMonth,
+    newStudentsThisMonth: newStudents.length,
+    renewalsThisMonth: renewalsCount,
     avgDailyAttendance,
     totalSessionsThisMonth,
   };
 
-  return { rollCallByDate, calendarCounts, kpis };
+  return { rollCallByDate, registrationsByDate, renewalsByDate, calendarCounts, kpis };
 }

@@ -23,7 +23,10 @@ export default async function AttendancePage({ searchParams }: PageProps) {
   const params = await searchParams;
 
   const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
+  const y = today.getFullYear();
+  const m = String(today.getMonth() + 1).padStart(2, "0");
+  const d = String(today.getDate()).padStart(2, "0");
+  const todayStr = `${y}-${m}-${d}`;
 
   // Year/month from URL — default to current month
   const year  = parseInt(params.year  ?? String(today.getFullYear()), 10);
@@ -42,6 +45,8 @@ export default async function AttendancePage({ searchParams }: PageProps) {
         kpis={monthData.kpis}
         calendarCounts={monthData.calendarCounts}
         rollCallByDate={monthData.rollCallByDate}
+        registrationsByDate={monthData.registrationsByDate}
+        renewalsByDate={monthData.renewalsByDate}
         yearlyBreakdown={yearlyBreakdown}
         todayStr={todayStr}
         year={year}
