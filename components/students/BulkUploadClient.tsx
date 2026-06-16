@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { UploadCloud, Download, Save, AlertCircle, CheckCircle, Trash2 } from "lucide-react";
+import { UploadCloud, Download, Save, AlertCircle, Trash2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { bulkImportStudentsAction } from "@/lib/actions/students";
 

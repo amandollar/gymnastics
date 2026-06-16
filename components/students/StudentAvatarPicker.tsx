@@ -10,11 +10,9 @@ function formatFileSize(bytes: number): string {
 }
 
 export default function StudentAvatarPicker({
-  name,
   gender,
   currentAvatarUrl,
 }: {
-  name: string;
   gender?: string | null;
   currentAvatarUrl?: string | null;
 }) {

@@ -21,6 +21,7 @@ export interface ActivePlanSnapshot {
   /** When set (and today is within the window), status is FREEZE. */
   freezeStartDate?: Date | null;
   freezeEndDate?: Date | null;
+  freezePeriods?: { startDate: Date; endDate: Date }[];
 }
 
 export function computeStudentAge(
@@ -103,6 +104,7 @@ export function computeStudentStatus(
     expiryDate,
     freezeStartDate,
     freezeEndDate,
+    freezePeriods,
   } = activePlan;
 
   // 1. Sessions exhausted → always INACTIVE regardless of dates
@@ -112,11 +114,19 @@ export function computeStudentStatus(
   const end = startOfDay(new Date(endDate));
   const expiry = startOfDay(new Date(expiryDate));
 
-  // 2. Check active freeze window
+  // 2. Check active freeze window (legacy field or explicit array)
   if (freezeStartDate && freezeEndDate) {
     const fStart = startOfDay(new Date(freezeStartDate));
     const fEnd = startOfDay(new Date(freezeEndDate));
     if (today >= fStart && today <= fEnd) return "FREEZE";
+  }
+
+  if (freezePeriods && freezePeriods.length > 0) {
+    for (const fp of freezePeriods) {
+      const fStart = startOfDay(new Date(fp.startDate));
+      const fEnd = startOfDay(new Date(fp.endDate));
+      if (today >= fStart && today <= fEnd) return "FREEZE";
+    }
   }
 
   // 3. Grace period completely exhausted

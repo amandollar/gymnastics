@@ -2,7 +2,7 @@
 
 import { auth } from "@/auth";
 import { revalidatePath, updateTag } from "next/cache";
-import { freezeStudentPlan, unfreezeStudentPlan } from "@/lib/services/students";
+import { freezeStudentPlan, unfreezeStudentPlan, addFreezePeriod, deleteFreezePeriod } from "@/lib/services/students";
 import { parseDateInput } from "@/lib/utils/student";
 
 async function assertCanManage() {
@@ -94,6 +94,86 @@ export async function unfreezePlanAction(
     return {
       success: false,
       message: e instanceof Error ? e.message : "Failed to unfreeze plan",
+    };
+  }
+}
+
+export async function addFreezePeriodAction(
+  _prev: unknown,
+  formData: FormData
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    await assertCanManage();
+
+    const studentPlanId = formData.get("studentPlanId");
+    const startDateRaw = formData.get("freezeStartDate");
+    const endDateRaw = formData.get("freezeEndDate");
+
+    if (
+      typeof studentPlanId !== "string" ||
+      typeof startDateRaw !== "string" ||
+      typeof endDateRaw !== "string" ||
+      !studentPlanId ||
+      !startDateRaw ||
+      !endDateRaw
+    ) {
+      return { success: false, message: "Missing required fields" };
+    }
+
+    const startDate = parseDateInput(startDateRaw);
+    const endDate = parseDateInput(endDateRaw);
+
+    await addFreezePeriod(studentPlanId, startDate, endDate);
+
+    const studentId = formData.get("studentId") as string | null;
+    if (studentId) {
+      revalidatePath(`/students/${studentId}`);
+      revalidatePath("/students");
+      revalidatePath("/dashboard");
+      updateTag("students");
+      updateTag("attendance");
+    }
+
+    return {
+      success: true,
+      message: "Freeze period added. Plan has been extended.",
+    };
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Failed to add freeze period",
+    };
+  }
+}
+
+export async function deleteFreezePeriodAction(
+  _prev: unknown,
+  formData: FormData
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    await assertCanManage();
+
+    const freezePeriodId = formData.get("freezePeriodId");
+    if (typeof freezePeriodId !== "string" || !freezePeriodId) {
+      return { success: false, message: "Missing freezePeriodId" };
+    }
+
+    await deleteFreezePeriod(freezePeriodId);
+
+    const studentId = formData.get("studentId") as string | null;
+    if (studentId) {
+      revalidatePath(`/students/${studentId}`);
+      revalidatePath("/students");
+      revalidatePath("/dashboard");
+      updateTag("students");
+      updateTag("attendance");
+    }
+
+    return { success: true, message: "Freeze period deleted and plan duration reduced." };
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Failed to delete freeze period",
     };
   }
 }

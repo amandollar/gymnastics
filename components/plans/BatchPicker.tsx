@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, Layers } from "lucide-react";
+import { Clock, Users } from "lucide-react";
 import type { BatchWithCount } from "@/lib/services/batches";
 
 export default function BatchPicker({
@@ -59,21 +59,52 @@ export default function BatchPicker({
                 >
                   {b.name}
                 </p>
-                <div className="flex items-center gap-1.5">
-                  <Clock
-                    className={`h-3 w-3 shrink-0 ${
-                      selected ? "text-brand-orange-500" : "text-zinc-400"
-                    }`}
-                  />
-                  <span
-                    className={`text-xs ${
-                      selected
-                        ? "text-brand-orange-600 dark:text-brand-orange-400"
-                        : "text-zinc-500 dark:text-zinc-400"
-                    }`}
-                  >
-                    {b.timing}
-                  </span>
+                <div className="flex flex-col gap-1.5 mt-1.5 w-full">
+                  <div className="flex items-center gap-1.5">
+                    <Clock
+                      className={`h-3.5 w-3.5 shrink-0 ${
+                        selected ? "text-brand-orange-500" : "text-zinc-400"
+                      }`}
+                    />
+                    <span
+                      className={`text-xs ${
+                        selected
+                          ? "text-brand-orange-600 dark:text-brand-orange-400"
+                          : "text-zinc-500 dark:text-zinc-400"
+                      }`}
+                    >
+                      {b.timing}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Users
+                      className={`h-3.5 w-3.5 shrink-0 ${
+                        selected ? "text-brand-orange-500" : "text-zinc-400"
+                      }`}
+                    />
+                    <div
+                      className={`text-xs flex items-center gap-1.5 flex-wrap ${
+                        selected
+                          ? "text-brand-orange-600 dark:text-brand-orange-400"
+                          : "text-zinc-500 dark:text-zinc-400"
+                      }`}
+                    >
+                      <span className={`font-semibold ${selected ? "text-brand-orange-700 dark:text-brand-orange-300" : "text-zinc-700 dark:text-zinc-300"}`}>
+                        {b.activeCount ?? 0}
+                      </span>
+                      <span className="opacity-90">active</span>
+                      <span className="opacity-30 select-none">|</span>
+                      <span className={`font-semibold ${selected ? "text-brand-orange-700 dark:text-brand-orange-300" : "text-zinc-700 dark:text-zinc-300"}`}>
+                        {b.graceCount ?? 0}
+                      </span>
+                      <span className="opacity-90">grace</span>
+                      <span className="opacity-30 select-none">|</span>
+                      <span className={`font-semibold ${selected ? "text-brand-orange-700 dark:text-brand-orange-300" : "text-zinc-700 dark:text-zinc-300"}`}>
+                        {b.inactiveCount ?? 0}
+                      </span>
+                      <span className="opacity-90">inactive</span>
+                    </div>
+                  </div>
                 </div>
               </button>
             );
@@ -84,7 +115,9 @@ export default function BatchPicker({
       {/* Error */}
       {error && (
         <p className="text-xs text-rose-600 dark:text-rose-400 flex items-center gap-1">
-          <span className="inline-block h-3.5 w-3.5 rounded-full border border-rose-500 flex items-center justify-center text-[9px] font-bold shrink-0">!</span>
+          <span className="inline-block h-3.5 w-3.5 rounded-full border border-rose-500 flex items-center justify-center text-[9px] font-bold shrink-0">
+            !
+          </span>
           {error}
         </p>
       )}

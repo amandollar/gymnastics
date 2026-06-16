@@ -289,7 +289,7 @@ export default function AdmissionsRenewalsChartCard({
             value={chartViewType}
             disabled={isLoading}
             onChange={(e) => handleViewTypeChange(e.target.value as any)}
-            className={`bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl px-2.5 py-1.5 text-xs font-bold text-zinc-700 dark:text-zinc-300 outline-none focus:ring-1 focus:ring-brand-orange-500/20 ${
+            className={`bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-950 dark:hover:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800/50 rounded-xl px-2.5 py-1.5 text-xs font-bold text-zinc-700 dark:text-zinc-300 outline-none focus:ring-1 focus:ring-brand-orange-500/20 transition-colors ${
               isLoading ? "cursor-default opacity-50" : "cursor-pointer"
             }`}
           >
@@ -335,7 +335,7 @@ export default function AdmissionsRenewalsChartCard({
             />
             <Tooltip
               contentStyle={chartTooltipStyle}
-              cursor={{ fill: "rgba(241, 109, 40, 0.03)" }}
+              cursor={{ fill: "var(--chart-cursor-bg)" }}
               formatter={(val, name) => [Number(val), String(name)]}
             />
             <Bar

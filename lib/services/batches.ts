@@ -1,33 +1,72 @@
 import { prisma } from "@/lib/prisma";
+import { computeStudentStatus } from "@/lib/utils/student";
 
 export type BatchWithCount = {
   id: string;
   name: string;
   timing: string;
   studentCount: number;
+  activeCount: number;
+  graceCount: number;
+  inactiveCount: number;
   createdAt: Date;
   updatedAt: Date;
 };
 
 /** Returns all batches ordered by creation date, with the count of currently-active student plans assigned to each. */
 export async function listBatches(): Promise<BatchWithCount[]> {
-  const batches = await prisma.batch.findMany({
+  const batches = await (prisma as any).batch.findMany({
     orderBy: { createdAt: "asc" },
     include: {
-      _count: {
-        select: { studentPlans: { where: { isActive: true } } },
+      studentPlans: {
+        where: { isActive: true },
+        select: {
+          sessionsCompleted: true,
+          totalSessions: true,
+          endDate: true,
+          expiryDate: true,
+          freezeStartDate: true,
+          freezeEndDate: true,
+          freezePeriods: {
+            select: {
+              startDate: true,
+              endDate: true,
+            },
+          },
+        },
       },
     },
   });
 
-  return batches.map((b) => ({
-    id: b.id,
-    name: b.name,
-    timing: b.timing,
-    studentCount: b._count.studentPlans,
-    createdAt: b.createdAt,
-    updatedAt: b.updatedAt,
-  }));
+  // Cast to any[] to resolve transient TS Server type caching issues in some editors
+  return (batches as any[]).map((b) => {
+    let activeCount = 0;
+    let graceCount = 0;
+    let inactiveCount = 0;
+
+    b.studentPlans.forEach((plan: any) => {
+      const status = computeStudentStatus(plan);
+      if (status === "ACTIVE" || status === "FREEZE") {
+        activeCount++;
+      } else if (status === "GRACE") {
+        graceCount++;
+      } else {
+        inactiveCount++;
+      }
+    });
+
+    return {
+      id: b.id,
+      name: b.name,
+      timing: b.timing,
+      studentCount: b.studentPlans.length,
+      activeCount,
+      graceCount,
+      inactiveCount,
+      createdAt: b.createdAt,
+      updatedAt: b.updatedAt,
+    };
+  });
 }
 
 /** Creates a new batch. Throws if name is blank. */

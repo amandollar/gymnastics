@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { UserPlus, UserCheck, IndianRupee, ChevronRight, X, Check } from "lucide-react";
+import { UserPlus, UserCheck, IndianRupee, ChevronLeft, ChevronRight, X, Check } from "lucide-react";
 import { useMediaQuery } from "@/components/hooks/useMediaQuery";
 import ChartBox from "@/components/charts/ChartBox";
 import {
@@ -16,14 +16,10 @@ import {
   YAxis,
 } from "recharts";
 import {
-  kpiStats,
-  revenueByMonth,
-  admissionsByMonth,
-  renewalsByMonth,
-  weeklyAttendance,
   recentActivity,
   formatINR,
 } from "@/lib/sample/dashboard";
+import type { DashboardData } from "@/lib/services/dashboard";
 
 const CHART_H = 260;
 const CHART_H_SM = 224;
@@ -45,18 +41,94 @@ const dummyStudents = [
   { id: "5", studentNumber: 105, name: "Meera Nair", parentName: "Suresh Nair", contactNumber: "9543210987", activePlan: "Beginner Gymnastics", outstanding: 1200 },
 ];
 
+interface DashboardOverviewProps {
+  firstName: string;
+  dashboardData: DashboardData;
+}
+
 export default function DashboardOverview({
   firstName,
-}: {
-  firstName: string;
-}) {
+  dashboardData,
+}: DashboardOverviewProps) {
   const isMobile = useMediaQuery("(max-width: 639px)");
   const chartH = isMobile ? CHART_H_SM : CHART_H;
-  
-  const attendanceData = weeklyAttendance.map((d) => ({
-    day: d.day,
-    present: d.present,
-  }));
+
+  const currentMonthLabel = useMemo(() => {
+    return new Date().toLocaleString("en-US", { month: "short" }).toUpperCase();
+  }, []);
+
+  const currentYear = useMemo(() => {
+    return new Date().getFullYear();
+  }, []);
+
+  // View States for daily/weekly vs monthly toggles
+  const [attendanceView, setAttendanceView] = useState<"daily" | "monthly">("daily");
+  const [admissionsView, setAdmissionsView] = useState<"daily" | "monthly">("monthly");
+  const [renewalsView, setRenewalsView] = useState<"daily" | "monthly">("monthly");
+
+  // Sliding Window States for daily views (pages of 10 days)
+  const [attendanceStartIndex, setAttendanceStartIndex] = useState(20);
+  const [admissionsStartIndex, setAdmissionsStartIndex] = useState(20);
+  const [renewalsStartIndex, setRenewalsStartIndex] = useState(20);
+
+  // Derive chart datasets dynamically from database props
+  const attendanceChartData = useMemo(() => {
+    if (attendanceView === "daily") {
+      return dashboardData.attendanceDaily.map((d) => ({
+        label: d.day.replace(/^0/, ""), // "05" -> "5" (makes labels shorter)
+        present: d.present
+      }));
+    } else {
+      return dashboardData.attendanceMonthly.map((d) => ({ label: d.month, present: d.present }));
+    }
+  }, [attendanceView, dashboardData]);
+
+  const visibleAttendanceData = useMemo(() => {
+    if (attendanceView === "daily") {
+      return attendanceChartData.slice(attendanceStartIndex, attendanceStartIndex + 10);
+    }
+    return attendanceChartData;
+  }, [attendanceChartData, attendanceView, attendanceStartIndex]);
+
+  const admissionsChartData = useMemo(() => {
+    if (admissionsView === "daily") {
+      return dashboardData.admissionsDaily.map((d) => ({
+        label: d.day.replace(/^0/, ""), // "05" -> "5" (makes labels shorter)
+        admissions: d.admissions
+      }));
+    } else {
+      return dashboardData.admissionsMonthly.map((d) => ({ label: d.month, admissions: d.admissions }));
+    }
+  }, [admissionsView, dashboardData]);
+
+  const visibleAdmissionsData = useMemo(() => {
+    if (admissionsView === "daily") {
+      return admissionsChartData.slice(admissionsStartIndex, admissionsStartIndex + 10);
+    }
+    return admissionsChartData;
+  }, [admissionsChartData, admissionsView, admissionsStartIndex]);
+
+  const renewalsChartData = useMemo(() => {
+    if (renewalsView === "daily") {
+      return dashboardData.renewalsDaily.map((d) => ({
+        label: d.day.replace(/^0/, ""), // "05" -> "5" (makes labels shorter)
+        renewals: d.renewals
+      }));
+    } else {
+      return dashboardData.renewalsMonthly.map((d) => ({ label: d.month, renewals: d.renewals }));
+    }
+  }, [renewalsView, dashboardData]);
+
+  const visibleRenewalsData = useMemo(() => {
+    if (renewalsView === "daily") {
+      return renewalsChartData.slice(renewalsStartIndex, renewalsStartIndex + 10);
+    }
+    return renewalsChartData;
+  }, [renewalsChartData, renewalsView, renewalsStartIndex]);
+
+  const revenueChartData = useMemo(() => {
+    return dashboardData.revenueMonthly;
+  }, [dashboardData]);
 
   const chartMargin = isMobile
     ? { top: 8, right: 4, left: -16, bottom: 0 }
@@ -146,9 +218,14 @@ export default function DashboardOverview({
     }
   };
 
-  const totalStudents = kpiStats.activeStudents + kpiStats.gracePeriodStudents;
-  const activePercent = totalStudents > 0 ? Math.round((kpiStats.activeStudents / totalStudents) * 100) : 0;
-  const gracePercent = totalStudents > 0 ? Math.round((kpiStats.gracePeriodStudents / totalStudents) * 100) : 0;
+  const activeCount = dashboardData.kpis.activeStudents;
+  const graceCount = dashboardData.kpis.gracePeriodStudents;
+  const freezeCount = dashboardData.kpis.freezeStudents;
+  const totalStudents = activeCount + graceCount + freezeCount;
+
+  const activePercent = totalStudents > 0 ? Math.round((activeCount / totalStudents) * 100) : 0;
+  const gracePercent = totalStudents > 0 ? Math.round((graceCount / totalStudents) * 100) : 0;
+  const freezePercent = totalStudents > 0 ? Math.round((freezeCount / totalStudents) * 100) : 0;
 
   return (
     <div className="space-y-2.5 min-w-0 w-full pb-6">
@@ -164,38 +241,57 @@ export default function DashboardOverview({
 
         {/* Header Row 2: Pill Bar and Stats */}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between pt-3 pb-2 sm:pt-6 sm:pb-3">
-          {/* Left Part: Premium standalone pills side-by-side with extra gap (Cleanest UI, matching user reference image exactly, scaled proportionally) */}
-          <div className="flex items-center gap-0.5 pt-2 w-full max-w-sm shrink-0">
-            {/* Active Group */}
-            <div 
-              className="flex flex-col"
-              style={{ width: `${activePercent}%`, minWidth: "140px" }}
-            >
-              <div 
-                className="h-10 w-full bg-zinc-800 dark:bg-white text-white dark:text-black flex items-center justify-center text-xs font-semibold shadow-xs whitespace-nowrap px-4 transition-all duration-300"
-                style={{ borderRadius: '20px 8px 8px 20px' }}
-              >
-                {kpiStats.activeStudents} ({activePercent}%)
+          {/* Left Part: Premium standalone pills side-by-side with extra gap, scaled proportionally */}
+          <div className="flex flex-col gap-2.5 w-full max-w-sm pt-2 shrink-0">
+            {totalStudents === 0 ? (
+              <div className="h-10 w-full bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 flex items-center justify-center text-xs font-semibold rounded-full">
+                No active students
               </div>
-              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-left pl-5 mt-1.5">
-                Active
-              </p>
-            </div>
+            ) : (
+              <div className="h-10 w-full rounded-full overflow-hidden flex bg-zinc-200/50 dark:bg-zinc-800/50 p-0.5 gap-0.5">
+                {activeCount > 0 && (
+                  <div 
+                    className="h-full bg-zinc-800 dark:bg-white text-white dark:text-black flex items-center justify-center text-xs font-semibold transition-all duration-300 first:rounded-l-full last:rounded-r-full"
+                    style={{ width: `${activePercent}%` }}
+                  >
+                    {activePercent >= 10 ? `${activePercent}%` : ""}
+                  </div>
+                )}
 
-            {/* Grace Period Group */}
-            <div 
-              className="flex flex-col"
-              style={{ width: `${gracePercent}%`, minWidth: "90px" }}
-            >
-              <div 
-                className="h-10 w-full bg-brand-orange-500 text-white flex items-center justify-center text-xs font-bold shadow-xs whitespace-nowrap px-3 transition-all duration-300"
-                style={{ borderRadius: '8px 20px 20px 8px' }}
-              >
-                {kpiStats.gracePeriodStudents} ({gracePercent}%)
+                {graceCount > 0 && (
+                  <div 
+                    className="h-full bg-brand-orange-500 text-white flex items-center justify-center text-xs font-bold transition-all duration-300 first:rounded-l-full last:rounded-r-full"
+                    style={{ width: `${gracePercent}%` }}
+                  >
+                    {gracePercent >= 10 ? `${gracePercent}%` : ""}
+                  </div>
+                )}
+
+                {freezeCount > 0 && (
+                  <div 
+                    className="h-full bg-zinc-400 dark:bg-zinc-500 text-white dark:text-zinc-950 flex items-center justify-center text-xs font-semibold transition-all duration-300 first:rounded-l-full last:rounded-r-full"
+                    style={{ width: `${freezePercent}%` }}
+                  >
+                    {freezePercent >= 10 ? `${freezePercent}%` : ""}
+                  </div>
+                )}
               </div>
-              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-left pl-2 mt-1.5">
-                Grace Period
-              </p>
+            )}
+
+            {/* Labels Row */}
+            <div className="flex items-center justify-start gap-5 px-1 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-zinc-850 dark:bg-white" />
+                <span>active ({activeCount})</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-brand-orange-500" />
+                <span>grace ({graceCount})</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-zinc-400 dark:bg-zinc-500" />
+                <span>freeze ({freezeCount})</span>
+              </div>
             </div>
           </div>
 
@@ -208,7 +304,7 @@ export default function DashboardOverview({
                   <UserPlus className="h-4 w-4" />
                 </span>
                 <span className="text-3xl sm:text-4xl font-extralight text-zinc-955 dark:text-zinc-50 tracking-tight">
-                  {kpiStats.admissionsThisMonth}
+                  {dashboardData.kpis.admissionsThisMonth}
                 </span>
               </div>
               <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-left sm:pl-7 mt-0.5">
@@ -223,7 +319,7 @@ export default function DashboardOverview({
                   <UserCheck className="h-4 w-4" />
                 </span>
                 <span className="text-3xl sm:text-4xl font-extralight text-zinc-955 dark:text-zinc-50 tracking-tight">
-                  {kpiStats.todayAttendanceCount}
+                  {dashboardData.kpis.todayAttendanceCount}
                 </span>
               </div>
               <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-left sm:pl-7 mt-0.5">
@@ -238,7 +334,7 @@ export default function DashboardOverview({
                   <IndianRupee className="h-4 w-4" />
                 </span>
                 <span className="text-3xl sm:text-4xl font-extralight text-zinc-955 dark:text-zinc-50 tracking-tight">
-                  {formatINR(kpiStats.monthlyRevenue)}
+                  {formatINR(dashboardData.kpis.monthlyRevenue)}
                 </span>
               </div>
               <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-left sm:pl-7 mt-0.5">
@@ -333,12 +429,9 @@ export default function DashboardOverview({
           <h3 className="text-sm font-bold text-zinc-950 dark:text-zinc-50 uppercase tracking-wider">
             Monthly Revenue
           </h3>
-          <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
-            Last 6 months collection in INR (₹ lakhs)
-          </p>
           <div className="mt-4">
             <ChartBox height={chartH}>
-              <LineChart data={revenueByMonth} margin={chartMargin}>
+              <LineChart data={revenueChartData} margin={chartMargin}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="var(--chart-grid)"
@@ -374,24 +467,57 @@ export default function DashboardOverview({
           </div>
         </div>
 
-        {/* Chart 2: Weekly Attendance Count (Bar Chart) */}
+        {/* Chart 2: Attendance (Bar Chart) */}
         <div className="rounded-3xl border-0 bg-white dark:bg-zinc-900 p-5 shadow-xs min-w-0 overflow-hidden transition-all duration-300">
-          <h3 className="text-sm font-bold text-zinc-955 dark:text-zinc-50 uppercase tracking-wider">
-            Weekly Attendance
-          </h3>
-          <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
-            Daily present count of students attended class
-          </p>
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-bold text-zinc-955 dark:text-zinc-50 uppercase tracking-wider truncate">
+                {attendanceView === "daily" ? `Attendance ${currentMonthLabel}` : `Attendance ${currentYear}`}
+              </h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-0.5">
+                <button
+                  onClick={() => setAttendanceStartIndex(Math.max(0, attendanceStartIndex - 10))}
+                  disabled={attendanceView === "monthly" || attendanceStartIndex === 0}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer"
+                >
+                  <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                </button>
+                <button
+                  onClick={() => setAttendanceStartIndex(Math.min(20, attendanceStartIndex + 10))}
+                  disabled={attendanceView === "monthly" || attendanceStartIndex === 20}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer"
+                >
+                  <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
+                </button>
+              </div>
+              <select
+                value={attendanceView}
+                onChange={(e) => {
+                  const val = e.target.value as "daily" | "monthly";
+                  setAttendanceView(val);
+                  if (val === "daily") {
+                    setAttendanceStartIndex(20);
+                  }
+                }}
+                className="shrink-0 text-xs bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 font-bold tracking-tight cursor-pointer transition-colors"
+              >
+                <option value="daily">Daily View</option>
+                <option value="monthly">Monthly View</option>
+              </select>
+            </div>
+          </div>
           <div className="mt-4">
             <ChartBox height={chartH}>
-              <BarChart data={attendanceData} margin={chartMargin} barCategoryGap={6}>
+              <BarChart data={visibleAttendanceData} margin={chartMargin} barCategoryGap={6}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="var(--chart-grid)"
                   vertical={false}
                 />
                 <XAxis
-                  dataKey="day"
+                  dataKey="label"
                   tick={{ fontSize: isMobile ? 10 : 11, fill: "var(--tick-color)", fontWeight: 500 }}
                   axisLine={false}
                   tickLine={false}
@@ -406,7 +532,9 @@ export default function DashboardOverview({
                 />
                 <Tooltip
                   contentStyle={chartTooltipStyle}
-                  formatter={(value) => [`${value} students`, "Present Count"]}
+                  cursor={{ fill: "var(--chart-cursor-bg)" }}
+                  separator=""
+                  formatter={(value) => [`${value} present`, ""]}
                 />
                 <Bar
                   dataKey="present"
@@ -419,24 +547,57 @@ export default function DashboardOverview({
           </div>
         </div>
 
-        {/* Chart 3: Monthly Admissions (Line Chart) */}
+        {/* Chart 3: Admissions (Line Chart) */}
         <div className="rounded-3xl border-0 bg-white dark:bg-zinc-900 p-5 shadow-xs min-w-0 overflow-hidden transition-all duration-300">
-          <h3 className="text-sm font-bold text-zinc-955 dark:text-zinc-50 uppercase tracking-wider">
-            Monthly Admissions
-          </h3>
-          <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
-            New student enrollments per month
-          </p>
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-bold text-zinc-955 dark:text-zinc-50 uppercase tracking-wider truncate">
+                {admissionsView === "daily" ? `Admissions ${currentMonthLabel}` : `Admissions ${currentYear}`}
+              </h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-0.5">
+                <button
+                  onClick={() => setAdmissionsStartIndex(Math.max(0, admissionsStartIndex - 10))}
+                  disabled={admissionsView === "monthly" || admissionsStartIndex === 0}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer"
+                >
+                  <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                </button>
+                <button
+                  onClick={() => setAdmissionsStartIndex(Math.min(20, admissionsStartIndex + 10))}
+                  disabled={admissionsView === "monthly" || admissionsStartIndex === 20}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer"
+                >
+                  <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
+                </button>
+              </div>
+              <select
+                value={admissionsView}
+                onChange={(e) => {
+                  const val = e.target.value as "daily" | "monthly";
+                  setAdmissionsView(val);
+                  if (val === "daily") {
+                    setAdmissionsStartIndex(20);
+                  }
+                }}
+                className="shrink-0 text-xs bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 font-bold tracking-tight cursor-pointer transition-colors"
+              >
+                <option value="daily">Daily View</option>
+                <option value="monthly">Monthly View</option>
+              </select>
+            </div>
+          </div>
           <div className="mt-4">
             <ChartBox height={chartH}>
-              <LineChart data={admissionsByMonth} margin={chartMargin}>
+              <LineChart data={visibleAdmissionsData} margin={chartMargin}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="var(--chart-grid)"
                   vertical={false}
                 />
                 <XAxis
-                  dataKey="month"
+                  dataKey="label"
                   tick={{ fontSize: isMobile ? 10 : 11, fill: "var(--tick-color)", fontWeight: 500 }}
                   axisLine={false}
                   tickLine={false}
@@ -450,7 +611,8 @@ export default function DashboardOverview({
                 />
                 <Tooltip
                   contentStyle={chartTooltipStyle}
-                  formatter={(value) => [`${value} students`, "Admissions"]}
+                  separator=""
+                  formatter={(value) => [`${value} admissions`, ""]}
                 />
                 <Line
                   type="monotone"
@@ -465,24 +627,57 @@ export default function DashboardOverview({
           </div>
         </div>
 
-        {/* Chart 4: Monthly Renewals (Line Chart) */}
+        {/* Chart 4: Renewals (Line Chart) */}
         <div className="rounded-3xl border-0 bg-white dark:bg-zinc-900 p-5 shadow-xs min-w-0 overflow-hidden transition-all duration-300">
-          <h3 className="text-sm font-bold text-zinc-955 dark:text-zinc-50 uppercase tracking-wider">
-            Monthly Renewals
-          </h3>
-          <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
-            Members renewing their subscription plans
-          </p>
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-sm font-bold text-zinc-955 dark:text-zinc-50 uppercase tracking-wider truncate">
+                {renewalsView === "daily" ? `Renewals ${currentMonthLabel}` : `Renewals ${currentYear}`}
+              </h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-0.5">
+                <button
+                  onClick={() => setRenewalsStartIndex(Math.max(0, renewalsStartIndex - 10))}
+                  disabled={renewalsView === "monthly" || renewalsStartIndex === 0}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer"
+                >
+                  <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
+                </button>
+                <button
+                  onClick={() => setRenewalsStartIndex(Math.min(20, renewalsStartIndex + 10))}
+                  disabled={renewalsView === "monthly" || renewalsStartIndex === 20}
+                  className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer"
+                >
+                  <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
+                </button>
+              </div>
+              <select
+                value={renewalsView}
+                onChange={(e) => {
+                  const val = e.target.value as "daily" | "monthly";
+                  setRenewalsView(val);
+                  if (val === "daily") {
+                    setRenewalsStartIndex(20);
+                  }
+                }}
+                className="shrink-0 text-xs bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 font-bold tracking-tight cursor-pointer transition-colors"
+              >
+                <option value="daily">Daily View</option>
+                <option value="monthly">Monthly View</option>
+              </select>
+            </div>
+          </div>
           <div className="mt-4">
             <ChartBox height={chartH}>
-              <LineChart data={renewalsByMonth} margin={chartMargin}>
+              <LineChart data={visibleRenewalsData} margin={chartMargin}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="var(--chart-grid)"
                   vertical={false}
                 />
                 <XAxis
-                  dataKey="month"
+                  dataKey="label"
                   tick={{ fontSize: isMobile ? 10 : 11, fill: "var(--tick-color)", fontWeight: 500 }}
                   axisLine={false}
                   tickLine={false}
@@ -496,7 +691,8 @@ export default function DashboardOverview({
                 />
                 <Tooltip
                   contentStyle={chartTooltipStyle}
-                  formatter={(value) => [`${value} renewals`, "Renewals"]}
+                  separator=""
+                  formatter={(value) => [`${value} renewals`, ""]}
                 />
                 <Line
                   type="monotone"

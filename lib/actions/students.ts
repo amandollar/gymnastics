@@ -10,6 +10,7 @@ import {
   parsePlanFormDates,
   updateStudentActivePlanBatch,
   updateStudentActivePlan,
+  updateStudentNotesAndMedical,
 } from "@/lib/services/students";
 import { createStudentSchema, updateStudentSchema, assignPlanSchema } from "@/lib/validations/student";
 import type { WeekdayName } from "@/lib/plan/calculations";
@@ -369,6 +370,28 @@ export async function updateStudentActivePlanAction(
     return {
       success: false,
       message: e instanceof Error ? e.message : "Failed to update plan",
+    };
+  }
+}
+
+export async function updateStudentNotesAndMedicalAction(
+  studentId: string,
+  data: { notes?: string | null; medicalHistory?: string | null }
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    await assertCanManageStudents();
+
+    await updateStudentNotesAndMedical(studentId, data);
+
+    revalidatePath(`/students/${studentId}`);
+    revalidatePath("/students");
+    updateTag("students");
+
+    return { success: true, message: "Notes and medical history updated successfully" };
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Failed to update notes and medical history",
     };
   }
 }

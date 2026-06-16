@@ -143,7 +143,7 @@ export default function StudentIDCardClient({ student }: { student: StudentData 
       <header className="no-print w-full max-w-5xl mx-auto px-4 py-6 flex items-center justify-between z-10">
         <Link
           href={`/students/${student.id}`}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-400 hover:text-zinc-150 transition-colors"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-400 hover:text-zinc-100 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to profile

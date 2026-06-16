@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import type { PlanType, Prisma } from "@prisma/client";
 import {
   computePlanFields,
+  startOfDay,
   type WeekdayName,
 } from "@/lib/plan/calculations";
 import {
@@ -23,13 +24,7 @@ export type StudentWithActivePlan = Awaited<
   ReturnType<typeof getStudentById>
 >;
 
-function mapStudentRow(
-  student: Prisma.StudentGetPayload<{
-    include: {
-      plans: { where: { isActive: true }; take: 1 };
-    };
-  }>
-) {
+function mapStudentRow(student: any) {
   const activePlan = student.plans[0] ?? null;
   const status = computeStudentStatus(
     activePlan
@@ -40,6 +35,7 @@ function mapStudentRow(
           expiryDate: activePlan.expiryDate,
           freezeStartDate: activePlan.freezeStartDate,
           freezeEndDate: activePlan.freezeEndDate,
+          freezePeriods: activePlan.freezePeriods,
         }
       : null
   );
@@ -60,7 +56,7 @@ export async function listStudents(filters?: {
 }) {
   const searchQuery = filters?.search?.trim();
 
-  const students = await prisma.student.findMany({
+  const students = await (prisma as any).student.findMany({
     orderBy: { studentNumber: "asc" },
     where: searchQuery
       ? {
@@ -79,11 +75,14 @@ export async function listStudents(filters?: {
       plans: {
         where: { isActive: true },
         take: 1,
+        include: {
+          freezePeriods: true,
+        },
       },
     },
   });
 
-  let rows = students.map(mapStudentRow);
+  let rows = (students as any[]).map(mapStudentRow);
 
   // Status is computed from plan dates — keep this in-memory filter since it
   // depends on `computeStudentStatus()` logic that runs post-query.
@@ -96,13 +95,16 @@ export async function listStudents(filters?: {
 
 
 export async function getStudentById(id: string) {
-  const student = await prisma.student.findUnique({
+  const student = await (prisma as any).student.findUnique({
     where: { id },
     include: {
       plans: {
         orderBy: { createdAt: "desc" },
         include: {
           batch: true,
+          freezePeriods: {
+            orderBy: { startDate: "asc" },
+          },
         },
       },
       attendances: {
@@ -114,7 +116,7 @@ export async function getStudentById(id: string) {
 
   if (!student) return null;
 
-  const activePlan = student.plans.find((p) => p.isActive) ?? null;
+  const activePlan = student.plans.find((p: any) => p.isActive) ?? null;
   const status = computeStudentStatus(
     activePlan
       ? {
@@ -124,13 +126,48 @@ export async function getStudentById(id: string) {
           expiryDate: activePlan.expiryDate,
           freezeStartDate: activePlan.freezeStartDate,
           freezeEndDate: activePlan.freezeEndDate,
+          freezePeriods: activePlan.freezePeriods,
         }
       : null
   );
 
+  // Enrich batch with live student counts so the PlanCard can display them
+  let enrichedActivePlan = activePlan;
+  if (activePlan?.batch?.id) {
+    const batchPlans = await (prisma as any).studentPlan.findMany({
+      where: { batchId: activePlan.batch.id, isActive: true },
+      select: {
+        sessionsCompleted: true,
+        totalSessions: true,
+        endDate: true,
+        expiryDate: true,
+        freezeStartDate: true,
+        freezeEndDate: true,
+        freezePeriods: { select: { startDate: true, endDate: true } },
+      },
+    }) as any[];
+    let activeCount = 0, graceCount = 0, inactiveCount = 0;
+    for (const bp of batchPlans) {
+      const s = computeStudentStatus(bp);
+      if (s === "ACTIVE" || s === "FREEZE") activeCount++;
+      else if (s === "GRACE") graceCount++;
+      else inactiveCount++;
+    }
+    enrichedActivePlan = {
+      ...activePlan,
+      batch: {
+        ...(activePlan.batch as any),
+        studentCount: batchPlans.length,
+        activeCount,
+        graceCount,
+        inactiveCount,
+      },
+    };
+  }
+
   return {
     ...student,
-    activePlan,
+    activePlan: enrichedActivePlan,
     status,
     sessionsPending: activePlan
       ? Math.max(0, activePlan.totalSessions - activePlan.sessionsCompleted)
@@ -220,6 +257,19 @@ export async function updateStudent(
   }
 
   return student;
+}
+
+export async function updateStudentNotesAndMedical(
+  id: string,
+  data: { notes?: string | null; medicalHistory?: string | null }
+) {
+  return prisma.student.update({
+    where: { id },
+    data: {
+      notes: data.notes ?? null,
+      medicalHistory: data.medicalHistory ?? null,
+    },
+  });
 }
 
 export async function assignPlanToStudent(
@@ -521,4 +571,104 @@ export async function updateStudentActivePlan(
       ...(data.batchId !== undefined ? { batchId: data.batchId } : {}),
     },
   });
+}
+
+export async function addFreezePeriod(
+  studentPlanId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<void> {
+  if (endDate < startDate) {
+    throw new Error("Freeze end date must be after freeze start date");
+  }
+
+  const plan = await (prisma as any).studentPlan.findUnique({
+    where: { id: studentPlanId },
+    include: { freezePeriods: true },
+  }) as any;
+  if (!plan) throw new Error("Plan not found");
+  if (!plan.isActive) throw new Error("Plan is not active");
+
+  // Validate that the new freeze window is within the plan's startDate and endDate
+  const pStart = startOfDay(new Date(plan.startDate));
+  const pEnd = startOfDay(new Date(plan.endDate));
+  const fStart = startOfDay(new Date(startDate));
+  const fEnd = startOfDay(new Date(endDate));
+
+  if (fStart < pStart || fEnd > pEnd) {
+    throw new Error("Freeze dates must be within the active plan window");
+  }
+
+  // Validate that the new freeze window does not overlap with existing freeze periods
+  for (const fp of (plan.freezePeriods || []) as any[]) {
+    const existingStart = startOfDay(new Date(fp.startDate));
+    const existingEnd = startOfDay(new Date(fp.endDate));
+    if (fStart <= existingEnd && fEnd >= existingStart) {
+      throw new Error("Freeze period overlaps with an existing freeze period");
+    }
+  }
+
+  // Compute duration in days (inclusive)
+  const durationMs = endDate.getTime() - startDate.getTime();
+  const durationDays = Math.ceil(durationMs / 86400000) + 1;
+
+  // Extend endDate and expiryDate
+  const newEndDate = new Date(plan.endDate);
+  newEndDate.setDate(newEndDate.getDate() + durationDays);
+
+  const newExpiryDate = new Date(plan.expiryDate);
+  newExpiryDate.setDate(newExpiryDate.getDate() + durationDays);
+
+  await prisma.$transaction([
+    (prisma as any).freezePeriod.create({
+      data: {
+        studentPlanId,
+        startDate,
+        endDate,
+      },
+    }),
+    prisma.studentPlan.update({
+      where: { id: studentPlanId },
+      data: {
+        endDate: newEndDate,
+        expiryDate: newExpiryDate,
+      },
+    }),
+  ]);
+}
+
+export async function deleteFreezePeriod(
+  freezePeriodId: string
+): Promise<void> {
+  const freezePeriod = await (prisma as any).freezePeriod.findUnique({
+    where: { id: freezePeriodId },
+    include: { studentPlan: true },
+  });
+  if (!freezePeriod) throw new Error("Freeze period not found");
+
+  const plan = freezePeriod.studentPlan;
+
+  // Compute duration in days (inclusive)
+  const durationMs = freezePeriod.endDate.getTime() - freezePeriod.startDate.getTime();
+  const durationDays = Math.ceil(durationMs / 86400000) + 1;
+
+  // Reduce endDate and expiryDate
+  const newEndDate = new Date(plan.endDate);
+  newEndDate.setDate(newEndDate.getDate() - durationDays);
+
+  const newExpiryDate = new Date(plan.expiryDate);
+  newExpiryDate.setDate(newExpiryDate.getDate() - durationDays);
+
+  await prisma.$transaction([
+    (prisma as any).freezePeriod.delete({
+      where: { id: freezePeriodId },
+    }),
+    prisma.studentPlan.update({
+      where: { id: plan.id },
+      data: {
+        endDate: newEndDate,
+        expiryDate: newExpiryDate,
+      },
+    }),
+  ]);
 }

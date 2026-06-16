@@ -75,8 +75,8 @@ export async function updateGracePeriodAction(
       graceDays: number;
     }[] = [];
 
-    // sessionsPerWeek 1–4, planMonths 1 and 3
-    for (const spw of [1, 2, 3, 4]) {
+    // sessionsPerWeek 1–6, planMonths 1 and 3
+    for (const spw of [1, 2, 3, 4, 5, 6]) {
       for (const months of [1, 3]) {
         const raw = formData.get(`grace_${spw}_${months}`);
         if (raw === null || raw === "") continue;

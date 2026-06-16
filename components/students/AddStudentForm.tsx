@@ -97,7 +97,7 @@ export default function AddStudentForm() {
           </span>
           <span className="text-zinc-900 dark:text-zinc-200">Details</span>
           <span className="text-zinc-300 dark:text-zinc-700">—</span>
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-150 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 text-[11px] font-bold">
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 text-[11px] font-bold">
             2
           </span>
           <span className="text-zinc-400 dark:text-zinc-550">Assign plan</span>
@@ -111,7 +111,7 @@ export default function AddStudentForm() {
             <FormSection title="Student information">
               {/* Profile image centered below the title */}
               <div className="flex flex-col items-center justify-center pt-2 pb-4">
-                <StudentAvatarPicker name={name} gender={gender} />
+                <StudentAvatarPicker gender={gender} />
               </div>
 
               <div className="grid gap-x-4 gap-y-7 sm:grid-cols-2">
@@ -193,7 +193,7 @@ export default function AddStudentForm() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
-                    Parent's name *
+                    Parent&apos;s name *
                   </label>
                   <input name="parentName" required defaultValue={defaultParentName} className={inputClass} placeholder="e.g. Vijay Sharma" />
                   {state?.errors?.parentName && (

@@ -88,10 +88,8 @@ export default function BasicDetailsTab({ student }: { student: StudentData }) {
           )}
         </div>
 
-        {/* Avatar */}
         <div className="flex flex-col items-center justify-center pt-2 pb-2">
           <StudentAvatarPicker
-            name={name}
             gender={gender}
             currentAvatarUrl={student.avatarUrl}
           />
@@ -156,7 +154,7 @@ export default function BasicDetailsTab({ student }: { student: StudentData }) {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
-              Parent's name *
+              Parent&apos;s name *
             </label>
             <input
               name="parentName"

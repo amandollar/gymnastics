@@ -95,7 +95,7 @@ export default function StudentPicker({
               {selected.name}
             </p>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-              #{selected.studentNumber} · {selected.parentName}
+              TAG{selected.studentNumber} · {selected.parentName}
             </p>
           </div>
           <StatusPill status={selected.status} />
@@ -125,7 +125,7 @@ export default function StudentPicker({
             value={query}
             onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
             onFocus={() => setOpen(true)}
-            placeholder="Search by name, parent, or student #…"
+            placeholder="Search by name, parent, or student ID…"
             className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 pl-10 pr-10 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-orange-500/25 focus:border-brand-orange-500 transition-all placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
             aria-label="Search students"
             aria-expanded={open}
@@ -190,7 +190,7 @@ export default function StudentPicker({
                           {s.name}
                         </span>
                         <span className="block text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                          #{s.studentNumber} · {s.parentName}
+                          TAG{s.studentNumber} · {s.parentName}
                         </span>
                       </span>
                       <StatusPill status={s.status} />

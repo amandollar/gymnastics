@@ -78,6 +78,8 @@ function GracePeriodTable({
     2: "2 classes/week",
     3: "3 classes/week",
     4: "4 classes/week",
+    5: "5 classes/week",
+    6: "6 classes/week",
   };
 
   function getDays(spw: number, months: number): number {
@@ -101,7 +103,7 @@ function GracePeriodTable({
       </div>
 
       <ul className="divide-y divide-zinc-100 dark:divide-zinc-800 text-sm">
-        {[1, 2, 3, 4].map((spw) => (
+        {[1, 2, 3, 4, 5, 6].map((spw) => (
           <li key={spw} className="grid grid-cols-3 items-center gap-3 px-4 py-2.5">
             <span className="text-zinc-600 dark:text-zinc-400 text-xs">
               {spwLabels[spw]}

@@ -8,11 +8,13 @@ import StudentAvatar from "./StudentAvatar";
 import {
   formatAge,
   formatINR,
-  formatTenure,
   type StudentStatus,
 } from "@/lib/utils/student";
 import { computeDaysLeft } from "@/lib/plan/calculations";
-import { updateStudentActivePlanBatchAction } from "@/lib/actions/students";
+import {
+  updateStudentActivePlanBatchAction,
+  updateStudentNotesAndMedicalAction,
+} from "@/lib/actions/students";
 
 export type StudentListItem = {
   id: string;
@@ -35,6 +37,8 @@ export type StudentListItem = {
   } | null;
   sessionsPending: number | null;
   createdAt: Date | string;
+  notes?: string | null;
+  medicalHistory?: string | null;
 };
 
 // ─── Three-dot dropdown ────────────────────────────────────────────────────────
@@ -59,6 +63,13 @@ function RowMenu({
   const [selectedBatchId, setSelectedBatchId] = useState(student.activePlan?.batchId ?? "");
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Modal states for Add Notes (Notes & Medical History)
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [notes, setNotes] = useState(student.notes ?? "");
+  const [medicalHistory, setMedicalHistory] = useState(student.medicalHistory ?? "");
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [notesError, setNotesError] = useState<string | null>(null);
 
   // Calculate fixed position from the button's screen rect
   function openMenu() {
@@ -96,6 +107,35 @@ function RowMenu({
     setSelectedBatchId(student.activePlan?.batchId ?? "");
     setError(null);
     setIsUpdateBatchOpen(true);
+  };
+
+  const handleOpenNotesModal = () => {
+    setOpen(false);
+    setNotes(student.notes ?? "");
+    setMedicalHistory(student.medicalHistory ?? "");
+    setNotesError(null);
+    setIsNotesModalOpen(true);
+  };
+
+  const handleSaveNotes = async () => {
+    setIsSavingNotes(true);
+    setNotesError(null);
+    try {
+      const res = await updateStudentNotesAndMedicalAction(student.id, {
+        notes: notes || null,
+        medicalHistory: medicalHistory || null,
+      });
+      if (res.success) {
+        setIsNotesModalOpen(false);
+        router.refresh();
+      } else {
+        setNotesError(res.message || "Failed to update notes");
+      }
+    } catch (err) {
+      setNotesError(err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
+      setIsSavingNotes(false);
+    }
   };
 
   const handleUpdateBatch = async () => {
@@ -163,6 +203,21 @@ function RowMenu({
             </Link>
           )}
 
+          {/* Add Notes */}
+          {canManage && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={handleOpenNotesModal}
+              className={itemClass}
+            >
+              <svg className="w-4 h-4 text-zinc-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Add Notes
+            </button>
+          )}
+
           {/* Mark Present */}
           <button
             type="button"
@@ -193,21 +248,7 @@ function RowMenu({
             </button>
           )}
 
-          {/* Change Status */}
-          {canManage && (
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => { setOpen(false); /* TODO: trigger change status */ }}
-              className={itemClass}
-            >
-              <svg className="w-4 h-4 text-violet-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h10M4 18h6" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 15l2 2 4-4" />
-              </svg>
-              Change Status
-            </button>
-          )}
+
 
           {/* Update Batch */}
           {canManage && (
@@ -277,7 +318,7 @@ function RowMenu({
             {student.activePlan ? (
               <div className="space-y-4">
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  Update the batch assignment for <span className="font-semibold text-zinc-800 dark:text-zinc-200">{student.name}</span>'s active plan.
+                  Update the batch assignment for <span className="font-semibold text-zinc-800 dark:text-zinc-200">{student.name}</span>&apos;s active plan.
                 </p>
 
                 {error && (
@@ -338,6 +379,92 @@ function RowMenu({
                   {isUpdating ? "Updating..." : "Update"}
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notes & Medical Modal */}
+      {isNotesModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isSavingNotes) {
+              setIsNotesModalOpen(false);
+            }
+          }}
+        >
+          <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 shadow-2xl p-6 overflow-hidden animate-scale-in space-y-4">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                Notes & Medical History
+              </h3>
+              <button
+                type="button"
+                disabled={isSavingNotes}
+                onClick={() => setIsNotesModalOpen(false)}
+                className="h-8 w-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                ✕
+              </button>
+            </div>
+
+            {notesError && (
+              <div className="p-3 text-xs bg-rose-50 dark:bg-rose-955/20 text-rose-600 dark:text-rose-400 rounded-xl border border-rose-100 dark:border-rose-900/30 animate-fade-in">
+                {notesError}
+              </div>
+            )}
+
+            {/* Modal Body */}
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wider">
+                  Medical & Allergies
+                </label>
+                <textarea
+                  value={medicalHistory}
+                  onChange={(e) => setMedicalHistory(e.target.value)}
+                  disabled={isSavingNotes}
+                  placeholder="e.g. Asthma, peanut allergy, none..."
+                  rows={3}
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 disabled:opacity-50"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wider">
+                  Notes
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  disabled={isSavingNotes}
+                  placeholder="e.g. Behavioral notes, requirements..."
+                  rows={3}
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 disabled:opacity-50"
+                />
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex gap-2.5 justify-end pt-2">
+              <button
+                type="button"
+                disabled={isSavingNotes}
+                onClick={() => setIsNotesModalOpen(false)}
+                className="px-4 py-2 text-sm font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isSavingNotes}
+                onClick={handleSaveNotes}
+                className="px-4 py-2 text-sm font-semibold text-white bg-brand-orange-500 hover:bg-brand-orange-600 rounded-xl transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+              >
+                {isSavingNotes ? "Saving..." : "Save"}
+              </button>
             </div>
           </div>
         </div>
@@ -493,15 +620,7 @@ export default function StudentsListClient({
     return rows;
   }, [students, search, statusFilter, batchFilter, planTypeFilter, sortField, sortOrder]);
 
-  const stats = useMemo(() => {
-    return {
-      total: students.length,
-      active: students.filter((s) =>
-        ["ACTIVE", "GRACE"].includes(s.status)
-      ).length,
-      noPlan: students.filter((s) => s.status === "NO_PLAN").length,
-    };
-  }, [students]);
+
 
   const handleHeaderSort = (field: SortField) => {
     if (sortField === field) {
@@ -673,7 +792,7 @@ export default function StudentsListClient({
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value as StudentStatus | "ALL")}
-                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-850 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
                 >
                   <option value="ALL">All statuses</option>
                   <option value="ACTIVE">Active</option>
@@ -692,7 +811,7 @@ export default function StudentsListClient({
                 <select
                   value={batchFilter}
                   onChange={(e) => setBatchFilter(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-850 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
                 >
                   <option value="ALL">All batches</option>
                   <option value="UNASSIGNED">No batch allotted</option>
@@ -712,7 +831,7 @@ export default function StudentsListClient({
                 <select
                   value={planTypeFilter}
                   onChange={(e) => setPlanTypeFilter(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-850 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
                 >
                   <option value="ALL">All plans</option>
                   <option value="REGULAR">Grouped</option>
@@ -731,7 +850,7 @@ export default function StudentsListClient({
                     setSortField(e.target.value as SortField);
                     setSortOrder("asc");
                   }}
-                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-850 dark:text-zinc-150 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
                 >
                   <option value="NONE">Sort by newest</option>
                   <option value="NAME">Sort by name</option>
@@ -825,7 +944,7 @@ export default function StudentsListClient({
                   <StudentAvatar student={s} size={48} />
                   <div className="min-w-0">
                     <p className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                      #{s.studentNumber} {s.name}
+                      TAG{s.studentNumber} {s.name}
                     </p>
                     <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
                       <span>Age: {formatAge(new Date(s.dateOfBirth))}</span>
@@ -861,11 +980,21 @@ export default function StudentsListClient({
                 <div>
                   <span className="text-zinc-400 dark:text-zinc-550">Plan:</span>{" "}
                   <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                    {s.activePlan
-                      ? s.activePlan.planType === "ONE_TO_ONE"
-                        ? "personal"
-                        : "grouped"
-                      : "—"}
+                    {s.activePlan ? (
+                      s.activePlan.planType === "ONE_TO_ONE" ? "personal" : "grouped"
+                    ) : (
+                      canManage ? (
+                        <Link
+                          href={`/plans?student=${s.id}`}
+                          prefetch={false}
+                          className="inline-flex items-center gap-1 rounded-lg bg-brand-orange-500 hover:bg-brand-orange-600 px-2 py-0.5 text-[10px] font-bold text-white transition-colors shadow-sm mt-0.5"
+                        >
+                          Assign plan
+                        </Link>
+                      ) : (
+                        "—"
+                      )
+                    )}
                   </span>
                 </div>
                 <div>
@@ -954,12 +1083,23 @@ export default function StudentsListClient({
                   <td className="px-4 py-3">
                     <StudentStatusBadge status={s.status} />
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300">
-                    {s.activePlan
-                      ? s.activePlan.planType === "ONE_TO_ONE"
-                        ? "personal"
-                        : "grouped"
-                      : "—"}
+                  <td className="px-4 py-3 text-zinc-650 dark:text-zinc-350">
+                    {s.activePlan ? (
+                      s.activePlan.planType === "ONE_TO_ONE" ? "personal" : "grouped"
+                    ) : (
+                      canManage ? (
+                        <Link
+                          href={`/plans?student=${s.id}`}
+                          prefetch={false}
+                          data-prevent-row-click="true"
+                          className="inline-flex items-center gap-1 rounded-lg bg-brand-orange-500 hover:bg-brand-orange-600 px-2.5 py-1 text-xs font-semibold text-white transition-colors shadow-sm"
+                        >
+                          Assign plan
+                        </Link>
+                      ) : (
+                        "—"
+                      )
+                    )}
                   </td>
                   <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300">
                     {s.sessionsPending ?? "—"}

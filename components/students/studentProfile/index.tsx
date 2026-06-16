@@ -1,0 +1,445 @@
+"use client";
+
+import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { MoreVertical } from "lucide-react";
+import { MedicalNotesCard } from "./MedicalNotesCard";
+import StudentStatusBadge from "../StudentStatusBadge";
+import StudentAvatar from "../StudentAvatar";
+import {
+  formatAge,
+  formatJoinedDate,
+  formatTenure,
+  type StudentStatus,
+} from "@/lib/utils/student";
+import type { PlanRow, AttendanceRow } from "./types";
+import { AttendanceCard } from "./AttendanceCard";
+import { PlanCard } from "./PlanCard";
+import { FreezePlanPopup } from "./FreezePlanPopup";
+import { PlanHistory } from "./PlanHistory";
+
+// ─── Student type ─────────────────────────────────────────────────────────────
+
+type StudentData = {
+  id: string;
+  studentNumber: number;
+  name: string;
+  dateOfBirth: Date;
+  gender: string;
+  parentName: string;
+  contactNumber: string;
+  admissionDate: Date;
+  notes: string | null;
+  medicalHistory: string | null;
+  avatarUrl?: string | null;
+  status: StudentStatus;
+  activePlan: PlanRow | null;
+  sessionsPending: number | null;
+  plans: PlanRow[];
+  attendances: AttendanceRow[];
+};
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
+export default function StudentDetailClient({
+  student,
+  canManage,
+}: {
+  student: StudentData;
+  canManage: boolean;
+}) {
+  const [showFreeze, setShowFreeze] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [menuOpen]);
+
+  return (
+    <div className="space-y-6 min-w-0">
+      {/* Page title + action buttons */}
+      <div className="flex flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-light tracking-tight text-zinc-900 dark:text-zinc-55 truncate">
+            Student Profile
+          </h1>
+          <StudentStatusBadge status={student.status} />
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Desktop view: inline buttons */}
+          <div className="hidden min-[1025px]:flex items-center gap-2">
+            {/* Print ID card */}
+            <a
+              href={`/students/${student.id}/id-card`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-350 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
+            >
+              <svg
+                className="w-4 h-4 text-zinc-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.8}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 9V2h12v7"
+                />
+                <rect x="3" y="9" width="18" height="10" rx="2" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 14h12M6 18h8"
+                />
+                <circle cx="18" cy="13" r="1" fill="currentColor" />
+              </svg>
+              Print ID
+            </a>
+
+            {/* Freeze plan */}
+            {canManage &&
+              student.activePlan &&
+              student.status !== "INACTIVE" &&
+              student.status !== "NO_PLAN" && (
+                <button
+                  type="button"
+                  onClick={() => setShowFreeze(true)}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-350 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
+                >
+                  <svg
+                    className="w-4 h-4 text-zinc-500"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.8}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 3v18M3 12h18M12 9l-3-3M12 15l-3 3M12 9l3-3M12 15l3 3M9 12L6 9M15 12l3-3M9 12l-3 3M15 12l3 3"
+                    />
+                  </svg>
+                  Freeze plan
+                </button>
+              )}
+
+            {/* Edit profile */}
+            {canManage && (
+              <a
+                href={`/students/${student.id}/edit`}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors shadow-sm"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-1.414.94l-3.414 1.137 1.137-3.414A4 4 0 019 13z"
+                  />
+                </svg>
+                Update details
+              </a>
+            )}
+          </div>
+
+          {/* Mobile view: dropdown menu */}
+          <div className="relative min-[1025px]:hidden" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="inline-flex items-center justify-center h-9 w-9 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
+              aria-label="More actions"
+              aria-expanded={menuOpen}
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
+
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-48 rounded-2xl border border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-xl py-1 z-50 origin-top-right animate-scale-in">
+                {/* Update details */}
+                {canManage && (
+                  <Link
+                    href={`/students/${student.id}/edit`}
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors text-left font-medium cursor-pointer"
+                  >
+                    <svg
+                      className="w-4 h-4 text-zinc-500 shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-1.414.94l-3.414 1.137 1.137-3.414A4 4 0 019 13z"
+                      />
+                    </svg>
+                    Update details
+                  </Link>
+                )}
+
+                {/* Freeze plan */}
+                {canManage &&
+                  student.activePlan &&
+                  student.status !== "INACTIVE" &&
+                  student.status !== "NO_PLAN" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowFreeze(true);
+                        setMenuOpen(false);
+                      }}
+                      className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors text-left font-semibold cursor-pointer"
+                    >
+                      <svg
+                        className="w-4 h-4 text-zinc-500 shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={1.8}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 3v18M3 12h18M12 9l-3-3M12 15l-3 3M12 9l3-3M12 15l3 3M9 12L6 9M15 12l3-3M9 12l-3 3M15 12l3 3"
+                        />
+                      </svg>
+                      Freeze plan
+                    </button>
+                  )}
+
+                {/* Print ID */}
+                <a
+                  href={`/students/${student.id}/id-card`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors text-left font-medium cursor-pointer"
+                >
+                  <svg
+                    className="w-4 h-4 text-zinc-500 shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={1.8}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 9V2h12v7"
+                    />
+                    <rect x="3" y="9" width="18" height="10" rx="2" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M6 14h12M6 18h8"
+                    />
+                    <circle cx="18" cy="13" r="1" fill="currentColor" />
+                  </svg>
+                  Print ID
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Two-column layout */}
+      <div className="grid gap-5 lg:grid-cols-[300px_1fr] min-w-0">
+        {/* ── Left column ── */}
+        <div className="space-y-4 min-w-0">
+          {/* Avatar + name card */}
+          <div className="flex flex-col items-center text-center gap-4 py-4">
+            <StudentAvatar student={student} size={128} />
+            <div>
+              <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-55">
+                {student.name}
+              </h2>
+              <p className="text-sm font-medium text-zinc-400 dark:text-zinc-500 mt-0.5">
+                TAG{student.studentNumber}
+              </p>
+            </div>
+          </div>
+
+          {/* Basic info card */}
+          <div className="rounded-3xl bg-white dark:bg-zinc-900 p-5 shadow-sm space-y-4">
+            <dl className="space-y-3 text-sm">
+              <div className="flex justify-between gap-2">
+                <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">
+                  Age
+                </dt>
+                <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
+                  {formatAge(new Date(student.dateOfBirth))}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">
+                  Gender
+                </dt>
+                <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right capitalize">
+                  {student.gender}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">
+                  DOB
+                </dt>
+                <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
+                  {new Date(student.dateOfBirth).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </dd>
+              </div>
+              <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
+              <div className="flex justify-between gap-2">
+                <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">
+                  Parent
+                </dt>
+                <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
+                  {student.parentName}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">
+                  Phone
+                </dt>
+                <dd className="font-medium text-right">
+                  <a
+                    href={`tel:${student.contactNumber}`}
+                    className="text-brand-orange-500 hover:underline"
+                  >
+                    {student.contactNumber}
+                  </a>
+                </dd>
+              </div>
+              <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
+              <div className="flex justify-between gap-2">
+                <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">
+                  Joined
+                </dt>
+                <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
+                  {formatJoinedDate(new Date(student.admissionDate))}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">
+                  Tenure
+                </dt>
+                <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
+                  {formatTenure(new Date(student.admissionDate))}
+                </dd>
+              </div>
+            </dl>
+          </div>
+
+          <MedicalNotesCard
+            studentId={student.id}
+            initialNotes={student.notes}
+            initialMedicalHistory={student.medicalHistory}
+            canManage={canManage}
+          />
+        </div>
+
+        {/* ── Right column ── */}
+        <div className="space-y-4 min-w-0">
+          {!student.activePlan ? (
+            /* No plan empty state */
+            <div className="rounded-3xl bg-white dark:bg-zinc-900 shadow-sm flex flex-col items-center justify-center text-center gap-5 py-16 px-8">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <svg
+                  className="w-8 h-8 text-zinc-400 dark:text-zinc-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"
+                  />
+                </svg>
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                  No plan created
+                </h3>
+                <p className="text-sm text-zinc-400 dark:text-zinc-500 max-w-[240px]">
+                  This student doesn&apos;t have an active plan yet.
+                </p>
+              </div>
+              {canManage && (
+                <Link
+                  href={`/plans?student=${student.id}`}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-brand-orange-500 hover:bg-brand-orange-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors shadow-sm"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 4.5v15m7.5-7.5h-15"
+                    />
+                  </svg>
+                  Create plan
+                </Link>
+              )}
+            </div>
+          ) : (
+            <>
+              <AttendanceCard
+                attendances={student.attendances}
+                activePlan={student.activePlan}
+              />
+              <PlanCard
+                plan={student.activePlan}
+                sessionsPending={student.sessionsPending}
+                status={student.status}
+                student={student}
+                canManage={canManage}
+                setShowFreeze={setShowFreeze}
+              />
+            </>
+          )}
+
+          <PlanHistory plans={student.plans} />
+        </div>
+      </div>
+
+      {/* Freeze popup */}
+      {showFreeze && student.activePlan && (
+        <FreezePlanPopup
+          activePlan={student.activePlan}
+          studentId={student.id}
+          onClose={() => setShowFreeze(false)}
+        />
+      )}
+    </div>
+  );
+}

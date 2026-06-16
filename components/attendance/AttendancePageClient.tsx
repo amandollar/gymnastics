@@ -116,7 +116,7 @@ export default function AttendancePageClient({
     params.set("year", String(y));
     params.set("month", String(m));
     startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`);
+      router.replace(`${pathname}?${params.toString()}`);
     });
   };
 

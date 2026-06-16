@@ -14,6 +14,48 @@ import { PLAN_DAY_OPTIONS } from "@/components/plans/plan-form-shared";
 import BatchPicker from "@/components/plans/BatchPicker";
 import type { BatchWithCount } from "@/lib/services/batches";
 
+function parseDaysFromBatchName(name: string): WeekdayName[] | null {
+  const words = name.trim().split(/\s+/);
+  if (words.length === 0) return null;
+  const lastWord = words[words.length - 1];
+
+  // Must consist only of uppercase letters
+  if (!/^[A-Z]+$/.test(lastWord)) {
+    return null;
+  }
+
+  const daysInfo: { char: string; name: WeekdayName }[] = [
+    { char: "M", name: "Monday" },
+    { char: "T", name: "Tuesday" },
+    { char: "W", name: "Wednesday" },
+    { char: "T", name: "Thursday" },
+    { char: "F", name: "Friday" },
+    { char: "S", name: "Saturday" },
+    { char: "S", name: "Sunday" },
+  ];
+
+  const selected: WeekdayName[] = [];
+  let searchIndex = 0;
+
+  for (let i = 0; i < lastWord.length; i++) {
+    const char = lastWord[i];
+    let foundIndex = -1;
+    for (let j = searchIndex; j < daysInfo.length; j++) {
+      if (daysInfo[j].char === char) {
+        foundIndex = j;
+        break;
+      }
+    }
+
+    if (foundIndex !== -1) {
+      selected.push(daysInfo[foundIndex].name);
+      searchIndex = foundIndex + 1;
+    }
+  }
+
+  return selected.length > 0 ? selected : null;
+}
+
 const inputClass =
   "w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 focus:border-brand-orange-500 transition-all duration-200";
 
@@ -72,6 +114,17 @@ export default function UpdatePlanTab({
       prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
     );
   }
+
+  const handleBatchChange = (id: string) => {
+    setSelectedBatchId(id);
+    const batch = batches.find((b) => b.id === id);
+    if (batch) {
+      const autoDays = parseDaysFromBatchName(batch.name);
+      if (autoDays) {
+        setSelectedDays(autoDays);
+      }
+    }
+  };
 
   // Live-calculated plan preview
   const preview = useMemo(() => {
@@ -240,7 +293,7 @@ export default function UpdatePlanTab({
             <BatchPicker
               batches={batches}
               value={selectedBatchId}
-              onChange={setSelectedBatchId}
+              onChange={handleBatchChange}
             />
           )}
         </div>

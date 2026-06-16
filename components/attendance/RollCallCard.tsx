@@ -26,7 +26,7 @@ function PresentRow({ student }: PresentRowProps) {
             {student.name}
           </p>
           <span className="shrink-0 text-[9px] font-bold text-zinc-400 dark:text-zinc-650 bg-zinc-100 dark:bg-zinc-800 px-1 py-0.5 rounded">
-            #{student.studentNumber}
+            TAG{student.studentNumber}
           </span>
         </div>
         {student.planName && (

@@ -18,6 +18,48 @@ import PlanBuilderFields from "./PlanBuilderFields";
 import StudentPicker, { type PlanStudentOption } from "./StudentPicker";
 import BatchPicker from "./BatchPicker";
 
+function parseDaysFromBatchName(name: string): WeekdayName[] | null {
+  const words = name.trim().split(/\s+/);
+  if (words.length === 0) return null;
+  const lastWord = words[words.length - 1];
+
+  // Must consist only of uppercase letters
+  if (!/^[A-Z]+$/.test(lastWord)) {
+    return null;
+  }
+
+  const daysInfo: { char: string; name: WeekdayName }[] = [
+    { char: "M", name: "Monday" },
+    { char: "T", name: "Tuesday" },
+    { char: "W", name: "Wednesday" },
+    { char: "T", name: "Thursday" },
+    { char: "F", name: "Friday" },
+    { char: "S", name: "Saturday" },
+    { char: "S", name: "Sunday" },
+  ];
+
+  const selected: WeekdayName[] = [];
+  let searchIndex = 0;
+
+  for (let i = 0; i < lastWord.length; i++) {
+    const char = lastWord[i];
+    let foundIndex = -1;
+    for (let j = searchIndex; j < daysInfo.length; j++) {
+      if (daysInfo[j].char === char) {
+        foundIndex = j;
+        break;
+      }
+    }
+
+    if (foundIndex !== -1) {
+      selected.push(daysInfo[foundIndex].name);
+      searchIndex = foundIndex + 1;
+    }
+  }
+
+  return selected.length > 0 ? selected : null;
+}
+
 export default function CreateAssignPlanPanel({
   students,
   pricingMaps,
@@ -100,6 +142,18 @@ export default function CreateAssignPlanPanel({
     );
   }
 
+  const handleBatchChange = (id: string) => {
+    setSelectedBatchId(id);
+    setBatchError(undefined);
+    const batch = batches.find((b) => b.id === id);
+    if (batch) {
+      const autoDays = parseDaysFromBatchName(batch.name);
+      if (autoDays) {
+        setSelectedDays(autoDays);
+      }
+    }
+  };
+
   const selectedStudent = students.find((s) => s.id === studentId);
 
   if (showSuccess && selectedStudent) {
@@ -171,77 +225,66 @@ export default function CreateAssignPlanPanel({
       <input type="hidden" name="batchId" value={selectedBatchId} readOnly />
 
       <div className="rounded-3xl bg-white dark:bg-zinc-900 overflow-hidden">
-        {/* Student selection */}
-        <div className="px-5 pt-5 pb-4 sm:px-6 sm:pt-6">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500 mb-3">
-            Student
-          </p>
-          <StudentPicker
-            students={students}
-            value={studentId}
-            onChange={(id) => {
-              setStudentId(id);
-              setStudentError(undefined);
-            }}
-            error={studentError}
-          />
-        </div>
-
-        {/* Divider */}
-        {batches.length > 0 && (
-          <div className="border-t border-zinc-100 dark:border-zinc-800" />
-        )}
-
-        {/* Batch selection */}
-        <div className="px-5 py-4 sm:px-6">
-          <div className="flex items-center justify-between mb-3">
+        <div className="p-5 sm:p-6 space-y-6">
+          {/* Student selection */}
+          <div className="space-y-3">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-              {batches.length === 0 ? "No batches added" : "Batch"}
+              Student
             </p>
-            {batches.length === 0 && onOpenBatchesModal && (
-              <button
-                type="button"
-                onClick={onOpenBatchesModal}
-                className="inline-flex items-center justify-center rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 text-white px-3.5 py-1.5 text-xs font-semibold transition-colors cursor-pointer shadow-sm"
-              >
-                Create Batch
-              </button>
-            )}
+            <StudentPicker
+              students={students}
+              value={studentId}
+              onChange={(id) => {
+                setStudentId(id);
+                setStudentError(undefined);
+              }}
+              error={studentError}
+            />
           </div>
-          <BatchPicker
-            batches={batches}
-            value={selectedBatchId}
-            onChange={(id) => {
-              setSelectedBatchId(id);
-              setBatchError(undefined);
-            }}
-            error={batchError}
-            onManageBatches={onOpenBatchesModal}
-          />
-        </div>
 
-        {/* Divider */}
-        {batches.length > 0 && (
-          <div className="border-t border-zinc-100 dark:border-zinc-800" />
-        )}
+          {/* Batch selection */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                {batches.length === 0 ? "No batches added" : "Batch"}
+              </p>
+              {batches.length === 0 && onOpenBatchesModal && (
+                <button
+                  type="button"
+                  onClick={onOpenBatchesModal}
+                  className="inline-flex items-center justify-center rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 text-white px-3.5 py-1.5 text-xs font-semibold transition-colors cursor-pointer shadow-sm"
+                >
+                  Create Batch
+                </button>
+              )}
+            </div>
+            <BatchPicker
+              batches={batches}
+              value={selectedBatchId}
+              onChange={handleBatchChange}
+              error={batchError}
+              onManageBatches={onOpenBatchesModal}
+            />
+          </div>
 
-        {/* Plan builder */}
-        <div className="px-5 pb-5 sm:px-6 sm:pb-6 pt-4">
-          <PlanBuilderFields
-            formMode
-            planType={planType}
-            onPlanTypeChange={setPlanType}
-            startDate={startDate}
-            onStartDateChange={setStartDate}
-            endDate={endDate}
-            onEndDateChange={setEndDate}
-            selectedDays={selectedDays}
-            onToggleDay={toggleDay}
-            discountPercent={discountPercent}
-            onDiscountChange={setDiscountPercent}
-            preview={preview}
-            selectedDaysError={state?.errors?.selectedDays?.[0]}
-          />
+          {/* Plan builder */}
+          <div>
+            <PlanBuilderFields
+              formMode
+              planType={planType}
+              onPlanTypeChange={setPlanType}
+              startDate={startDate}
+              onStartDateChange={setStartDate}
+              endDate={endDate}
+              onEndDateChange={setEndDate}
+              selectedDays={selectedDays}
+              onToggleDay={toggleDay}
+              discountPercent={discountPercent}
+              onDiscountChange={setDiscountPercent}
+              preview={preview}
+              selectedDaysError={state?.errors?.selectedDays?.[0]}
+            />
+          </div>
         </div>
 
         {/* Submit footer */}

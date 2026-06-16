@@ -354,7 +354,7 @@ export default function SettingsClient({
                   <button
                     type="submit"
                     disabled={isCreatePending || isEditPending}
-                    className="rounded-lg bg-zinc-900 dark:bg-zinc-150 px-4 py-2 text-sm font-medium text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 cursor-pointer"
+                    className="rounded-lg bg-zinc-900 dark:bg-zinc-100 px-4 py-2 text-sm font-medium text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 cursor-pointer"
                   >
                     {isCreatePending || isEditPending
                       ? "Saving…"

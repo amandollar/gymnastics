@@ -58,7 +58,7 @@ export default function StudentCreatedSuccess({
               {studentName}
             </p>
             <p className="text-sm text-zinc-500">
-              Student ID #{studentNumber}
+              Student ID TAG{studentNumber}
             </p>
             <span className="mt-2 inline-flex items-center rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600">
               No plan assigned yet
