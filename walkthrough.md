@@ -39,7 +39,15 @@ We added Next.js `loading.tsx` skeletons matching the structure of each page:
 ### 5. Prefetching Optimizations (Minimizing Database Query Cascades)
 - **Viewport-based Prefetching Disabled (`prefetch={false}`)**: Added `prefetch={false}` to all navigation links in `DashboardNav`, `MobileBottomNav`, and `DashboardSidebar`.
 - **Grid and Table Row Prefetching Disabled**: Added `prefetch={false}` to student row links in the student table and mobile list cards in `StudentsListClient.tsx`, and enquiry row links (convert, edit) in `EnquiryListClient.tsx`.
-- **Why this is critical**: By default, Next.js prefetches any `<Link>` that enters the viewport. For sidebars and table rows, this triggers parallel server component runs for *all* linked pages (which run database queries like fetching profile details, plans, and bills for every student or enquiry rendered on the page). Disabling viewport prefetching prevents this cascading load on the Neon database while retaining hover-based prefetching for instant navigations.
+  - **Layout Aesthetics**: Removed double-darkening gradients from the top and bottom header/footer overlays of the scanner camera, allowing the viewport background mask shadow to provide consistent contrast. Corrected broken Tailwind color classes (changed typo `text-zinc-350` to `text-zinc-400` to fix black close icon, and `placeholder-zinc-550` to `placeholder-zinc-500` for clear placeholder visibility).
+  - **Scan Feedback Alert Overlay**:
+    - Constrained the scan message overlay (success present mark UI and failure error message) to `max-w-xs` and centered it horizontally using `left-1/2 -translate-x-1/2` to prevent stretching.
+    - Increased vertical padding to `p-5` (giving it taller stature), removed borders completely (`border-0`), and used clean glassmorphism.
+    - Added a red warning cross (`X`) icon on failure scan feedback, while keeping the checkmark (`Check`) on success.
+  - **Attendance Success Audio & Toast Notification**:
+    - Plays `/audio/atttendance-success.mp3` at full volume (`volume = 1.0`) on a successful check-in.
+    - Displays a glassmorphic check-in notification card in the bottom-right corner of the screen containing a custom green checkmark, the student's name, and their updated session completion stats (e.g. `Sessions: 12 / 24`) clearly.
+    - Automatically hides after 2.5 seconds or immediately when the next check-in is initiated.
 
 ---
 

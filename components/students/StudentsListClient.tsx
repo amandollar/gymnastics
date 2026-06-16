@@ -734,6 +734,16 @@ export default function StudentsListClient({
                   Bulk upload
                 </Link>
                 <Link
+                  href="/students/print-ids"
+                  className="inline-flex items-center gap-1.5 justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
+                    <rect x="6" y="14" width="12" height="8" rx="1" />
+                  </svg>
+                  Print IDs
+                </Link>
+                <Link
                   href="/students/new"
                   className="inline-flex items-center justify-center rounded-lg bg-brand-orange-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-orange-600 transition-colors"
                 >
@@ -765,6 +775,17 @@ export default function StudentsListClient({
                       className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-705 dark:text-zinc-295 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                     >
                       Bulk upload
+                    </Link>
+                    <Link
+                      href="/students/print-ids"
+                      onClick={() => setHeaderMenuOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                    >
+                      <svg className="w-4 h-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" />
+                        <rect x="6" y="14" width="12" height="8" rx="1" />
+                      </svg>
+                      Print IDs
                     </Link>
                     <Link
                       href="/students/new"

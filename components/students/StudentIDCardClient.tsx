@@ -1,9 +1,21 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Printer } from "lucide-react";
+import QRCode from "qrcode";
+import {
+  ArrowLeft,
+  Printer,
+  IdCard,
+  Users,
+  Phone,
+  Calendar,
+  Dumbbell,
+  Clock,
+  MapPin,
+  Mail,
+} from "lucide-react";
 import { getStudentAvatarUrl } from "@/lib/utils/avatar";
 
 type StudentData = {
@@ -22,65 +34,27 @@ type StudentData = {
   activePlan?: {
     planType: string;
     expiryDate: Date | string;
+    batch?: {
+      id: string;
+      name: string;
+      timing: string;
+    } | null;
   } | null;
 };
-
-// SVG standard Code 39 barcode generator
-function generateCode39Svg(studentNumber: number): string {
-  const CODE39_MAP: Record<string, string> = {
-    "0": "N N N W W N W N N", "1": "W N N W N N N N W", "2": "N N W W N N N N W",
-    "3": "W N W W N N N N N", "4": "N N N W W N N N W", "5": "W N N W W N N N N",
-    "6": "N N W W W N N N N", "7": "N N N W N N W N W", "8": "W N N W N N W N N",
-    "9": "N N W W N N W N N", "A": "W N N N N W N N W", "B": "N N W N N W N N W",
-    "C": "W N W N N W N N N", "D": "N N N N W W N N W", "E": "W N N N W W N N N",
-    "F": "N N W N W W N N N", "G": "N N N N N W W N W", "H": "W N N N N W W N N",
-    "I": "N N W N N W W N N", "J": "N N N N W W W N N", "K": "W N N N N N N W W",
-    "L": "N N W N N N N W W", "M": "W N W N N N N W N", "N": "N N N N W N N W W",
-    "O": "W N N N W N N W N", "P": "N N W N W N N W N", "Q": "N N N N N N W W W",
-    "R": "W N N N N N N W W", "S": "N N W N N N N W W", "T": "N N N N W N N W W",
-    "U": "W W N N N N N N W", "V": "N W W N N N N N W", "W": "W W W N N N N N N",
-    "X": "N W N N W N N N W", "Y": "W W N N W N N N N", "Z": "N W W N N W N N N",
-    "-": "N W N N N N W N W", ".": "W W N N N N W N N", " ": "N W W N N N W N N",
-    "*": "N W N N W N W N N",
-  };
-
-  const paddedNum = String(studentNumber).padStart(3, "0");
-  const value = `TAG${paddedNum}`;
-  const code = `*${value}*`;
-  
-  let x = 0;
-  const rects: string[] = [];
-  const narrowWidth = 1.5;
-  const wideWidth = 3.5;
-  const barHeight = 45;
-  
-  for (let i = 0; i < code.length; i++) {
-    const char = code[i];
-    const pattern = CODE39_MAP[char] || CODE39_MAP["*"];
-    const elements = pattern.split(" ");
-    
-    for (let j = 0; j < elements.length; j++) {
-      const type = elements[j];
-      const isBar = j % 2 === 0;
-      const width = type === "W" ? wideWidth : narrowWidth;
-      
-      if (isBar) {
-        rects.push(`<rect x="${x}" y="0" width="${width}" height="${barHeight}" fill="black" />`);
-      }
-      x += width;
-    }
-    x += narrowWidth; // Inter-character gap
-  }
-  
-  return `<svg width="100%" height="100%" viewBox="0 0 ${x} ${barHeight}" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">${rects.join("")}</svg>`;
-}
 
 function formatStudentId(num: number): string {
   const padded = String(num).padStart(3, "0");
   return `TAG${padded}`;
 }
 
-export default function StudentIDCardClient({ student }: { student: StudentData }) {
+export default function StudentIDCardClient({
+  student,
+}: {
+  student: StudentData;
+}) {
+  const [frontQr, setFrontQr] = useState<string>("");
+  const [backQr, setBackQr] = useState<string>("");
+
   const avatarUrl = useMemo(() => {
     return getStudentAvatarUrl({
       id: student.id,
@@ -90,28 +64,6 @@ export default function StudentIDCardClient({ student }: { student: StudentData 
       gender: student.gender,
     });
   }, [student]);
-
-  const barcodeSvg = useMemo(() => {
-    return generateCode39Svg(student.studentNumber);
-  }, [student.studentNumber]);
-
-  const validTillText = useMemo(() => {
-    if (student.activePlan?.expiryDate) {
-      return new Date(student.activePlan.expiryDate).toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
-    }
-    return "N/A";
-  }, [student.activePlan]);
-
-  const memberSinceText = useMemo(() => {
-    return new Date(student.admissionDate).toLocaleDateString("en-IN", {
-      month: "short",
-      year: "numeric",
-    });
-  }, [student.admissionDate]);
 
   const dateOfBirthText = useMemo(() => {
     return new Date(student.dateOfBirth).toLocaleDateString("en-IN", {
@@ -123,19 +75,66 @@ export default function StudentIDCardClient({ student }: { student: StudentData 
 
   const planTypeText = useMemo(() => {
     if (!student.activePlan?.planType) return "N/A";
-    return student.activePlan.planType === "ONE_TO_ONE" ? "Personal training" : "Group class";
+    return student.activePlan.planType === "ONE_TO_ONE"
+      ? "Personal training"
+      : "Group class";
   }, [student.activePlan]);
 
   const statusText = useMemo(() => {
     return String(student.status).replace(/_/g, " ");
   }, [student.status]);
 
-  const isMemberActive = student.status === "ACTIVE" || student.status === "GRACE" || student.status === "FREEZE";
-  const footerText = isMemberActive ? "ACTIVE MEMBER" : "ACADEMY MEMBER";
+  // Split name for styled rendering (first name / rest of name)
+  const { firstName, lastName } = useMemo(() => {
+    const parts = student.name.trim().split(/\s+/);
+    return {
+      firstName: parts[0] || "",
+      lastName: parts.slice(1).join(" ") || "",
+    };
+  }, [student.name]);
+
+  // Generate QR codes locally
+  // Both front and back encode the same student attendance URL.
+  // The attendance scanner in handleScanSuccess() already handles the
+  // "/students/<id>" path — it extracts the student ID directly and calls
+  // markAttendance(studentId) without any extra DB lookup. This makes scanning
+  // from either side of the card instant and reliable.
+  useEffect(() => {
+    const attendanceUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/students/${student.id}`
+        : `/students/${student.id}`;
+
+    // Front QR: slightly smaller but same data, compact margin for the smaller box
+    QRCode.toDataURL(attendanceUrl, {
+      margin: 1,
+      width: 220,
+      errorCorrectionLevel: "M",
+      color: {
+        dark: "#000000",
+        light: "#ffffff",
+      },
+    })
+      .then((url) => setFrontQr(url))
+      .catch((err) => console.error("Front QR generation error:", err));
+
+    // Back QR: larger render for the bigger display box
+    QRCode.toDataURL(attendanceUrl, {
+      margin: 1,
+      width: 300,
+      errorCorrectionLevel: "M",
+      color: {
+        dark: "#000000",
+        light: "#ffffff",
+      },
+    })
+      .then((url) => setBackQr(url))
+      .catch((err) => console.error("Back QR generation error:", err));
+  }, [student]);
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col items-center justify-between pb-12 sm:pb-16 relative overflow-hidden">
-      {/* Decorative gradient glowing circles */}
+      {/* Decorative background glow */}
       <div className="absolute top-[-20%] left-[-20%] w-[80%] aspect-square rounded-full bg-brand-orange-500/10 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-20%] right-[-20%] w-[80%] aspect-square rounded-full bg-amber-500/5 blur-[120px] pointer-events-none" />
 
@@ -161,20 +160,43 @@ export default function StudentIDCardClient({ student }: { student: StudentData 
       {/* Main Preview Container */}
       <main className="flex-1 flex flex-col items-center justify-center p-4 w-full z-10">
         <div className="print-area flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12 w-full max-w-4xl">
-          
-          {/* ── CARD FRONT (CR80 scale: 1.5857 aspect ratio) ── */}
-          <div className="id-card-wrap relative w-[300px] h-[475px] rounded-[24px] overflow-hidden bg-gradient-to-b from-zinc-900 to-zinc-950 border border-zinc-800 shadow-2xl flex flex-col justify-between shrink-0">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-zinc-800/20 via-transparent to-transparent pointer-events-none" />
-            
-            {/* 1. Student Photo (Top Position) */}
-            <div className="flex flex-col items-center justify-center pt-8 px-4">
-              <div className="relative w-36 h-36 rounded-full p-1 bg-gradient-to-b from-brand-orange-500 to-amber-500 shadow-xl">
-                <div className="w-full h-full rounded-full overflow-hidden bg-zinc-900 relative border border-black/10">
+          {/* ── CARD FRONT (CR80 scale: 1.5858 aspect ratio) ── */}
+          <div className="id-card-wrap relative rounded-[1.5em] overflow-hidden shadow-2xl shrink-0 bg-white select-none">
+            {/* Background Graphic Template */}
+            <div className="absolute inset-0 z-0">
+              <Image
+                src="/Id-card/front-graphic.webp"
+                alt="Front Background"
+                fill
+                sizes="300px"
+                priority
+                className="object-cover"
+                unoptimized
+              />
+            </div>
+
+            {/* Top Left: Logo (Smaller) */}
+            <div className="absolute top-[1.4em] left-[1.6em] z-10 w-[3.2em] h-[3.2em]">
+              <Image
+                src="/logo.webp"
+                alt="TAG Logo"
+                fill
+                sizes="50px"
+                priority
+                className="object-contain"
+                unoptimized
+              />
+            </div>
+
+            {/* Student Photo (Shifted more towards left) */}
+            <div className="absolute top-[6.8em] right-[3.2em] z-10 w-[7.4em] h-[7.4em]">
+              <div className="w-full h-full rounded-full p-[0.18em] bg-[#f05a22] shadow-lg">
+                <div className="w-full h-full rounded-full overflow-hidden bg-zinc-100 relative">
                   <Image
                     src={avatarUrl}
                     alt={student.name}
                     fill
-                    sizes="144px"
+                    sizes="110px"
                     className="object-cover object-center"
                     unoptimized
                   />
@@ -182,159 +204,262 @@ export default function StudentIDCardClient({ student }: { student: StudentData 
               </div>
             </div>
 
-            {/* 2. Student Name & 3. Student ID (Middle Position) */}
-            <div className="flex flex-col items-center text-center px-6 mt-1 flex-1 justify-center gap-2">
-              <span className="text-[9px] font-semibold tracking-[0.3em] uppercase text-zinc-400">
-                Student ID Card
-              </span>
-              <h2 className="text-[20px] font-black text-white leading-snug tracking-wide uppercase clamp-name-text">
-                {student.name}
-              </h2>
-              <div className="text-[13px] font-semibold tracking-[0.18em] text-zinc-300 uppercase">
-                {statusText}
+            {/* Student Name & Details Flow Container */}
+            <div className="absolute top-[13.4em] left-[1.6em] right-[1.6em] z-10 flex flex-col gap-[0.7em]">
+              {/* Student Name */}
+              <div className="flex flex-col text-left leading-tight">
+                <span className="text-[1.25em] font-black text-zinc-950 uppercase tracking-wide break-words">
+                  {firstName}
+                </span>
+                {lastName && (
+                  <span className="text-[1.25em] font-black text-[#f05a22] uppercase tracking-wide break-words">
+                    {lastName}
+                  </span>
+                )}
+                <span className="text-[0.55em] font-bold tracking-[0.2em] text-zinc-500 mt-[0.3em] uppercase">
+                  Student
+                </span>
               </div>
-              <div className="text-[15px] font-black tracking-wider text-brand-orange-500">
-                ID: {formatStudentId(student.studentNumber)}
+
+              {/* Details List (Cleaner, no icons, slightly more compact) */}
+              <div className="flex flex-col gap-[0.3em]">
+                {/* ID NO */}
+                <div className="flex items-center text-[0.58em] font-bold text-zinc-800">
+                  <span className="w-[6.2em] text-zinc-500 uppercase tracking-wider shrink-0 font-extrabold">
+                    ID No.
+                  </span>
+                  <span className="text-zinc-400 mr-[0.5em] font-medium">
+                    :
+                  </span>
+                  <span className="text-zinc-950 font-black truncate">
+                    {formatStudentId(student.studentNumber)}
+                  </span>
+                </div>
+
+                {/* Parent Name */}
+                <div className="flex items-center text-[0.58em] font-bold text-zinc-800">
+                  <span className="w-[6.2em] text-zinc-500 uppercase tracking-wider shrink-0 font-extrabold">
+                    Parent
+                  </span>
+                  <span className="text-zinc-400 mr-[0.5em] font-medium">
+                    :
+                  </span>
+                  <span className="text-zinc-950 font-black truncate">
+                    {student.parentName}
+                  </span>
+                </div>
+
+                {/* Contact */}
+                <div className="flex items-center text-[0.58em] font-bold text-zinc-800">
+                  <span className="w-[6.2em] text-zinc-500 uppercase tracking-wider shrink-0 font-extrabold">
+                    Contact
+                  </span>
+                  <span className="text-zinc-400 mr-[0.5em] font-medium">
+                    :
+                  </span>
+                  <span className="text-zinc-950 font-black truncate">
+                    {student.contactNumber}
+                  </span>
+                </div>
+
+                {/* DOB */}
+                <div className="flex items-center text-[0.58em] font-bold text-zinc-800">
+                  <span className="w-[6.2em] text-zinc-500 uppercase tracking-wider shrink-0 font-extrabold">
+                    DOB
+                  </span>
+                  <span className="text-zinc-400 mr-[0.5em] font-medium">
+                    :
+                  </span>
+                  <span className="text-zinc-950 font-black truncate">
+                    {dateOfBirthText}
+                  </span>
+                </div>
+
+                {/* Plan */}
+                <div className="flex items-center text-[0.58em] font-bold text-zinc-800">
+                  <span className="w-[6.2em] text-zinc-500 uppercase tracking-wider shrink-0 font-extrabold">
+                    Plan
+                  </span>
+                  <span className="text-zinc-400 mr-[0.5em] font-medium">
+                    :
+                  </span>
+                  <span className="text-zinc-950 font-black truncate">
+                    {planTypeText}
+                  </span>
+                </div>
+
+                {/* Batch */}
+                <div className="flex items-center text-[0.58em] font-bold text-zinc-800">
+                  <span className="w-[6.2em] text-zinc-500 uppercase tracking-wider shrink-0 font-extrabold">
+                    Batch
+                  </span>
+                  <span className="text-zinc-400 mr-[0.5em] font-medium">
+                    :
+                  </span>
+                  <span className="text-zinc-950 font-black truncate">
+                    {student.activePlan?.batch?.name ||
+                      student.activePlan?.batch?.timing ||
+                      "N/A"}
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* 4. Academy Logo (Bottom Position) */}
-            <div className="flex flex-col items-center gap-1 mt-auto mb-6 opacity-90">
-              <Image
-                src="/logo.webp"
-                alt="TAG Logo"
-                width={30}
-                height={30}
-                className="object-contain"
-              />
-              <span className="text-[8px] font-black tracking-[0.22em] text-zinc-400 uppercase">
-                The Academy of Gymnastics
-              </span>
+            {/* Tagline (Bottom Left) */}
+            <div className="absolute bottom-[1.8em] left-[1.6em] border-l-[0.15em] border-[#f05a22] pl-[0.5em] text-left leading-[1.1] z-10">
+              <p className="text-[0.52em] font-black text-zinc-500 uppercase tracking-wider">
+                Focus.
+              </p>
+              <p className="text-[0.52em] font-black text-zinc-500 uppercase tracking-wider">
+                Practice.
+              </p>
+              <p className="text-[0.52em] font-black text-[#f05a22] uppercase tracking-wider">
+                Achieve.
+              </p>
             </div>
 
-            {/* Bottom Footer Strip */}
-            <div className="w-full bg-brand-orange-500 py-3 text-center">
-              <span className="text-xs font-black tracking-[0.25em] text-white uppercase block">
-                {footerText}
-              </span>
+            {/* QR Code (Bottom Right, Larger, no URL below) */}
+            <div className="absolute bottom-[1.5em] right-[1.6em] z-10">
+              <div className="w-[4.7em] h-[4.7em]">
+                {frontQr ? (
+                  <img
+                    src={frontQr}
+                    alt="Front QR Code"
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-zinc-200 animate-pulse rounded" />
+                )}
+              </div>
             </div>
           </div>
 
           {/* ── CARD BACK ── */}
-          <div className="id-card-wrap relative w-[300px] h-[475px] rounded-[24px] overflow-hidden bg-gradient-to-b from-zinc-900 to-zinc-950 border border-zinc-800 shadow-2xl flex flex-col justify-between shrink-0 px-6 py-7">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom,_var(--tw-gradient-stops))] from-zinc-800/10 via-transparent to-transparent pointer-events-none" />
-            
-            {/* Logo watermark background */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.02] w-48 h-48 pointer-events-none">
-              <Image src="/logo.webp" alt="" width={192} height={192} className="object-contain" />
+          <div className="id-card-wrap relative rounded-[1.5em] overflow-hidden shadow-2xl shrink-0 bg-zinc-950 select-none">
+            {/* Background Graphic */}
+            <div className="absolute inset-0 z-0">
+              <Image
+                src="/Id-card/back-graphic.webp"
+                alt="Back Background"
+                fill
+                sizes="300px"
+                priority
+                className="object-cover"
+                unoptimized
+              />
             </div>
 
-            {/* Back Header with Academy Info & Contacts */}
-            <div className="text-center pb-3 border-b border-zinc-800/80 z-10">
-              <span className="text-[10px] font-black tracking-[0.24em] text-brand-orange-500 uppercase block mb-1">
-                The Academy of Gymnastics
-              </span>
-              <p className="text-[8px] text-zinc-400 tracking-wider leading-none">
-                academyofgymnastics.com &middot; +91 95959 51931
+            {/* Top Center: Logo (Dark Logo Version) */}
+            <div className="absolute top-[2.5em] left-1/2 -translate-x-1/2 z-10 w-[5.9em] h-[3.5em]">
+              <Image
+                src="/Id-card/dark-logo.webp"
+                alt="TAG Dark Logo"
+                fill
+                sizes="95px"
+                priority
+                className="object-contain"
+                unoptimized
+              />
+            </div>
+
+            {/* Slogan */}
+            <div className="absolute top-[6.0em] left-0 right-0 text-center w-full z-10 uppercase tracking-wider font-black leading-tight">
+              <p className="text-[0.60em] text-white">Empowering Athletes.</p>
+              <p className="text-[0.60em] text-[#f05a22]">
+                Building Champions.
               </p>
             </div>
 
-            {/* Info Section - High utilization grid */}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-4 text-xs py-4 flex-1 items-center z-10">
-              <div>
-                <dt className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Parent Name</dt>
-                <dd className="font-semibold text-zinc-200 mt-0.5 clamp-parent-name">{student.parentName}</dd>
-              </div>
-              <div>
-                <dt className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Emergency</dt>
-                <dd className="font-semibold text-zinc-200 mt-0.5 tabular-nums">{student.contactNumber}</dd>
-              </div>
-              <div>
-                <dt className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Date of Birth</dt>
-                <dd className="font-semibold text-zinc-200 mt-0.5 tabular-nums">{dateOfBirthText}</dd>
-              </div>
-              <div>
-                <dt className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Gender</dt>
-                <dd className="font-semibold text-zinc-200 mt-0.5">{student.gender}</dd>
-              </div>
-              <div>
-                <dt className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Plan</dt>
-                <dd className="font-semibold text-zinc-200 mt-0.5">{planTypeText}</dd>
-              </div>
-              <div>
-                <dt className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Status</dt>
-                <dd className={`font-semibold mt-0.5 tabular-nums ${isMemberActive ? "text-emerald-400" : "text-zinc-200"}`}>
-                  {statusText}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Valid Till</dt>
-                <dd className={`font-semibold mt-0.5 tabular-nums ${isMemberActive ? "text-emerald-400" : "text-zinc-200"}`}>
-                  {validTillText}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-[9px] font-bold text-zinc-500 uppercase tracking-wide">Member Since</dt>
-                <dd className="font-semibold text-zinc-200 mt-0.5 tabular-nums">{memberSinceText}</dd>
+            {/* Center QR Code (Large) */}
+            <div className="absolute top-[8.8em] left-1/2 -translate-x-1/2 z-10 flex flex-col items-center justify-center">
+              <div className="relative w-[8.0em] h-[8.0em]">
+                {backQr ? (
+                  <img
+                    src={backQr}
+                    alt="Back QR Code"
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-zinc-200 animate-pulse" />
+                )}
               </div>
             </div>
 
-            {/* Barcode & Footer Notice */}
-            <div className="flex flex-col items-center gap-3.5 mt-auto z-10">
-              <div className="bg-white p-2.5 rounded-[14px] flex flex-col items-center justify-center gap-1 w-full shadow-inner border border-zinc-200 max-w-[240px]">
-                <div 
-                  className="h-10 w-full" 
-                  dangerouslySetInnerHTML={{ __html: barcodeSvg }} 
-                />
-                <span className="text-[8px] font-mono tracking-[0.25em] text-zinc-950 font-black">
-                  *TAG{String(student.studentNumber).padStart(3, "0")}*
+            {/* Terms & Conditions */}
+            <div className="absolute top-[18.2em] left-[1.6em] right-[1.6em] text-left z-10">
+              <h3 className="text-[0.55em] font-black text-[#f05a22] uppercase tracking-wider mb-[0.25em]">
+                Terms & Conditions
+              </h3>
+              <ul className="text-[0.45em] text-zinc-300 list-disc pl-[0.9em] space-y-[0.2em] font-semibold leading-normal tracking-wide">
+                <li>
+                  This ID card is the property of The Academy of Gymnastics.
+                </li>
+                <li>
+                  It must be worn or displayed at all times while on the
+                  premises.
+                </li>
+                <li>
+                  This card is non-transferable and must be returned upon
+                  request or at the end of association.
+                </li>
+                <li>If found, please return to the nearest TAG center.</li>
+              </ul>
+            </div>
+
+            {/* Bottom Footer Strip */}
+            <div className="absolute bottom-[0.4em] left-0 right-0 h-[3.2em] z-10 flex items-center justify-around px-[0.8em] rounded-b-[1.5em]">
+              {/* Address */}
+              <div className="flex flex-col items-center text-center max-w-[5.2em]">
+                <MapPin className="w-[0.9em] h-[0.9em] text-[#f05a22] mb-[0.05em]" />
+                <span className="text-[0.35em] font-black text-zinc-800 leading-tight">
+                  123 Gymnastics Way, Performance City, PC 12345
                 </span>
               </div>
 
-              <div className="text-center space-y-1">
-                <p className="text-[7.5px] text-zinc-550 leading-relaxed max-w-[240px] mx-auto">
-                  This card is property of TAG. If found, please return to the academy.
-                </p>
-                <p className="text-[6.5px] text-zinc-600 font-bold uppercase tracking-wider">
-                  © {new Date().getFullYear()} The Academy of Gymnastics
-                </p>
+              {/* Vertical divider */}
+              <div className="h-[1.8em] w-[0.05em] bg-zinc-300" />
+
+              {/* Phone */}
+              <div className="flex flex-col items-center text-center">
+                <Phone className="w-[0.9em] h-[0.9em] text-[#f05a22] mb-[0.05em]" />
+                <span className="text-[0.35em] font-black text-zinc-800 leading-tight tracking-wider">
+                  +1 234 567 890
+                </span>
+              </div>
+
+              {/* Vertical divider */}
+              <div className="h-[1.8em] w-[0.05em] bg-zinc-300" />
+
+              {/* Email */}
+              <div className="flex flex-col items-center text-center max-w-[5.8em]">
+                <Mail className="w-[0.9em] h-[0.9em] text-[#f05a22] mb-[0.05em]" />
+                <span className="text-[0.35em] font-black text-zinc-800 leading-tight truncate w-full">
+                  info@tagymnastics.com
+                </span>
               </div>
             </div>
           </div>
-
         </div>
       </main>
 
       {/* Instructions footer (No print) */}
       <footer className="no-print text-center text-xs text-zinc-500 leading-relaxed max-w-md px-4 mt-4">
-        Tip: Print in portrait mode on an A4 sheet. Fold the front and back cards, then laminate for a professional standard plastic ID card.
+        Tip: Print in portrait mode on an A4 sheet. Fold the front and back
+        cards, then laminate for a professional standard plastic ID card.
       </footer>
 
-      {/* Custom Styles for Clamping and Printing */}
-      <style dangerouslySetInnerHTML={{ __html: `
-        /* Limit Student & Parent Name length to 2 lines without truncating words abruptly */
-        .clamp-name-text {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
+      {/* Custom Styles for Clamping, Layout and Printing */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        .id-card-wrap {
+          font-family: 'Inter', system-ui, sans-serif;
+          width: 18.75em;
+          height: 29.734em;
+          font-size: 16px;
+          position: relative;
           overflow: hidden;
-          font-size: 18px;
-          line-height: 1.25;
-        }
-
-        .clamp-parent-name {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-          line-height: 1.2;
-        }
-
-        .clamp-medical-info {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
+          background: white;
         }
 
         @media print {
@@ -377,29 +502,24 @@ export default function StudentIDCardClient({ student }: { student: StudentData 
           .id-card-wrap {
             width: 53.98mm !important;
             height: 85.60mm !important;
-            border-radius: 3.18mm !important;
-            border: 0.5px solid #27272a !important;
+            font-size: 2.8789mm !important; /* Scale to exactly 53.98mm wide */
             box-shadow: none !important;
+            border: none !important;
+            background: white !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
-            background: #09090b !important;
-            background-image: linear-gradient(to bottom, #18181b, #09090b) !important;
             color-adjust: exact !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
-          }
-
-          /* Sizing adjustments for print scaling */
-          .clamp-name-text {
-            font-size: 13px !important;
-            line-height: 1.3 !important;
           }
 
           body::-webkit-scrollbar {
             display: none;
           }
         }
-      `}} />
+      `,
+        }}
+      />
     </div>
   );
 }

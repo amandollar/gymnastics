@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { UserPlus, UserCheck, IndianRupee, ChevronLeft, ChevronRight, X, Check } from "lucide-react";
+import { UserPlus, UserCheck, IndianRupee, ChevronLeft, ChevronRight, X, Check, Maximize2, Minimize2, Camera, RefreshCw } from "lucide-react";
 import { useMediaQuery } from "@/components/hooks/useMediaQuery";
 import ChartBox from "@/components/charts/ChartBox";
 import {
@@ -20,6 +20,9 @@ import {
   formatINR,
 } from "@/lib/sample/dashboard";
 import type { DashboardData } from "@/lib/services/dashboard";
+import { useRouter } from "next/navigation";
+import jsQR from "jsqr";
+import { searchStudentsForAttendanceAction, markAttendanceAction, getAttendanceSessionDataAction } from "@/lib/actions/attendance";
 
 const CHART_H = 260;
 const CHART_H_SM = 224;
@@ -138,15 +141,59 @@ export default function DashboardOverview({
   const [qrOpen, setQrOpen] = useState(false);
   const [feeOpen, setFeeOpen] = useState(false);
 
-  // Camera QR Scanner states
+  const router = useRouter();
+
+  // Fullscreen & Camera Scanner states
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
+  const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
+  const [isPhone, setIsPhone] = useState(false);
+  const [isScanning, setIsScanning] = useState(true);
+  const [scanMessage, setScanMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [manualSearchQuery, setManualSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
-  const [scannedStudent, setScannedStudent] = useState<typeof dummyStudents[0] | null>(null);
-  const [scanMethod, setScanMethod] = useState<"camera" | "manual">("camera");
-  const [manualIdInput, setManualIdInput] = useState("");
+  const [scannedStudent, setScannedStudent] = useState<{
+    id: string;
+    studentNumber: number;
+    name: string;
+    parentName: string;
+    contactNumber: string;
+    activePlan: string | null;
+    outstanding: number;
+    sessionsCompleted?: number;
+    totalSessions?: number;
+  } | null>(null);
+
+  const [attendanceNotification, setAttendanceNotification] = useState<{
+    name: string;
+    studentNumber: number;
+    activePlan: string;
+    sessionsCompleted: number;
+    totalSessions: number;
+  } | null>(null);
+
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const modalRef = useRef<HTMLDivElement | null>(null);
+  const notificationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // ── Session cache refs (populated once on modal open, not per-scan) ──────────
+  // Using refs (not state) so updates never trigger a re-render.
+  type CachedStudent = {
+    id: string;
+    studentNumber: number;
+    name: string;
+    activePlan: { planType: string; sessionsCompleted: number; totalSessions: number } | null;
+  };
+  /** Map<studentId, CachedStudent> — all active-plan students */
+  const studentsCacheRef = useRef<Map<string, CachedStudent>>(new Map());
+  /** Set<studentId> — students already marked present today (updated optimistically) */
+  const attendedTodayRef = useRef<Set<string>>(new Set());
+  /** Set<studentId> — in-flight mark calls (prevents duplicate frame reads) */
+  const processingRef = useRef<Set<string>>(new Set());
 
   // Collect Fee states
   const [feeSearchQuery, setFeeSearchQuery] = useState("");
@@ -166,57 +213,365 @@ export default function DashboardOverview({
     setCameraError(null);
   };
 
-  const startCamera = async () => {
+  const startCamera = async (currentMode: "user" | "environment" = facingMode) => {
     setCameraError(null);
     setScannedStudent(null);
+    setScanMessage(null);
+
+    // Stop existing tracks if any
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } },
+      const constraints = {
+        video: { facingMode: currentMode },
         audio: false,
-      });
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        videoRef.current.play();
+        videoRef.current.play().catch((err) => console.error("Video play failed:", err));
       }
       setCameraActive(true);
     } catch (err: any) {
       console.error("Camera error:", err);
-      setCameraError(
-        "Could not access the rear camera. Make sure permissions are granted or try the manual simulation fallback."
-      );
+      // Fallback
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch((playErr) => console.error("Video play failed:", playErr));
+        }
+        setCameraActive(true);
+      } catch (fallbackErr: any) {
+        console.error("Camera fallback error:", fallbackErr);
+        setCameraError(
+          "Could not access the camera. Please ensure camera permissions are granted."
+        );
+      }
     }
   };
 
+  const toggleFacingMode = () => {
+    const nextMode = facingMode === "user" ? "environment" : "user";
+    setFacingMode(nextMode);
+    startCamera(nextMode);
+  };
+
+  const toggleFullscreen = async () => {
+    if (!modalRef.current) return;
+    try {
+      if (!document.fullscreenElement) {
+        await modalRef.current.requestFullscreen();
+        setIsFullscreen(true);
+      } else {
+        await document.exitFullscreen();
+        setIsFullscreen(false);
+      }
+    } catch (err) {
+      console.error("Fullscreen error:", err);
+      // CSS fallback
+      setIsFullscreen(!isFullscreen);
+    }
+  };
+
+  // Sync isFullscreen with escape key or other exit methods
   useEffect(() => {
-    if (qrOpen && scanMethod === "camera") {
-      startCamera();
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      if (notificationTimerRef.current) {
+        clearTimeout(notificationTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Detect phone and camera device support when opening the QR modal.
+  // Also kicks off the session-cache preload in parallel with camera init.
+  useEffect(() => {
+    if (qrOpen && typeof window !== "undefined") {
+      const checkDevice = async () => {
+        const mobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        setIsPhone(mobile);
+
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const cameras = devices.filter((d) => d.kind === "videoinput");
+          setHasMultipleCameras(cameras.length > 1);
+        } catch (e) {
+          console.error("Enumerate devices error:", e);
+        }
+
+        const initialMode = mobile ? "environment" : "user";
+        setFacingMode(initialMode);
+        startCamera(initialMode);
+      };
+
+      // Run camera setup and session-cache preload in parallel
+      checkDevice();
+      getAttendanceSessionDataAction().then((data) => {
+        studentsCacheRef.current = new Map(data.students.map((s) => [s.id, s]));
+        attendedTodayRef.current = new Set(data.attendedStudentIds);
+        // processingRef is intentionally reset each session so stale in-flight IDs don't persist
+        processingRef.current = new Set();
+      }).catch((err) => {
+        console.warn("Session cache preload failed — scanner will use per-scan DB calls:", err);
+      });
     } else {
       stopCamera();
+      // Clear caches when modal closes
+      studentsCacheRef.current = new Map();
+      attendedTodayRef.current = new Set();
+      processingRef.current = new Set();
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+      setIsFullscreen(false);
     }
     return () => stopCamera();
-  }, [qrOpen, scanMethod]);
+  }, [qrOpen]);
 
+  // ── Attendance marking — cache-first, optimistic write ───────────────────────
+  const markAttendance = async (studentId: string, fallbackStudent?: any) => {
+    // ① Dedup guard — ignore if a mark is already in-flight for this student
+    //   (prevents the QR frame-loop from firing duplicate calls on the same scan)
+    if (processingRef.current.has(studentId)) return;
 
-  // Simulate scanning a student
-  const handleSimulateScan = (student: typeof dummyStudents[0]) => {
-    setScannedStudent(student);
-    // Play virtual bip sound
+    // ② Client-side already-present check — zero network round-trip
+    if (attendedTodayRef.current.has(studentId)) {
+      const cached = studentsCacheRef.current.get(studentId);
+      setIsScanning(false);
+      setScanMessage({
+        type: "error",
+        text: `${cached?.name ?? "Student"} is already marked present today.`,
+      });
+      setTimeout(() => { setIsScanning(true); setScanMessage(null); }, 2500);
+      return;
+    }
+
+    // ③ Mark as in-flight and optimistically add to attended set
+    processingRef.current.add(studentId);
+    attendedTodayRef.current.add(studentId);
+    setIsScanning(false);
+
+    // Build today's date string (YYYY-MM-DD) for the server action
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+    const triggerSuccessUI = (studentData: any) => {
+      setScanMessage({
+        type: "success",
+        text: `Attendance marked successfully for ${studentData.name}`,
+      });
+
+      const sessionCount =
+        (studentData.activePlan?.sessionsCompleted ?? studentData.sessionsCompleted ?? 0) + 1;
+      const totalCount =
+        studentData.activePlan?.totalSessions ?? studentData.totalSessions ?? 0;
+      const planName =
+        typeof studentData.activePlan === "string"
+          ? studentData.activePlan
+          : studentData.activePlan?.planType === "ONE_TO_ONE"
+          ? "Personal training"
+          : "Group class";
+
+      setScannedStudent({
+        id: studentData.id,
+        studentNumber: studentData.studentNumber,
+        name: studentData.name,
+        parentName: "",
+        contactNumber: "",
+        activePlan: planName,
+        outstanding: 0,
+        sessionsCompleted: sessionCount,
+        totalSessions: totalCount,
+      });
+
+      setAttendanceNotification({
+        name: studentData.name,
+        studentNumber: studentData.studentNumber,
+        activePlan: planName,
+        sessionsCompleted: sessionCount,
+        totalSessions: totalCount,
+      });
+
+      if (notificationTimerRef.current) clearTimeout(notificationTimerRef.current);
+      notificationTimerRef.current = setTimeout(() => setAttendanceNotification(null), 2500);
+
+      try {
+        const audio = new Audio("/audio/atttendance-success.mp3");
+        audio.volume = 1.0;
+        audio.play().catch((err) => console.log("Audio play deferred/failed:", err));
+      } catch (e) {
+        console.log("Audio not supported or allowed:", e);
+      }
+    };
+
+    // ④ Instant optimistic UI — use cached student data, no server wait
+    const cachedStudent = studentsCacheRef.current.get(studentId) ?? fallbackStudent;
+    if (cachedStudent) {
+      triggerSuccessUI(cachedStudent);
+    }
+
+    // ⑤ Persist to DB in the background (non-blocking)
     try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(1000, audioCtx.currentTime);
-      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.1);
-    } catch (e) {
-      console.log("Audio not allowed yet or not supported");
+      const res = await markAttendanceAction(studentId, todayStr);
+      if (res.success) {
+        // If we had no cached data, show success UI now that server confirmed
+        if (!cachedStudent && res.student) triggerSuccessUI(res.student);
+        router.refresh();
+      } else {
+        // ⑥ Rollback optimistic update on server error
+        attendedTodayRef.current.delete(studentId);
+        setScanMessage({ type: "error", text: res.message || "Failed to mark attendance" });
+        setAttendanceNotification(null);
+        setScannedStudent(null);
+      }
+    } catch (err: any) {
+      console.error("Background mark error:", err);
+      attendedTodayRef.current.delete(studentId);
+      if (!cachedStudent) {
+        setScanMessage({ type: "error", text: err.message || "Failed to mark attendance" });
+      }
+    } finally {
+      // Always release the dedup lock
+      processingRef.current.delete(studentId);
+    }
+
+    // Resume scanning after 2.5s (gives admin time to see the result)
+    setTimeout(() => {
+      setIsScanning(true);
+      setScanMessage(null);
+      setScannedStudent(null);
+    }, 2500);
+  };
+
+  const handleSelectStudentManual = async (studentId: string) => {
+    const optStudent = searchResults.find((s) => s.id === studentId);
+    setManualSearchQuery("");
+    setSearchResults([]);
+    await markAttendance(studentId, optStudent);
+  };
+
+  const handleScanSuccess = async (qrValue: string) => {
+    // Handles QR codes from student ID cards.
+    // ID card QR encodes: https://<origin>/students/<cuid>
+    // The scanner extracts the student CUID for a direct markAttendance() call
+    // with no additional database lookup needed — fastest possible path.
+    let studentId: string | null = null;
+    let studentNumber: number | null = null;
+
+    // Check if it's a URL containing /students/<id>
+    if (qrValue.includes("/students/")) {
+      const parts = qrValue.split("/students/");
+      // Strip any trailing slash, query params (?...) or hash (#...) from the id
+      const rawId = parts[parts.length - 1];
+      studentId = rawId.split(/[?#\/]/)[0].trim() || null;
+    } else {
+      const tagMatch = qrValue.match(/^tag\s*(\d+)/i);
+      if (tagMatch) {
+        studentNumber = parseInt(tagMatch[1], 10);
+      } else if (/^\d+$/.test(qrValue.trim())) {
+        studentNumber = parseInt(qrValue.trim(), 10);
+      }
+    }
+
+    if (studentId) {
+      await markAttendance(studentId);
+    } else if (studentNumber !== null) {
+      // Find the student ID from search action
+      const res = await searchStudentsForAttendanceAction(String(studentNumber));
+      if (res && res.length > 0) {
+        await markAttendance(res[0].id, res[0]); // Pass res[0] as optimistic student!
+      } else {
+        setIsScanning(false);
+        setScanMessage({ type: "error", text: `No student found with ID TAG${studentNumber}` });
+        setTimeout(() => {
+          setIsScanning(true);
+          setScanMessage(null);
+        }, 2500);
+      }
+    } else {
+      setIsScanning(false);
+      setScanMessage({ type: "error", text: `Invalid QR code scanned: "${qrValue}"` });
+      setTimeout(() => {
+        setIsScanning(true);
+        setScanMessage(null);
+      }, 2500);
     }
   };
+
+  // Real-time camera QR scanning frame loop
+  useEffect(() => {
+    let animationFrameId: number;
+    let isActive = true;
+
+    const scanFrame = () => {
+      if (!isActive) return;
+      if (
+        videoRef.current &&
+        videoRef.current.readyState === videoRef.current.HAVE_ENOUGH_DATA &&
+        isScanning
+      ) {
+        const video = videoRef.current;
+        const width = video.videoWidth;
+        const height = video.videoHeight;
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+        if (ctx) {
+          ctx.drawImage(video, 0, 0, width, height);
+          const imageData = ctx.getImageData(0, 0, width, height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: "dontInvert",
+          });
+
+          if (code && code.data) {
+            handleScanSuccess(code.data);
+          }
+        }
+      }
+      animationFrameId = requestAnimationFrame(scanFrame);
+    };
+
+    if (qrOpen && cameraActive && isScanning) {
+      animationFrameId = requestAnimationFrame(scanFrame);
+    }
+
+    return () => {
+      isActive = false;
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [qrOpen, cameraActive, isScanning]);
+
+  // Debounced search query for manual attendance input
+  useEffect(() => {
+    if (!manualSearchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    const fetchResults = async () => {
+      const results = await searchStudentsForAttendanceAction(manualSearchQuery);
+      setSearchResults(results);
+    };
+
+    const timer = setTimeout(fetchResults, 200);
+    return () => clearTimeout(timer);
+  }, [manualSearchQuery]);
 
   const activeCount = dashboardData.kpis.activeStudents;
   const graceCount = dashboardData.kpis.gracePeriodStudents;
@@ -351,7 +706,6 @@ export default function DashboardOverview({
         <button
           onClick={() => {
             setQrOpen(true);
-            setScanMethod("camera");
           }}
           className="group flex flex-col lg:flex-row items-center gap-2.5 lg:gap-4.5 py-4.5 px-3 lg:py-5.5 lg:px-4.5 rounded-3xl border-0 bg-orange-200/90 dark:bg-orange-950/60 hover:bg-orange-300/80 dark:hover:bg-orange-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center lg:text-left w-full"
         >
@@ -732,188 +1086,215 @@ export default function DashboardOverview({
 
       {/* Interactive Modal 1: Take Attendance */}
       {qrOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-          <div className="relative w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 border-0 shadow-2xl p-6 overflow-hidden">
-            
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-850 pb-4 mb-4">
-              <div>
-                <h3 className="text-base font-bold text-zinc-950 dark:text-zinc-50 flex items-center gap-2">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
-                  </span>
-                  QR Attendance Scanner
-                </h3>
-                <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
-                  Point the camera at a student QR code to mark attendance
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setQrOpen(false);
-                  stopCamera();
-                }}
-                className="h-8 w-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-              >
-                <X className="h-5 w-5" strokeWidth={2} />
-              </button>
-            </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs animate-fade-in">
+          <div
+            ref={modalRef}
+            className={`relative w-full rounded-3xl bg-black border border-zinc-800/80 shadow-2xl overflow-hidden flex flex-col justify-between transition-all duration-300 ${
+              isFullscreen
+                ? "fixed inset-0 w-screen h-screen rounded-none z-[100] max-w-none"
+                : "max-w-lg h-[580px] sm:h-[620px]"
+            }`}
+          >
+            {/* 1. Background Video Feed */}
+            <video
+              ref={videoRef}
+              playsInline
+              muted
+              autoPlay
+              className="absolute inset-0 w-full h-full object-cover z-0"
+            />
 
-            {/* Toggle Scanner Method */}
-            <div className="grid grid-cols-2 gap-1 bg-zinc-100 dark:bg-zinc-800/80 p-0.5 rounded-lg mb-4 text-xs font-semibold">
-              <button
-                onClick={() => setScanMethod("camera")}
-                className={`py-1.5 px-3 rounded-md transition-all cursor-pointer ${
-                  scanMethod === "camera"
-                    ? "bg-white dark:bg-zinc-700 text-zinc-950 dark:text-zinc-50 shadow-3xs"
-                    : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-350"
-                }`}
-              >
-                Camera Scanner
-              </button>
-              <button
-                onClick={() => setScanMethod("manual")}
-                className={`py-1.5 px-3 rounded-md transition-all cursor-pointer ${
-                  scanMethod === "manual"
-                    ? "bg-white dark:bg-zinc-700 text-zinc-950 dark:text-zinc-50 shadow-3xs"
-                    : "text-zinc-400 dark:text-zinc-500 hover:text-zinc-850 dark:hover:text-zinc-350"
-                }`}
-              >
-                Manual & Simulation
-              </button>
-            </div>
-
-            {/* Camera View */}
-            {scanMethod === "camera" && (
-              <div className="relative aspect-video rounded-xl bg-black border border-zinc-800 overflow-hidden flex flex-col items-center justify-center">
-                {cameraActive && !cameraError ? (
-                  <>
-                    <video
-                      ref={videoRef}
-                      playsInline
-                      muted
-                      className="absolute inset-0 h-full w-full object-cover"
+            {/* 2. Dimmed Viewfinder Reticle Overlay */}
+            {cameraActive && !cameraError && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                <style dangerouslySetInnerHTML={{__html: `
+                  @keyframes scan-laser {
+                    0% { top: 0%; opacity: 0.1; }
+                    10% { opacity: 1; }
+                    90% { opacity: 1; }
+                    100% { top: 100%; opacity: 0.1; }
+                  }
+                `}} />
+                {/* Visual Highlight Area (Outside this square, the shadow dims everything) */}
+                <div className={`relative rounded-2xl border border-white/10 shadow-[0_0_0_9999px_rgba(0,0,0,0.65)] transition-all duration-300 aspect-square max-h-[50vh] max-w-[80vw] md:max-h-[60vh] ${
+                  isFullscreen 
+                    ? "h-72 w-72 sm:h-96 sm:w-96 md:h-[450px] md:w-[450px]" 
+                    : "h-44 w-44 sm:h-56 sm:w-56"
+                }`}>
+                  {/* Corner Accents */}
+                  <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-brand-orange-500 rounded-tl-lg"></div>
+                  <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-brand-orange-500 rounded-tr-lg"></div>
+                  <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-brand-orange-500 rounded-bl-lg"></div>
+                  <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-brand-orange-500 rounded-br-lg"></div>
+                  
+                  {/* Scanning Laser Line */}
+                  {isScanning && (
+                    <div 
+                      className="absolute left-1 right-1 h-0.5 bg-brand-orange-500 shadow-[0_0_12px_rgba(241,109,40,0.95)]"
+                      style={{
+                        animation: "scan-laser 2.2s linear infinite"
+                      }}
                     />
-                    
-                    {/* Visual Overlay Scan Box */}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="relative h-44 w-44 sm:h-52 sm:w-52 rounded-2xl border-2 border-dashed border-emerald-400/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]">
-                        {/* Corner Accents */}
-                        <div className="absolute -top-1 -left-1 h-5 w-5 border-t-4 border-l-4 border-emerald-500 rounded-tl-sm"></div>
-                        <div className="absolute -top-1 -right-1 h-5 w-5 border-t-4 border-r-4 border-emerald-500 rounded-tr-sm"></div>
-                        <div className="absolute -bottom-1 -left-1 h-5 w-5 border-b-4 border-l-4 border-emerald-500 rounded-bl-sm"></div>
-                        <div className="absolute -bottom-1 -right-1 h-5 w-5 border-b-4 border-r-4 border-emerald-500 rounded-br-sm"></div>
-                        
-                        {/* Laser Scan line */}
-                        <div className="absolute left-0 w-full h-0.5 bg-emerald-400/90 shadow-[0_0_8px_rgba(52,211,153,1)] animate-bounce" style={{ top: "10%" }}></div>
-                      </div>
-                    </div>
-
-                    {/* Bottom Status bar */}
-                    <div className="absolute bottom-3 left-3 right-3 bg-black/75 px-3 py-1.5 rounded-lg text-[10px] text-zinc-300 font-semibold text-center border border-zinc-800">
-                      Camera feed active · Facing Mode: back/environment
-                    </div>
-                  </>
-                ) : (
-                  <div className="p-6 text-center">
-                    {cameraError ? (
-                      <p className="text-xs text-rose-500 px-4">{cameraError}</p>
-                    ) : (
-                      <div className="flex flex-col items-center gap-2">
-                        <span className="h-6 w-6 rounded-full border-2 border-zinc-600 border-t-transparent animate-spin"></span>
-                        <p className="text-xs text-zinc-400">Requesting camera device stream...</p>
-                      </div>
-                    )}
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Manual Simulation View */}
-            {scanMethod === "manual" && (
-              <div className="space-y-4 py-2">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-                    Student ID No / Search Student
-                  </label>
-                  <input
-                    type="text"
-                    value={manualIdInput}
-                    onChange={(e) => setManualIdInput(e.target.value)}
-                    placeholder="e.g. Rohan, 101, 102..."
-                    className="w-full px-3.5 py-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
-                  />
-                </div>
+            {/* 3. Header Controls overlay */}
+            <div className="absolute top-0 left-0 right-0 p-4 bg-transparent flex items-center justify-between z-20">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2 drop-shadow-md">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-orange-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-orange-500"></span>
+                </span>
+                QR Attendance Scanner
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={toggleFullscreen}
+                  title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                  className="h-8 w-8 rounded-lg flex items-center justify-center text-zinc-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  {isFullscreen ? (
+                    <Minimize2 className="h-4.5 w-4.5" />
+                  ) : (
+                    <Maximize2 className="h-4.5 w-4.5" />
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setQrOpen(false);
+                    stopCamera();
+                  }}
+                  className="h-8 w-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
 
-                {/* Autocomplete List */}
-                <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                  <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider px-1">
-                    Select student to simulate scan
-                  </p>
-                  {dummyStudents
-                    .filter(
-                      (st) =>
-                        st.name.toLowerCase().includes(manualIdInput.toLowerCase()) ||
-                        st.studentNumber.toString().includes(manualIdInput)
-                    )
-                    .map((student) => (
+            {/* 4. Spinner & Camera error state overlay */}
+            {!cameraActive && !cameraError && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 text-zinc-400 z-10 gap-2">
+                <span className="h-6 w-6 rounded-full border-2 border-zinc-650 border-t-transparent animate-spin"></span>
+                <p className="text-xs">Requesting camera device stream...</p>
+              </div>
+            )}
+
+            {cameraError && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/95 text-zinc-400 z-10 gap-2 p-6 text-center">
+                <p className="text-xs text-rose-500 px-4">{cameraError}</p>
+                <button
+                  onClick={() => startCamera(facingMode)}
+                  className="mt-2 text-xs font-bold text-brand-orange-500 underline cursor-pointer"
+                >
+                  Retry Camera Access
+                </button>
+              </div>
+            )}
+
+            {/* 5. Flip camera switcher overlay (Floating bottom right, above inputs) */}
+            {cameraActive && !cameraError && hasMultipleCameras && (
+              <button
+                onClick={toggleFacingMode}
+                className="absolute bottom-[92px] right-4 bg-black/70 hover:bg-black/90 text-white p-3 rounded-xl transition-all duration-200 cursor-pointer border border-zinc-800/80 shadow-md flex items-center justify-center z-20 hover:scale-[1.05] active:scale-[0.95]"
+                title="Flip Camera"
+              >
+                <RefreshCw className="h-4.5 w-4.5" />
+              </button>
+            )}
+
+            {/* 6. Scan Feedback Message Overlay */}
+            {scanMessage && (scanMessage.type === "error" || isFullscreen) && (
+              <div className={`absolute top-[72px] left-1/2 -translate-x-1/2 w-[90%] max-w-xs p-5 rounded-2xl flex items-start gap-3.5 z-30 shadow-xl animate-scale-in backdrop-blur-lg border-0 ${
+                scanMessage.type === "success" 
+                  ? "bg-emerald-950/95 text-emerald-200"
+                  : "bg-rose-950/95 text-rose-200"
+              }`}>
+                <span className={`h-6 w-6 rounded-full flex items-center justify-center shrink-0 text-white ${
+                  scanMessage.type === "success" ? "bg-emerald-500" : "bg-rose-500"
+                }`}>
+                  {scanMessage.type === "success" ? (
+                    <Check className="h-3.5 w-3.5" strokeWidth={3.5} />
+                  ) : (
+                    <X className="h-3.5 w-3.5" strokeWidth={3.5} />
+                  )}
+                </span>
+                <div className="min-w-0 flex-1 text-left">
+                  <h4 className="font-extrabold text-xs text-white">
+                    {scanMessage.type === "success" ? "Attendance Recorded!" : "Scan Failed"}
+                  </h4>
+                  {scanMessage.type === "success" && scannedStudent ? (
+                    <div className="mt-1">
+                      <p className="font-medium text-xs text-zinc-200">
+                        {scannedStudent.name} (TAG{String(scannedStudent.studentNumber).padStart(3, "0")})
+                      </p>
+                      <p className="text-xs text-emerald-400 font-extrabold mt-1">
+                        Session count: {Math.max(0, (scannedStudent.totalSessions ?? 0) - (scannedStudent.sessionsCompleted ?? 0))}
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] mt-0.5 text-zinc-350">
+                      {scanMessage.text}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* 7. Bottom controls overlay (glassmorphic footer inputs) */}
+            <div className="w-full max-w-md mx-auto p-4 bg-transparent flex flex-col gap-2 z-20 mt-auto">
+              {/* Autocomplete List overlay (appears overlayed directly above search input) */}
+              {manualSearchQuery.trim() && searchResults.length > 0 && (
+                <div className="space-y-1 max-h-36 overflow-y-auto border border-zinc-800/80 rounded-xl p-1 bg-black/85 backdrop-blur-md shadow-2xl mb-1">
+                  {searchResults.map((student) => {
+                    const hasActivePlan = !!student.activePlan;
+                    return (
                       <button
                         key={student.id}
                         type="button"
-                        onClick={() => handleSimulateScan(student)}
-                        className="w-full text-left flex items-center justify-between p-2.5 rounded-lg border border-zinc-100 dark:border-zinc-850 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer text-xs"
+                        disabled={!hasActivePlan}
+                        onClick={() => handleSelectStudentManual(student.id)}
+                        className={`w-full text-left flex items-center justify-between p-2 rounded-lg border transition-colors cursor-pointer text-xs ${
+                          hasActivePlan
+                            ? "border-transparent hover:bg-white/10 text-white"
+                            : "border-transparent text-zinc-650 opacity-40 cursor-not-allowed"
+                        }`}
                       >
                         <div>
-                          <p className="font-bold text-zinc-900 dark:text-zinc-100">{student.name}</p>
-                          <p className="text-[10px] text-zinc-400 dark:text-zinc-500">ID: {student.studentNumber} · {student.activePlan}</p>
+                          <p className="font-bold text-zinc-100">
+                            {student.name}
+                          </p>
+                          <p className="text-[9px] text-zinc-400">
+                            ID: TAG{String(student.studentNumber).padStart(3, "0")} · {hasActivePlan ? (student.activePlan.planType === "ONE_TO_ONE" ? "Personal training" : "Group class") : "No Active Plan"}
+                          </p>
                         </div>
-                        <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-500 font-bold text-[9px] uppercase tracking-wider">
-                          Simulate Scan
+                        <span className={`px-2 py-0.5 rounded-md font-bold text-[8px] uppercase tracking-wider ${
+                          hasActivePlan 
+                            ? "bg-brand-orange-500/20 text-brand-orange-400" 
+                            : "bg-zinc-800 text-zinc-600"
+                        }`}>
+                          {hasActivePlan ? "Mark" : "Inactive"}
                         </span>
                       </button>
-                    ))}
+                    );
+                  })}
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Simulated/Camera Scan Success Banner */}
-            {scannedStudent && (
-              <div className="mt-4 p-4 rounded-xl border border-emerald-200/50 dark:border-emerald-900/50 bg-emerald-500/5 dark:bg-emerald-500/10 flex items-start gap-3.5 animate-scale-in">
-                <span className="h-8 w-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-sm">
-                  <Check className="h-4.5 w-4.5" strokeWidth={3} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h4 className="font-bold text-sm text-emerald-700 dark:text-emerald-400">
-                    Attendance Recorded!
-                  </h4>
-                  <p className="text-xs text-zinc-900 dark:text-zinc-100 mt-1 font-semibold">
-                    {scannedStudent.name} (ID: {scannedStudent.studentNumber})
-                  </p>
-                  <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">
-                    Plan: {scannedStudent.activePlan} · Status updated successfully.
-                  </p>
-                </div>
+              <div className="flex flex-col gap-1">
+                <input
+                  type="text"
+                  value={manualSearchQuery}
+                  onChange={(e) => setManualSearchQuery(e.target.value)}
+                  placeholder="Enter Roll No or Student Name..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-800/80 bg-black/60 backdrop-blur-md text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/40"
+                />
               </div>
-            )}
-
-            {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-2 border-t border-zinc-100 dark:border-zinc-850 pt-4 mt-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setQrOpen(false);
-                  stopCamera();
-                }}
-                className="px-4 py-2 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-              >
-                Close Scanner
-              </button>
             </div>
 
           </div>
         </div>
- 
       )}
 
       {/* Interactive Modal 3: Collect Fee */}
@@ -1122,6 +1503,42 @@ export default function DashboardOverview({
             )}
 
           </div>
+        </div>
+      )}
+
+      {/* 8. Bottom-Right Toast Notification */}
+      {!isFullscreen && attendanceNotification && (
+        <div className="fixed bottom-6 right-6 z-[200] max-w-[280px] w-full bg-emerald-50/95 dark:bg-emerald-950/90 backdrop-blur-md border border-emerald-200/50 dark:border-emerald-800/30 p-3.5 rounded-2xl shadow-xl flex items-center gap-3"
+             style={{
+               animation: "slide-in-right 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards"
+             }}
+        >
+          <style dangerouslySetInnerHTML={{__html: `
+            @keyframes slide-in-right {
+              from { transform: translateX(100%); opacity: 0; }
+              to { transform: translateX(0); opacity: 1; }
+            }
+          `}} />
+          <div className="h-8 w-8 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+            <Check className="h-4.5 w-4.5" strokeWidth={3.5} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+              Attendance Recorded!
+            </p>
+            <h4 className="font-bold text-sm text-zinc-900 dark:text-zinc-50 mt-1 truncate">
+              {attendanceNotification.name} (TAG{String(attendanceNotification.studentNumber).padStart(3, "0")})
+            </h4>
+            <p className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
+              Session count: {Math.max(0, attendanceNotification.totalSessions - attendanceNotification.sessionsCompleted)}
+            </p>
+          </div>
+          <button 
+            onClick={() => setAttendanceNotification(null)}
+            className="text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 cursor-pointer self-start -mt-1 -mr-1"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
       )}
 

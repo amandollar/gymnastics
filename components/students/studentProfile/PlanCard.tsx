@@ -348,7 +348,7 @@ export function PlanCard({
                   Class Type
                 </span>
                 <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                  {plan.planType === "ONE_TO_ONE" ? "Personal" : "Custom"}
+                  {plan.planType === "ONE_TO_ONE" ? "Personal" : "Grouped"}
                 </p>
               </div>
 
