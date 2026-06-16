@@ -589,7 +589,7 @@ export default function DashboardOverview({
       <div className="relative z-10 flex flex-col gap-4 pt-1 pb-3">
         {/* Header Row 1 */}
           <div>
-            <h1 className="text-3xl sm:text-5xl font-light tracking-tight text-zinc-955 dark:text-zinc-50">
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-light tracking-tight text-zinc-955 dark:text-zinc-50">
               Welcome back, <span className="font-semibold text-brand-orange-500 dark:text-brand-orange-500">{firstName}</span>
             </h1>
           </div>
@@ -597,16 +597,16 @@ export default function DashboardOverview({
         {/* Header Row 2: Pill Bar and Stats */}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between pt-3 pb-2 sm:pt-6 sm:pb-3">
           {/* Left Part: Premium standalone pills side-by-side with extra gap, scaled proportionally */}
-          <div className="flex flex-col gap-2.5 w-full max-w-sm pt-2 shrink-0">
+          <div className="flex flex-col gap-2.5 w-full max-w-sm lg:max-w-[220px] xl:max-w-sm pt-2 shrink-0">
             {totalStudents === 0 ? (
-              <div className="h-10 w-full bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 flex items-center justify-center text-xs font-semibold rounded-full">
+              <div className="h-[30px] sm:h-10 w-full bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 flex items-center justify-center text-[10px] sm:text-xs font-semibold rounded-full">
                 No active students
               </div>
             ) : (
-              <div className="h-10 w-full rounded-full overflow-hidden flex bg-zinc-200/50 dark:bg-zinc-800/50 p-0.5 gap-0.5">
+              <div className="h-[30px] sm:h-10 w-full rounded-full overflow-hidden flex bg-zinc-200/50 dark:bg-zinc-800/50 p-0.5 gap-0.5">
                 {activeCount > 0 && (
                   <div 
-                    className="h-full bg-zinc-800 dark:bg-white text-white dark:text-black flex items-center justify-center text-xs font-semibold transition-all duration-300 first:rounded-l-full last:rounded-r-full"
+                    className="h-full bg-zinc-800 dark:bg-white text-white dark:text-black flex items-center justify-center text-[10px] sm:text-xs font-semibold transition-all duration-300 first:rounded-l-full last:rounded-r-full"
                     style={{ width: `${activePercent}%` }}
                   >
                     {activePercent >= 10 ? `${activePercent}%` : ""}
@@ -615,7 +615,7 @@ export default function DashboardOverview({
 
                 {graceCount > 0 && (
                   <div 
-                    className="h-full bg-brand-orange-500 text-white flex items-center justify-center text-xs font-bold transition-all duration-300 first:rounded-l-full last:rounded-r-full"
+                    className="h-full bg-brand-orange-500 text-white flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all duration-300 first:rounded-l-full last:rounded-r-full"
                     style={{ width: `${gracePercent}%` }}
                   >
                     {gracePercent >= 10 ? `${gracePercent}%` : ""}
@@ -624,7 +624,7 @@ export default function DashboardOverview({
 
                 {freezeCount > 0 && (
                   <div 
-                    className="h-full bg-zinc-400 dark:bg-zinc-500 text-white dark:text-zinc-950 flex items-center justify-center text-xs font-semibold transition-all duration-300 first:rounded-l-full last:rounded-r-full"
+                    className="h-full bg-zinc-400 dark:bg-zinc-500 text-white dark:text-zinc-950 flex items-center justify-center text-[10px] sm:text-xs font-semibold transition-all duration-300 first:rounded-l-full last:rounded-r-full"
                     style={{ width: `${freezePercent}%` }}
                   >
                     {freezePercent >= 10 ? `${freezePercent}%` : ""}
@@ -651,7 +651,7 @@ export default function DashboardOverview({
           </div>
 
           {/* Right Part: Three Primary Stats */}
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 justify-start lg:justify-end shrink-0">
+          <div className="flex flex-wrap items-center gap-x-6 lg:gap-x-4 xl:gap-x-6 gap-y-2 justify-start lg:justify-end shrink-0">
             {/* Stat 1: Admissions This Month */}
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
@@ -700,53 +700,65 @@ export default function DashboardOverview({
         </div>
       </div>
 
-      {/* Premium Quick Actions Row - Shades representing Terracotta, Emerald Green, and Charcoal grey */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+      {/* Premium Quick Actions Row - Shades representing Terracotta, Emerald Green, Charcoal grey, and Sky Blue */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         {/* Action 1: Take Attendance (Terracotta / Warm Coral-Orange) */}
         <button
           onClick={() => {
             setQrOpen(true);
           }}
-          className="group flex flex-col lg:flex-row items-center gap-2.5 lg:gap-4.5 py-4.5 px-3 lg:py-5.5 lg:px-4.5 rounded-3xl border-0 bg-orange-200/90 dark:bg-orange-950/60 hover:bg-orange-300/80 dark:hover:bg-orange-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center lg:text-left w-full"
+          className="group flex flex-col xl:flex-row items-center gap-2.5 xl:gap-4.5 py-3 px-3 xl:py-4 xl:px-4.5 rounded-3xl border-0 bg-orange-200/90 dark:bg-orange-950/60 hover:bg-orange-300/80 dark:hover:bg-orange-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center xl:text-left w-full"
         >
           <img 
             src="/attendance.webp" 
             alt="Attendance" 
-            className="h-12 w-12 lg:h-16 lg:w-16 object-cover rounded-xl shrink-0 shadow-3xs" 
+            className="h-16 w-16 xl:h-18 xl:w-18 object-cover rounded-xl shrink-0 shadow-3xs" 
           />
           <div className="flex flex-col justify-center min-w-0">
-            <span className="font-bold text-xs lg:text-[14px] text-orange-955 dark:text-orange-100 leading-tight">
+            <span className="font-bold text-xs xl:text-[14px] text-orange-955 dark:text-orange-100 leading-tight">
               Take Attendance
             </span>
-            <span className="hidden lg:block text-[10px] lg:text-xs text-orange-855 dark:text-orange-200/70 mt-1 leading-normal">
-              Scan via QR or type ID
-            </span>
           </div>
-          <ChevronRight className="hidden lg:block h-5 w-5 ml-auto text-orange-955 dark:text-orange-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" strokeWidth={2.5} />
+          <ChevronRight className="hidden xl:block h-5 w-5 ml-auto text-orange-955 dark:text-orange-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" strokeWidth={2.5} />
         </button>
 
-        {/* Action 2: New Admission (Emerald Green) */}
+        {/* Action 2: New Enquiry (Sky Blue) */}
+        <Link
+          href="/enquiries/new"
+          className="group flex flex-col xl:flex-row items-center gap-2.5 xl:gap-4.5 py-3 px-3 xl:py-4 xl:px-4.5 rounded-3xl border-0 bg-sky-200/90 dark:bg-sky-950/60 hover:bg-sky-300/80 dark:hover:bg-sky-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center xl:text-left w-full"
+        >
+          <img 
+            src="/enquiry.webp" 
+            alt="New Enquiry" 
+            className="h-16 w-16 xl:h-18 xl:w-18 object-cover rounded-xl shrink-0 shadow-3xs" 
+          />
+          <div className="flex flex-col justify-center min-w-0">
+            <span className="font-bold text-xs xl:text-[14px] text-sky-955 dark:text-sky-100 leading-tight">
+              New Enquiry
+            </span>
+          </div>
+          <ChevronRight className="hidden xl:block h-5 w-5 ml-auto text-sky-955 dark:text-sky-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" strokeWidth={2.5} />
+        </Link>
+
+        {/* Action 3: New Admission (Emerald Green) */}
         <Link
           href="/students/new"
-          className="group flex flex-col lg:flex-row items-center gap-2.5 lg:gap-4.5 py-4.5 px-3 lg:py-5.5 lg:px-4.5 rounded-3xl border-0 bg-emerald-200/90 dark:bg-emerald-950/60 hover:bg-emerald-300/80 dark:hover:bg-emerald-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center lg:text-left w-full"
+          className="group flex flex-col xl:flex-row items-center gap-2.5 xl:gap-4.5 py-3 px-3 xl:py-4 xl:px-4.5 rounded-3xl border-0 bg-emerald-200/90 dark:bg-emerald-950/60 hover:bg-emerald-300/80 dark:hover:bg-emerald-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center xl:text-left w-full"
         >
           <img 
             src="/newAdmission.webp" 
             alt="New Admission" 
-            className="h-12 w-12 lg:h-16 lg:w-16 object-cover rounded-xl shrink-0 shadow-3xs" 
+            className="h-16 w-16 xl:h-18 xl:w-18 object-cover rounded-xl shrink-0 shadow-3xs" 
           />
           <div className="flex flex-col justify-center min-w-0">
-            <span className="font-bold text-xs lg:text-[14px] text-emerald-955 dark:text-emerald-100 leading-tight">
+            <span className="font-bold text-xs xl:text-[14px] text-emerald-955 dark:text-emerald-100 leading-tight">
               New Admission
             </span>
-            <span className="hidden lg:block text-[10px] lg:text-xs text-emerald-855 dark:text-emerald-200/70 mt-1 leading-normal">
-              Enroll student to a plan
-            </span>
           </div>
-          <ChevronRight className="hidden lg:block h-5 w-5 ml-auto text-emerald-955 dark:text-emerald-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" strokeWidth={2.5} />
+          <ChevronRight className="hidden xl:block h-5 w-5 ml-auto text-emerald-955 dark:text-emerald-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" strokeWidth={2.5} />
         </Link>
 
-        {/* Action 3: Collect Fee (Charcoal / Zinc grey) */}
+        {/* Action 4: Collect Fee (Charcoal / Zinc grey) */}
         <button
           onClick={() => {
             setFeeOpen(true);
@@ -756,22 +768,19 @@ export default function DashboardOverview({
             setFeeAmount("");
             setFeeNotes("");
           }}
-          className="group flex flex-col lg:flex-row items-center gap-2.5 lg:gap-4.5 py-4.5 px-3 lg:py-5.5 lg:px-4.5 rounded-3xl border-0 bg-zinc-300/95 dark:bg-zinc-800/80 hover:bg-zinc-400/85 dark:hover:bg-zinc-700/80 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center lg:text-left w-full"
+          className="group flex flex-col xl:flex-row items-center gap-2.5 xl:gap-4.5 py-3 px-3 xl:py-4 xl:px-4.5 rounded-3xl border-0 bg-zinc-300/95 dark:bg-zinc-800/80 hover:bg-zinc-400/85 dark:hover:bg-zinc-700/80 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center xl:text-left w-full"
         >
           <img 
             src="/fee.webp" 
             alt="Collect Fee" 
-            className="h-12 w-12 lg:h-16 lg:w-16 object-cover rounded-xl shrink-0 shadow-3xs" 
+            className="h-16 w-16 xl:h-18 xl:w-18 object-cover rounded-xl shrink-0 shadow-3xs" 
           />
           <div className="flex flex-col justify-center min-w-0">
-            <span className="font-bold text-xs lg:text-[14px] text-zinc-955 dark:text-zinc-100 leading-tight">
+            <span className="font-bold text-xs xl:text-[14px] text-zinc-955 dark:text-zinc-100 leading-tight">
               Collect Fee
             </span>
-            <span className="hidden lg:block text-[10px] lg:text-xs text-zinc-850 dark:text-zinc-200/70 mt-1 leading-normal">
-              Record student payment
-            </span>
           </div>
-          <ChevronRight className="hidden lg:block h-5 w-5 ml-auto text-zinc-955 dark:text-zinc-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" strokeWidth={2.5} />
+          <ChevronRight className="hidden xl:block h-5 w-5 ml-auto text-zinc-955 dark:text-zinc-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0" strokeWidth={2.5} />
         </button>
       </div>
 

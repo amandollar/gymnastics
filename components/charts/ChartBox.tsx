@@ -15,28 +15,28 @@ export default function ChartBox({
   children: React.ReactElement;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState<{ width: number; height: number } | null>(
-    null
-  );
+  const [hasSize, setHasSize] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
 
-    const measure = () => {
-      const { width, height: h } = el.getBoundingClientRect();
-      const w = Math.floor(width);
-      const ht = Math.floor(h) || height;
-      if (w > 0 && ht > 0) {
-        setSize({ width: w, height: ht });
-      }
-    };
+    if (el.getBoundingClientRect().width > 0) {
+      setHasSize(true);
+      return;
+    }
 
-    measure();
-    const observer = new ResizeObserver(measure);
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.contentRect.width > 0) {
+          setHasSize(true);
+          observer.disconnect();
+        }
+      }
+    });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [height]);
+  }, []);
 
   return (
     <div
@@ -44,8 +44,8 @@ export default function ChartBox({
       className="w-full min-w-0"
       style={{ height, minHeight: height }}
     >
-      {size && (
-        <ResponsiveContainer width={size.width} height={size.height}>
+      {hasSize && (
+        <ResponsiveContainer width="100%" height="100%">
           {children}
         </ResponsiveContainer>
       )}
