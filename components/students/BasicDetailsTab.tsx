@@ -12,6 +12,8 @@ import {
 import StudentAvatarPicker from "./StudentAvatarPicker";
 import DateOfBirthField from "./DateOfBirthField";
 
+import { STUDENT_LEVELS } from "@/lib/utils/level";
+
 const inputClass =
   "w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 focus:border-brand-orange-500 transition-all duration-200";
 
@@ -23,6 +25,7 @@ type StudentData = {
   parentName: string;
   contactNumber: string;
   admissionDate: Date;
+  level: string;
   notes: string | null;
   medicalHistory: string | null;
   avatarUrl?: string | null;
@@ -146,6 +149,28 @@ export default function BasicDetailsTab({ student }: { student: StudentData }) {
             </select>
             {state?.errors?.gender && (
               <p className="mt-1 text-xs text-rose-600">{state.errors.gender[0]}</p>
+            )}
+          </div>
+
+          {/* Student Level */}
+          <div>
+            <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
+              Student Level *
+            </label>
+            <select
+              name="level"
+              required
+              defaultValue={student.level}
+              className={inputClass}
+            >
+              {STUDENT_LEVELS.map((lvl) => (
+                <option key={lvl.value} value={lvl.value}>
+                  {lvl.label}
+                </option>
+              ))}
+            </select>
+            {state?.errors?.level && (
+              <p className="mt-1 text-xs text-rose-600">{state.errors.level[0]}</p>
             )}
           </div>
         </div>

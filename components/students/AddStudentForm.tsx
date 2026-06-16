@@ -9,6 +9,7 @@ import StudentAvatarPicker from "./StudentAvatarPicker";
 import StudentCreatedSuccess from "./StudentCreatedSuccess";
 import DateOfBirthField from "./DateOfBirthField";
 import SimpleDateInput from "./SimpleDateInput";
+import { STUDENT_LEVELS } from "@/lib/utils/level";
 
 const inputClass =
   "w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 focus:border-brand-orange-500 transition-all duration-200";
@@ -181,6 +182,27 @@ export default function AddStudentForm() {
                     <p className="mt-1 text-xs text-rose-600">
                       {state.errors.admissionDate[0]}
                     </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
+                    Student Level *
+                  </label>
+                  <select
+                    name="level"
+                    required
+                    className={inputClass}
+                    defaultValue="FOUNDATION_1"
+                  >
+                    {STUDENT_LEVELS.map((lvl) => (
+                      <option key={lvl.value} value={lvl.value}>
+                        {lvl.label}
+                      </option>
+                    ))}
+                  </select>
+                  {state?.errors?.level && (
+                    <p className="mt-1 text-xs text-rose-600">{state.errors.level[0]}</p>
                   )}
                 </div>
               </div>

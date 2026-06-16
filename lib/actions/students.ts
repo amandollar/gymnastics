@@ -7,6 +7,7 @@ import {
   assignPlanToStudent,
   createStudent,
   updateStudent,
+  updateStudentLevel,
   parsePlanFormDates,
   updateStudentActivePlanBatch,
   updateStudentActivePlan,
@@ -15,7 +16,7 @@ import {
 import { createStudentSchema, updateStudentSchema, assignPlanSchema } from "@/lib/validations/student";
 import type { WeekdayName } from "@/lib/plan/calculations";
 import { parseDateInput } from "@/lib/utils/student";
-import type { PlanType } from "@prisma/client";
+import type { PlanType, StudentLevel } from "@prisma/client";
 
 async function assertCanManageStudents() {
   const session = await auth();
@@ -49,6 +50,7 @@ export async function createStudentAction(
       parentName: formData.get("parentName"),
       contactNumber: formData.get("contactNumber"),
       admissionDate: formData.get("admissionDate"),
+      level: formData.get("level"),
       notes: formData.get("notes") || undefined,
       medicalHistory: formData.get("medicalHistory") || undefined,
     };
@@ -77,6 +79,7 @@ export async function createStudentAction(
       parentName: parsed.data.parentName,
       contactNumber: parsed.data.contactNumber,
       admissionDate: admission,
+      level: parsed.data.level,
       notes: parsed.data.notes,
       medicalHistory: parsed.data.medicalHistory,
       avatarFile:
@@ -130,6 +133,7 @@ export async function updateStudentAction(
       parentName: formData.get("parentName"),
       contactNumber: formData.get("contactNumber"),
       admissionDate: formData.get("admissionDate"),
+      level: formData.get("level"),
       notes: formData.get("notes") || undefined,
       medicalHistory: formData.get("medicalHistory") || undefined,
     };
@@ -158,6 +162,7 @@ export async function updateStudentAction(
       parentName: parsed.data.parentName,
       contactNumber: parsed.data.contactNumber,
       admissionDate: admission,
+      level: parsed.data.level,
       notes: parsed.data.notes,
       medicalHistory: parsed.data.medicalHistory,
       avatarFile:
@@ -176,6 +181,29 @@ export async function updateStudentAction(
     return {
       success: false,
       message: e instanceof Error ? e.message : "Failed to update student",
+    };
+  }
+}
+
+export async function updateStudentLevelAction(
+  studentId: string,
+  level: StudentLevel
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    await assertCanManageStudents();
+
+    await updateStudentLevel(studentId, level);
+
+    revalidatePath(`/students/${studentId}`);
+    revalidatePath("/students");
+    revalidatePath("/dashboard");
+    updateTag("students");
+
+    return { success: true, message: `Student level upgraded to ${level}` };
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Failed to update student level",
     };
   }
 }

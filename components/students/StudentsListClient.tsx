@@ -15,6 +15,10 @@ import {
   updateStudentActivePlanBatchAction,
   updateStudentNotesAndMedicalAction,
 } from "@/lib/actions/students";
+import { StudentLevel } from "@prisma/client";
+import { STUDENT_LEVELS, getLevelConfig } from "@/lib/utils/level";
+import { FreezePlanPopup } from "./studentProfile/FreezePlanPopup";
+import { UpgradeLevelModal } from "./studentProfile/UpgradeLevelModal";
 
 export type StudentListItem = {
   id: string;
@@ -27,6 +31,7 @@ export type StudentListItem = {
   gender: string;
   avatarUrl?: string | null;
   status: StudentStatus;
+  level: StudentLevel;
   activePlan: {
     planType: string;
     totalSessions: number;
@@ -57,6 +62,10 @@ function RowMenu({
   const [coords, setCoords] = useState({ top: 0, right: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Modal states for Freeze Plan and Upgrade Level
+  const [showFreeze, setShowFreeze] = useState(false);
+  const [showUpgradeLevel, setShowUpgradeLevel] = useState(false);
 
   // Modal states for Update Batch
   const [isUpdateBatchOpen, setIsUpdateBatchOpen] = useState(false);
@@ -188,7 +197,7 @@ function RowMenu({
           style={{ position: "fixed", top: coords.top, right: coords.right, zIndex: 9999 }}
           className="w-52 rounded-2xl border border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-2xl py-1 overflow-hidden z-50 animate-scale-in origin-top-right"
         >
-          {/* Edit Profile */}
+          {/* Edit details */}
           {canManage && (
             <Link
               href={`/students/${student.id}/edit`}
@@ -199,7 +208,7 @@ function RowMenu({
               <svg className="w-4 h-4 text-zinc-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-1.414.94l-3.414 1.137 1.137-3.414A4 4 0 019 13z" />
               </svg>
-              Edit Profile
+              Edit details
             </Link>
           )}
 
@@ -248,20 +257,39 @@ function RowMenu({
             </button>
           )}
 
+          {/* Freeze Plan */}
+          {canManage && student.activePlan && student.status !== "INACTIVE" && student.status !== "NO_PLAN" && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                setShowFreeze(true);
+              }}
+              className={itemClass}
+            >
+              <svg className="w-4 h-4 text-sky-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18M3 12h18M12 9l-3-3M12 15l-3 3M12 9l3-3M12 15l3 3M9 12L6 9M15 12l3-3M9 12l-3 3M15 12l3 3" />
+              </svg>
+              Freeze Plan
+            </button>
+          )}
 
-
-          {/* Update Batch */}
+          {/* Upgrade Level */}
           {canManage && (
             <button
               type="button"
               role="menuitem"
-              onClick={handleOpenUpdateBatch}
+              onClick={() => {
+                setOpen(false);
+                setShowUpgradeLevel(true);
+              }}
               className={itemClass}
             >
               <svg className="w-4 h-4 text-brand-orange-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
               </svg>
-              Update Batch
+              Upgrade Level
             </button>
           )}
 
@@ -286,6 +314,26 @@ function RowMenu({
             Get ID Card
           </button>
         </nav>
+      )}
+
+      {/* Freeze popup */}
+      {showFreeze && student.activePlan && (
+        <FreezePlanPopup
+          activePlan={student.activePlan as any}
+          studentId={student.id}
+          onClose={() => setShowFreeze(false)}
+        />
+      )}
+
+      {/* Upgrade Level modal */}
+      {showUpgradeLevel && (
+        <UpgradeLevelModal
+          isOpen={showUpgradeLevel}
+          onClose={() => setShowUpgradeLevel(false)}
+          studentId={student.id}
+          studentName={student.name}
+          currentLevel={student.level}
+        />
       )}
 
       {/* Update Batch Modal */}
@@ -475,7 +523,7 @@ function RowMenu({
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
-type SortField = "NONE" | "ROLL" | "NAME" | "AGE" | "SESSIONS_LEFT" | "DAYS_LEFT" | "ADMISSION";
+type SortField = "NONE" | "ROLL" | "NAME" | "AGE" | "LEVEL" | "SESSIONS_LEFT" | "DAYS_LEFT" | "ADMISSION";
 
 export default function StudentsListClient({
   students,
@@ -614,6 +662,12 @@ export default function StudentsListClient({
         const daysA = computeDaysLeft(new Date(a.activePlan!.expiryDate));
         const daysB = computeDaysLeft(new Date(b.activePlan!.expiryDate));
         return sortOrder === "asc" ? daysA - daysB : daysB - daysA;
+      });
+    } else if (sortField === "LEVEL") {
+      rows.sort((a, b) => {
+        const idxA = STUDENT_LEVELS.findIndex((lvl) => lvl.value === a.level);
+        const idxB = STUDENT_LEVELS.findIndex((lvl) => lvl.value === b.level);
+        return sortOrder === "asc" ? idxA - idxB : idxB - idxA;
       });
     }
 
@@ -855,9 +909,10 @@ export default function StudentsListClient({
                   <option value="NONE">Sort by newest</option>
                   <option value="NAME">Sort by name</option>
                   <option value="AGE">Sort by age</option>
+                  <option value="LEVEL">Sort by level</option>
                   <option value="ADMISSION">Sort by admission</option>
                   <option value="ROLL">Sort by roll</option>
-                  <option value="SESSIONS_LEFT">Sessions left</option>
+                  <option value="SESSIONS_LEFT">Sess. Left</option>
                   <option value="DAYS_LEFT">Days left</option>
                 </select>
               </div>
@@ -912,9 +967,10 @@ export default function StudentsListClient({
             <option value="NONE">Sort by newest</option>
             <option value="NAME">Sort by name</option>
             <option value="AGE">Sort by age</option>
+            <option value="LEVEL">Sort by level</option>
             <option value="ADMISSION">Sort by admission</option>
             <option value="ROLL">Sort by roll</option>
-            <option value="SESSIONS_LEFT">Sessions left</option>
+            <option value="SESSIONS_LEFT">Sess. Left</option>
             <option value="DAYS_LEFT">Days left</option>
           </select>
           {isFilterApplied && (
@@ -947,6 +1003,10 @@ export default function StudentsListClient({
                       TAG{s.studentNumber} {s.name}
                     </p>
                     <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-bold ${getLevelConfig(s.level).badgeBg} ${getLevelConfig(s.level).badgeText} ring-1 ring-zinc-200/40 dark:ring-zinc-800/40`}>
+                        {getLevelConfig(s.level).shortLabel}
+                      </span>
+                      <span>·</span>
                       <span>Age: {formatAge(new Date(s.dateOfBirth))}</span>
                       <span>·</span>
                       <span>{s.contactNumber}</span>
@@ -1004,7 +1064,7 @@ export default function StudentsListClient({
                   </span>
                 </div>
                 <div>
-                  <span className="text-zinc-400 dark:text-zinc-550">Sessions left:</span>{" "}
+                  <span className="text-zinc-400 dark:text-zinc-550">Sess. Left:</span>{" "}
                   <span className="font-medium text-zinc-700 dark:text-zinc-300">
                     {s.sessionsPending ?? "—"}
                   </span>
@@ -1031,9 +1091,10 @@ export default function StudentsListClient({
               {renderHeader("Student", "ROLL")}
               {renderHeader("Name", "NAME")}
               {renderHeader("Age", "AGE")}
+              {renderHeader("Level", "LEVEL")}
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Plan</th>
-              {renderHeader("Sessions left", "SESSIONS_LEFT")}
+              {renderHeader("Sess. Left", "SESSIONS_LEFT")}
               {renderHeader("Days left", "DAYS_LEFT")}
               <th className="px-4 py-3">Fee</th>
               <th className="px-4 py-3 text-right"></th>
@@ -1079,6 +1140,11 @@ export default function StudentsListClient({
                   </td>
                   <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300">
                     {formatAge(new Date(s.dateOfBirth))}
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${getLevelConfig(s.level).badgeBg} ${getLevelConfig(s.level).badgeText} ring-1 ring-zinc-200/40 dark:ring-zinc-800/40`}>
+                      {getLevelConfig(s.level).shortLabel}
+                    </span>
                   </td>
                   <td className="px-4 py-3">
                     <StudentStatusBadge status={s.status} />

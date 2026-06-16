@@ -31,6 +31,7 @@ type StudentData = {
   parentName: string;
   contactNumber: string;
   admissionDate: Date;
+  level: string;
   notes: string | null;
   medicalHistory: string | null;
   avatarUrl?: string | null;

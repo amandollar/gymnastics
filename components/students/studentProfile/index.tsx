@@ -17,6 +17,8 @@ import { AttendanceCard } from "./AttendanceCard";
 import { PlanCard } from "./PlanCard";
 import { FreezePlanPopup } from "./FreezePlanPopup";
 import { PlanHistory } from "./PlanHistory";
+import { StudentLevel } from "@prisma/client";
+import { LevelProgress } from "./LevelProgress";
 
 // ─── Student type ─────────────────────────────────────────────────────────────
 
@@ -29,6 +31,7 @@ type StudentData = {
   parentName: string;
   contactNumber: string;
   admissionDate: Date;
+  level: StudentLevel;
   notes: string | null;
   medicalHistory: string | null;
   avatarUrl?: string | null;
@@ -135,7 +138,7 @@ export default function StudentDetailClient({
                 </button>
               )}
 
-            {/* Edit profile */}
+            {/* Edit details */}
             {canManage && (
               <a
                 href={`/students/${student.id}/edit`}
@@ -154,7 +157,7 @@ export default function StudentDetailClient({
                     d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-1.414.94l-3.414 1.137 1.137-3.414A4 4 0 019 13z"
                   />
                 </svg>
-                Update details
+                Edit details
               </a>
             )}
           </div>
@@ -173,7 +176,7 @@ export default function StudentDetailClient({
 
             {menuOpen && (
               <div className="absolute right-0 mt-2 w-48 rounded-2xl border border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-xl py-1 z-50 origin-top-right animate-scale-in">
-                {/* Update details */}
+                {/* Edit details */}
                 {canManage && (
                   <Link
                     href={`/students/${student.id}/edit`}
@@ -193,7 +196,7 @@ export default function StudentDetailClient({
                         d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-1.414.94l-3.414 1.137 1.137-3.414A4 4 0 019 13z"
                       />
                     </svg>
-                    Update details
+                    Edit details
                   </Link>
                 )}
 
@@ -279,6 +282,14 @@ export default function StudentDetailClient({
               </p>
             </div>
           </div>
+
+          {/* Student level progress */}
+          <LevelProgress
+            studentId={student.id}
+            studentName={student.name}
+            currentLevel={student.level}
+            canManage={canManage}
+          />
 
           {/* Basic info card */}
           <div className="rounded-3xl bg-white dark:bg-zinc-900 p-5 shadow-sm space-y-4">

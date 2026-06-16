@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { PlanType, Prisma } from "@prisma/client";
+import type { PlanType, Prisma, StudentLevel } from "@prisma/client";
 import {
   computePlanFields,
   startOfDay,
@@ -182,6 +182,7 @@ export async function createStudent(data: {
   parentName: string;
   contactNumber: string;
   admissionDate: Date;
+  level: StudentLevel;
   notes?: string;
   medicalHistory?: string;
   avatarFile?: File | null;
@@ -197,6 +198,7 @@ export async function createStudent(data: {
       parentName: data.parentName,
       contactNumber: data.contactNumber,
       admissionDate: data.admissionDate,
+      level: data.level,
       notes: data.notes,
       medicalHistory: data.medicalHistory,
       avatarUrl: null,
@@ -226,6 +228,7 @@ export async function updateStudent(
     parentName: string;
     contactNumber: string;
     admissionDate: Date;
+    level: StudentLevel;
     notes?: string;
     medicalHistory?: string;
     avatarFile?: File | null;
@@ -240,6 +243,7 @@ export async function updateStudent(
       parentName: data.parentName,
       contactNumber: data.contactNumber,
       admissionDate: data.admissionDate,
+      level: data.level,
       notes: data.notes ?? null,
       medicalHistory: data.medicalHistory ?? null,
     },
@@ -257,6 +261,13 @@ export async function updateStudent(
   }
 
   return student;
+}
+
+export async function updateStudentLevel(id: string, level: StudentLevel) {
+  return prisma.student.update({
+    where: { id },
+    data: { level },
+  });
 }
 
 export async function updateStudentNotesAndMedical(
