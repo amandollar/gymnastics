@@ -22,7 +22,7 @@ import type { EnquiryStatus } from "@prisma/client";
 export const listStudents = unstable_cache(
   async (filters?: { search?: string; status?: StudentStatus | "ALL" }) =>
     dbListStudents(filters),
-  ["students-list"],
+  ["students-list-v2"],
   { tags: ["students"] }
 );
 

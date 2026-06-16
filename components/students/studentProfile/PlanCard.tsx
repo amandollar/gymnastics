@@ -507,6 +507,17 @@ export function PlanCard({
                 <p className="text-xl font-bold text-zinc-955 dark:text-zinc-50 mt-0.5">
                   {formatINR(plan.fee)}
                 </p>
+                <div className="mt-1">
+                  {(typeof plan.outstanding === "number" ? plan.outstanding : plan.fee) <= 0 ? (
+                    <span className="text-xs font-semibold text-zinc-400 dark:text-zinc-650">
+                      Paid
+                    </span>
+                  ) : (
+                    <span className="text-xs font-bold text-rose-500 dark:text-rose-400">
+                      {formatINR(typeof plan.outstanding === "number" ? plan.outstanding : plan.fee)} due
+                    </span>
+                  )}
+                </div>
               </div>
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block mb-1.5">

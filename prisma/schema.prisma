@@ -55,6 +55,7 @@ model Student {
   updatedAt      DateTime      @updatedAt
   plans          StudentPlan[]
   attendances    Attendance[]
+  payments       PaymentRecord[]
 }
 
 model SessionPricing {
@@ -123,6 +124,7 @@ model StudentPlan {
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
   attendances       Attendance[]
+  payments          PaymentRecord[]
 
   @@index([studentId])
   @@index([studentId, isActive])
@@ -168,6 +170,13 @@ model Attendance {
   @@index([studentPlanId])
 }
 
+enum PaymentMethod {
+  UPI
+  CASH
+  BANK_TRANSFER
+  OTHER
+}
+
 enum EnquiryStatus {
   NEW
   CONTACTED
@@ -192,4 +201,21 @@ model Enquiry {
   convertedToId   String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+}
+
+model PaymentRecord {
+  id            String        @id @default(cuid())
+  invoiceNumber Int           @unique @default(autoincrement())
+  studentPlanId String
+  studentPlan   StudentPlan   @relation(fields: [studentPlanId], references: [id], onDelete: Cascade)
+  studentId     String
+  student       Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  amount        Int
+  method        PaymentMethod @default(CASH)
+  notes         String?
+  paidAt        DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+
+  @@index([studentId])
+  @@index([studentPlanId])
 }

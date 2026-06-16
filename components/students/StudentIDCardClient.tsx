@@ -14,7 +14,6 @@ import {
   Dumbbell,
   Clock,
   MapPin,
-  Mail,
 } from "lucide-react";
 import { getStudentAvatarUrl } from "@/lib/utils/avatar";
 
@@ -407,34 +406,21 @@ export default function StudentIDCardClient({
             </div>
 
             {/* Bottom Footer Strip */}
-            <div className="absolute bottom-[0.4em] left-0 right-0 h-[3.2em] z-10 flex items-center justify-around px-[0.8em] rounded-b-[1.5em]">
-              {/* Address */}
-              <div className="flex flex-col items-center text-center max-w-[5.2em]">
-                <MapPin className="w-[0.9em] h-[0.9em] text-[#f05a22] mb-[0.05em]" />
-                <span className="text-[0.35em] font-black text-zinc-800 leading-tight">
-                  123 Gymnastics Way, Performance City, PC 12345
+            <div className="absolute bottom-[0.3em] left-0 right-0 z-10 flex flex-col items-center justify-end px-[1.2em] pb-[0.4em] gap-[0.35em]">
+              {/* Row 1: Address */}
+              <div className="flex items-start gap-[0.3em] w-full justify-center">
+                <MapPin className="w-[0.7em] h-[0.7em] text-[#f05a22] shrink-0 mt-[0.05em]" />
+                <span className="text-[0.44em] font-bold text-zinc-800 leading-snug text-center">
+                  Office No 7, 2nd floor, Nine Hills Plaza, NIBM Annexe, Pune 411060
                 </span>
               </div>
-
-              {/* Vertical divider */}
-              <div className="h-[1.8em] w-[0.05em] bg-zinc-300" />
-
-              {/* Phone */}
-              <div className="flex flex-col items-center text-center">
-                <Phone className="w-[0.9em] h-[0.9em] text-[#f05a22] mb-[0.05em]" />
-                <span className="text-[0.35em] font-black text-zinc-800 leading-tight tracking-wider">
-                  +1 234 567 890
-                </span>
-              </div>
-
-              {/* Vertical divider */}
-              <div className="h-[1.8em] w-[0.05em] bg-zinc-300" />
-
-              {/* Email */}
-              <div className="flex flex-col items-center text-center max-w-[5.8em]">
-                <Mail className="w-[0.9em] h-[0.9em] text-[#f05a22] mb-[0.05em]" />
-                <span className="text-[0.35em] font-black text-zinc-800 leading-tight truncate w-full">
-                  info@tagymnastics.com
+              {/* Horizontal divider */}
+              <div className="w-[60%] h-[0.04em] bg-zinc-300" />
+              {/* Row 2: Phone */}
+              <div className="flex items-center gap-[0.3em] justify-center">
+                <Phone className="w-[0.7em] h-[0.7em] text-[#f05a22] shrink-0" />
+                <span className="text-[0.44em] font-bold text-zinc-800 leading-snug tracking-wider">
+                  7977177463 / 7757965651
                 </span>
               </div>
             </div>

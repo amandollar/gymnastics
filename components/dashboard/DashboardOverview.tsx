@@ -21,8 +21,10 @@ import {
 } from "@/lib/sample/dashboard";
 import type { DashboardData } from "@/lib/services/dashboard";
 import { useRouter } from "next/navigation";
+import { FeeReceipt } from "@/components/students/studentProfile/FeeReceipt";
 import jsQR from "jsqr";
 import { searchStudentsForAttendanceAction, markAttendanceAction, getAttendanceSessionDataAction } from "@/lib/actions/attendance";
+import { searchStudentsWithDuesAction, collectFeeAction, getPaymentByIdAction } from "@/lib/actions/payments";
 
 const CHART_H = 260;
 const CHART_H_SM = 224;
@@ -197,11 +199,125 @@ export default function DashboardOverview({
 
   // Collect Fee states
   const [feeSearchQuery, setFeeSearchQuery] = useState("");
-  const [feeSelectedStudent, setFeeSelectedStudent] = useState<typeof dummyStudents[0] | null>(null);
+  const [feeSelectedStudent, setFeeSelectedStudent] = useState<any | null>(null);
   const [feeAmount, setFeeAmount] = useState("");
   const [feeMethod, setFeeMethod] = useState("UPI");
-  const [feeNotes, setFeeNotes] = useState("");
+  const [feeNotes, setFeeNotes] = useState("Fees once paid are non-refundable.\nPlease renew on or before expiry date.");
   const [feeSuccess, setFeeSuccess] = useState(false);
+  const [feeLastPaymentId, setFeeLastPaymentId] = useState<string | null>(null);
+  const [feeStudentsList, setFeeStudentsList] = useState<any[]>([]);
+  const [allFeeStudents, setAllFeeStudents] = useState<any[]>([]);
+  const [feeSearching, setFeeSearching] = useState(false);
+  const [feeSubmitting, setFeeSubmitting] = useState(false);
+
+  // Printing state
+  const [printData, setPrintData] = useState<any | null>(null);
+
+  const handlePrint = async (paymentId: string) => {
+    try {
+      const data = await getPaymentByIdAction(paymentId);
+      if (data) {
+        const student = data.student;
+        const firstName = student.name.trim().split(/\s+/)[0]?.toLowerCase() || "student";
+        const newTitle = `TAG${student.studentNumber}-${firstName}-fee-reciept`;
+        document.title = newTitle;
+        const titleEl = document.querySelector('title');
+        if (titleEl) {
+          titleEl.textContent = newTitle;
+        }
+        setPrintData(data);
+      } else {
+        alert("Failed to load receipt data for printing");
+      }
+    } catch {
+      alert("Error fetching receipt details");
+    }
+  };
+
+  useEffect(() => {
+    if (printData) {
+      const timer = setTimeout(() => {
+        window.print();
+        const standardTitle = "TAG CRM · Academy of Gymnastics";
+        document.title = standardTitle;
+        const titleEl = document.querySelector('title');
+        if (titleEl) {
+          titleEl.textContent = standardTitle;
+        }
+        setPrintData(null);
+      }, 600);
+      return () => {
+        clearTimeout(timer);
+        const standardTitle = "TAG CRM · Academy of Gymnastics";
+        document.title = standardTitle;
+        const titleEl = document.querySelector('title');
+        if (titleEl) {
+          titleEl.textContent = standardTitle;
+        }
+      };
+    }
+  }, [printData]);
+
+  useEffect(() => {
+    if (feeOpen) {
+      setFeeNotes("Fees once paid are non-refundable.\nPlease renew on or before expiry date.");
+      setFeeSearching(true);
+      searchStudentsWithDuesAction("")
+        .then((res) => {
+          setAllFeeStudents(res);
+          setFeeStudentsList(res);
+        })
+        .finally(() => {
+          setFeeSearching(false);
+        });
+    } else {
+      setFeeSearchQuery("");
+      setFeeSelectedStudent(null);
+      setFeeAmount("");
+      setFeeMethod("UPI");
+      setFeeNotes("Fees once paid are non-refundable.\nPlease renew on or before expiry date.");
+      setFeeSuccess(false);
+      setFeeLastPaymentId(null);
+      setAllFeeStudents([]);
+      setFeeStudentsList([]);
+    }
+  }, [feeOpen]);
+
+  useEffect(() => {
+    const q = feeSearchQuery.trim().toLowerCase();
+    if (!q) {
+      setFeeStudentsList(allFeeStudents);
+      return;
+    }
+
+    const filtered = allFeeStudents.filter((s) => {
+      const nameMatch = s.name.toLowerCase().includes(q);
+      const idMatch = s.studentNumber.toString().startsWith(q);
+      return nameMatch || idMatch;
+    });
+
+    filtered.sort((a, b) => {
+      const aStr = a.studentNumber.toString();
+      const bStr = b.studentNumber.toString();
+
+      if (aStr === q && bStr !== q) return -1;
+      if (bStr === q && aStr !== q) return 1;
+
+      const aStarts = aStr.startsWith(q);
+      const bStarts = bStr.startsWith(q);
+      if (aStarts && !bStarts) return -1;
+      if (bStarts && !aStarts) return 1;
+
+      const aNameStarts = a.name.toLowerCase().startsWith(q);
+      const bNameStarts = b.name.toLowerCase().startsWith(q);
+      if (aNameStarts && !bNameStarts) return -1;
+      if (bNameStarts && !aNameStarts) return 1;
+
+      return 0;
+    });
+
+    setFeeStudentsList(filtered);
+  }, [feeSearchQuery, allFeeStudents]);
 
   // Clean up camera stream on close
   const stopCamera = () => {
@@ -1312,14 +1428,11 @@ export default function DashboardOverview({
           <div className="relative w-full max-w-lg rounded-2xl bg-white dark:bg-zinc-900 border-0 shadow-2xl p-6">
             
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-850 pb-4 mb-4">
+            <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-base font-bold text-zinc-950 dark:text-zinc-50">
                   Collect Student Fee
                 </h3>
-                <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
-                  Record a manual payment received from a student
-                </p>
               </div>
               <button
                 onClick={() => setFeeOpen(false)}
@@ -1351,27 +1464,64 @@ export default function DashboardOverview({
                   </div>
                   <div className="flex justify-between border-b border-zinc-200/50 dark:border-zinc-850 py-2">
                     <span className="text-zinc-400 dark:text-zinc-500">Method:</span>
-                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">{feeMethod}</span>
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                      {feeMethod === "BANK_TRANSFER" ? "Bank Transfer" : feeMethod}
+                    </span>
                   </div>
                   <div className="flex justify-between pt-2">
                     <span className="text-zinc-400 dark:text-zinc-500">Transaction Date:</span>
                     <span className="font-semibold text-zinc-900 dark:text-zinc-100">{new Date().toLocaleDateString("en-IN")}</span>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setFeeOpen(false)}
-                  className="mt-6 px-5 py-2.5 rounded-xl text-xs font-bold bg-zinc-900 dark:bg-zinc-800 text-white hover:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
-                >
-                  Close Receipt
-                </button>
+
+                <div className="mt-6 flex gap-3 w-full">
+                  <button
+                    type="button"
+                    onClick={() => setFeeOpen(false)}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer text-center"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (feeLastPaymentId) {
+                        handlePrint(feeLastPaymentId);
+                        setFeeOpen(false);
+                      }
+                    }}
+                    className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold bg-brand-orange-500 text-white hover:bg-brand-orange-600 transition-colors cursor-pointer text-center"
+                  >
+                    Print Receipt
+                  </button>
+                </div>
               </div>
             ) : (
               <form
-                onSubmit={(e) => {
+                onSubmit={async (e) => {
                   e.preventDefault();
                   if (!feeSelectedStudent || !feeAmount) return;
-                  setFeeSuccess(true);
+                  setFeeSubmitting(true);
+                  const formData = new FormData();
+                  formData.append("studentPlanId", feeSelectedStudent.activePlanId);
+                  formData.append("studentId", feeSelectedStudent.id);
+                  formData.append("amount", feeAmount);
+                  formData.append("method", feeMethod);
+                  formData.append("notes", feeNotes);
+
+                  try {
+                    const res = await collectFeeAction(null, formData);
+                    if (res.success && res.paymentId) {
+                      setFeeLastPaymentId(res.paymentId);
+                      setFeeSuccess(true);
+                    } else {
+                      alert(res.message || "Failed to record payment");
+                    }
+                  } catch (err) {
+                    alert("An error occurred while recording payment.");
+                  } finally {
+                    setFeeSubmitting(false);
+                  }
                 }}
                 className="space-y-4"
               >
@@ -1380,7 +1530,7 @@ export default function DashboardOverview({
                 {!feeSelectedStudent ? (
                   <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-                      Search Student *
+                      Search Student with Dues *
                     </label>
                     <input
                       type="text"
@@ -1392,13 +1542,12 @@ export default function DashboardOverview({
 
                     {/* Autocomplete Dropdown */}
                     <div className="mt-2 space-y-1.5 max-h-36 overflow-y-auto border border-zinc-100 dark:border-zinc-850 rounded-xl p-1 bg-zinc-50 dark:bg-zinc-950">
-                      {dummyStudents
-                        .filter(
-                          (st) =>
-                            st.name.toLowerCase().includes(feeSearchQuery.toLowerCase()) ||
-                            st.studentNumber.toString().includes(feeSearchQuery)
-                        )
-                        .map((student) => (
+                      {feeSearching ? (
+                        <p className="text-[10px] text-zinc-400 p-2">Searching...</p>
+                      ) : feeStudentsList.length === 0 ? (
+                        <p className="text-[10px] text-zinc-400 p-2">No students with outstanding dues found.</p>
+                      ) : (
+                        feeStudentsList.map((student) => (
                           <button
                             key={student.id}
                             type="button"
@@ -1410,13 +1559,16 @@ export default function DashboardOverview({
                           >
                             <div>
                               <p className="font-bold text-zinc-900 dark:text-zinc-100">{student.name}</p>
-                              <p className="text-[10px] text-zinc-400 dark:text-zinc-500">ID: {student.studentNumber} · {student.activePlan}</p>
+                              <p className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                                ID: {student.studentNumber} · {student.planType}
+                              </p>
                             </div>
                             <span className="text-[10px] font-bold text-rose-500">
-                              Dues: ₹{student.outstanding}
+                              Dues: ₹{student.outstanding.toLocaleString("en-IN")}
                             </span>
                           </button>
-                        ))}
+                        ))
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -1429,13 +1581,13 @@ export default function DashboardOverview({
                         {feeSelectedStudent.name} (ID: {feeSelectedStudent.studentNumber})
                       </p>
                       <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">
-                        Plan Outstanding Dues: ₹{feeSelectedStudent.outstanding}
+                        Plan Outstanding Dues: ₹{feeSelectedStudent.outstanding.toLocaleString("en-IN")}
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => setFeeSelectedStudent(null)}
-                      className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-800 text-[10px] font-bold text-zinc-500 hover:text-rose-500 transition-colors cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg border border-zinc-200 dark:border-zinc-800 text-[10px] font-bold text-zinc-500 hover:text-rose-500 transition-colors cursor-pointer text-center"
                     >
                       Change
                     </button>
@@ -1492,20 +1644,20 @@ export default function DashboardOverview({
                   <button
                     type="button"
                     onClick={() => setFeeOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                    className="px-4 py-2 rounded-xl text-xs font-semibold border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer text-center"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    disabled={!feeSelectedStudent}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold text-white shadow-sm transition-colors cursor-pointer ${
-                      feeSelectedStudent
-                        ? "bg-brand-orange-500 hover:bg-brand-orange-655"
+                    disabled={!feeSelectedStudent || feeSubmitting}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold text-white shadow-sm transition-colors cursor-pointer text-center ${
+                      feeSelectedStudent && !feeSubmitting
+                        ? "bg-brand-orange-500 hover:bg-brand-orange-600"
                         : "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-600 cursor-not-allowed"
                     }`}
                   >
-                    Record Payment
+                    {feeSubmitting ? "Recording..." : "Record Payment"}
                   </button>
                 </div>
               </form>
@@ -1549,6 +1701,63 @@ export default function DashboardOverview({
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
+      )}
+
+      {/* Print styles and hidden receipt container */}
+      {printData && (
+        <>
+          <style dangerouslySetInnerHTML={{__html: `
+            @page {
+              size: A4;
+              margin: 0 !important;
+            }
+            @media print {
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                overflow: hidden !important;
+                background: white !important;
+              }
+              body * {
+                visibility: hidden !important;
+              }
+              #print-receipt-container,
+              #print-receipt-container * {
+                visibility: visible !important;
+              }
+              #print-receipt-container {
+                display: block !important;
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                background: white !important;
+                border: none !important;
+              }
+            }
+          `}} />
+          <div
+            id="print-receipt-container"
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              zIndex: 99999,
+              backgroundColor: "white",
+              display: "none",
+            }}
+          >
+            <FeeReceipt data={printData} />
+          </div>
+        </>
       )}
 
     </div>

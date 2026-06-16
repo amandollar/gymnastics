@@ -39,6 +39,7 @@ export type StudentListItem = {
     fee: number;
     expiryDate: Date;
     batchId?: string | null;
+    payments?: { amount: number }[];
   } | null;
   sessionsPending: number | null;
   createdAt: Date | string;
@@ -598,9 +599,7 @@ export default function StudentsListClient({
       rows = rows.filter(
         (s) =>
           s.name.toLowerCase().includes(q) ||
-          s.parentName.toLowerCase().includes(q) ||
-          s.contactNumber.includes(q) ||
-          String(s.studentNumber).includes(q)
+          s.studentNumber.toString().startsWith(q)
       );
     }
     if (statusFilter !== "ALL") {
@@ -798,7 +797,7 @@ export default function StudentsListClient({
         <div className="relative flex-1">
           <input
             type="search"
-            placeholder="Search name, parent, ID, phone…"
+            placeholder="Search name or ID…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-10 pr-4 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20 transition-all"
@@ -1072,9 +1071,29 @@ export default function StudentsListClient({
                 </div>
                 <div>
                   <span className="text-zinc-400 dark:text-zinc-550">Fee:</span>{" "}
-                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
-                    {s.activePlan ? formatINR(s.activePlan.fee) : "—"}
-                  </span>
+                  {s.activePlan ? (
+                    <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                      {formatINR(s.activePlan.fee)}
+                      {(() => {
+                        const totalPaid = s.activePlan.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
+                        const dues = Math.max(0, s.activePlan.fee - totalPaid);
+                        return dues > 0 ? (
+                          <span className="ml-1.5 text-xs font-semibold text-rose-500 dark:text-rose-450">
+                            ({formatINR(dues)} due)
+                          </span>
+                        ) : (
+                          <span className="ml-1.5 text-xs font-medium text-zinc-400 dark:text-zinc-550 inline-flex items-center gap-0.5">
+                            <svg className="w-3 h-3 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            paid
+                          </span>
+                        );
+                      })()}
+                    </span>
+                  ) : (
+                    <span className="font-medium text-zinc-700 dark:text-zinc-300">—</span>
+                  )}
                 </div>
                 <div>
                   <span className="text-zinc-400 dark:text-zinc-550">Sess. Left:</span>{" "}
@@ -1189,7 +1208,31 @@ export default function StudentsListClient({
                       : "—"}
                   </td>
                   <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300">
-                    {s.activePlan ? formatINR(s.activePlan.fee) : "—"}
+                    {s.activePlan ? (
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                          {formatINR(s.activePlan.fee)}
+                        </span>
+                        {(() => {
+                          const totalPaid = s.activePlan.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
+                          const dues = Math.max(0, s.activePlan.fee - totalPaid);
+                          return dues > 0 ? (
+                            <span className="text-xs font-semibold text-rose-500 dark:text-rose-400">
+                              {formatINR(dues)} due
+                            </span>
+                          ) : (
+                            <span className="text-xs font-medium text-zinc-400 dark:text-zinc-550 flex items-center gap-1">
+                              <svg className="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                              paid
+                            </span>
+                          );
+                        })()}
+                      </div>
+                    ) : (
+                      "—"
+                    )}
                   </td>
 
                   {/* ── Actions ── */}

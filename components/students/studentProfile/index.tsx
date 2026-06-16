@@ -12,14 +12,16 @@ import {
   formatTenure,
   type StudentStatus,
 } from "@/lib/utils/student";
-import type { PlanRow, AttendanceRow } from "./types";
+import type { PlanRow, AttendanceRow, PaymentRow } from "./types";
 import { AttendanceCard } from "./AttendanceCard";
 import { PlanCard } from "./PlanCard";
 import { FreezePlanPopup } from "./FreezePlanPopup";
 import { PlanHistory } from "./PlanHistory";
 import { StudentLevel } from "@prisma/client";
 import { LevelProgress } from "./LevelProgress";
-
+import { PaymentHistory } from "./PaymentHistory";
+import { getPaymentByIdAction } from "@/lib/actions/payments";
+import { FeeReceipt } from "./FeeReceipt";
 // ─── Student type ─────────────────────────────────────────────────────────────
 
 type StudentData = {
@@ -40,6 +42,7 @@ type StudentData = {
   sessionsPending: number | null;
   plans: PlanRow[];
   attendances: AttendanceRow[];
+  payments: PaymentRow[];
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -54,7 +57,52 @@ export default function StudentDetailClient({
   const [showFreeze, setShowFreeze] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [printData, setPrintData] = useState<any | null>(null);
 
+  const handlePrint = async (paymentId: string) => {
+    try {
+      const data = await getPaymentByIdAction(paymentId);
+      if (data) {
+        const student = data.student;
+        const firstName = student.name.trim().split(/\s+/)[0]?.toLowerCase() || "student";
+        const newTitle = `TAG${student.studentNumber}-${firstName}-fee-reciept`;
+        document.title = newTitle;
+        const titleEl = document.querySelector('title');
+        if (titleEl) {
+          titleEl.textContent = newTitle;
+        }
+        setPrintData(data);
+      } else {
+        alert("Failed to load receipt data for printing");
+      }
+    } catch {
+      alert("Error fetching receipt details");
+    }
+  };
+
+  useEffect(() => {
+    if (printData) {
+      const timer = setTimeout(() => {
+        window.print();
+        const standardTitle = "TAG CRM · Academy of Gymnastics";
+        document.title = standardTitle;
+        const titleEl = document.querySelector('title');
+        if (titleEl) {
+          titleEl.textContent = standardTitle;
+        }
+        setPrintData(null);
+      }, 600);
+      return () => {
+        clearTimeout(timer);
+        const standardTitle = "TAG CRM · Academy of Gymnastics";
+        document.title = standardTitle;
+        const titleEl = document.querySelector('title');
+        if (titleEl) {
+          titleEl.textContent = standardTitle;
+        }
+      };
+    }
+  }, [printData]);
   useEffect(() => {
     if (!menuOpen) return;
     function handleClickOutside(event: MouseEvent) {
@@ -440,6 +488,7 @@ export default function StudentDetailClient({
           )}
 
           <PlanHistory plans={student.plans} />
+          <PaymentHistory payments={student.payments} studentId={student.id} onPrint={handlePrint} />
         </div>
       </div>
 
@@ -450,6 +499,63 @@ export default function StudentDetailClient({
           studentId={student.id}
           onClose={() => setShowFreeze(false)}
         />
+      )}
+
+      {/* Print styles and hidden receipt container */}
+      {printData && (
+        <>
+          <style dangerouslySetInnerHTML={{__html: `
+            @page {
+              size: A4;
+              margin: 0 !important;
+            }
+            @media print {
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                overflow: hidden !important;
+                background: white !important;
+              }
+              body * {
+                visibility: hidden !important;
+              }
+              #print-receipt-container,
+              #print-receipt-container * {
+                visibility: visible !important;
+              }
+              #print-receipt-container {
+                display: block !important;
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                background: white !important;
+                border: none !important;
+              }
+            }
+          `}} />
+          <div
+            id="print-receipt-container"
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              zIndex: 99999,
+              backgroundColor: "white",
+              display: "none",
+            }}
+          >
+            <FeeReceipt data={printData} />
+          </div>
+        </>
       )}
     </div>
   );

@@ -62,8 +62,6 @@ export async function listStudents(filters?: {
       ? {
           OR: [
             { name: { contains: searchQuery, mode: "insensitive" } },
-            { parentName: { contains: searchQuery, mode: "insensitive" } },
-            { contactNumber: { contains: searchQuery } },
             // studentNumber is Int — only add this clause when the query is numeric
             ...(isNaN(Number(searchQuery))
               ? []
@@ -77,6 +75,9 @@ export async function listStudents(filters?: {
         take: 1,
         include: {
           freezePeriods: true,
+          payments: {
+            select: { amount: true },
+          },
         },
       },
     },
@@ -105,18 +106,48 @@ export async function getStudentById(id: string) {
           freezePeriods: {
             orderBy: { startDate: "asc" },
           },
+          payments: {
+            select: { amount: true },
+          },
         },
       },
       attendances: {
         orderBy: { date: "asc" },
         select: { id: true, date: true, studentPlanId: true },
       },
+      payments: {
+        orderBy: { paidAt: "desc" },
+        include: {
+          studentPlan: {
+            select: {
+              id: true,
+              fee: true,
+              planType: true,
+              totalSessions: true,
+              startDate: true,
+              endDate: true,
+              discountPercent: true,
+              planMonths: true,
+            },
+          },
+        },
+      },
     },
   });
 
   if (!student) return null;
 
-  const activePlan = student.plans.find((p: any) => p.isActive) ?? null;
+  // Enrich plans with paidAmount + outstanding
+  const plans = (student.plans as any[]).map((plan: any) => {
+    const paidAmount = (plan.payments as { amount: number }[]).reduce(
+      (sum, p) => sum + p.amount,
+      0
+    );
+    const outstanding = Math.max(0, plan.fee - paidAmount);
+    return { ...plan, paidAmount, outstanding };
+  });
+
+  const activePlan = plans.find((p: any) => p.isActive) ?? null;
   const status = computeStudentStatus(
     activePlan
       ? {
@@ -167,6 +198,7 @@ export async function getStudentById(id: string) {
 
   return {
     ...student,
+    plans,
     activePlan: enrichedActivePlan,
     status,
     sessionsPending: activePlan
@@ -174,6 +206,7 @@ export async function getStudentById(id: string) {
       : null,
   };
 }
+
 
 export async function createStudent(data: {
   name: string;

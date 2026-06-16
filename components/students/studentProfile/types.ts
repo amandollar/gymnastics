@@ -24,6 +24,30 @@ export type PlanRow = {
   freezeEndDate: Date | null;
   freezePeriods?: FreezePeriod[];
   batch?: { id: string; name: string; timing: string; activeCount?: number; graceCount?: number; inactiveCount?: number; studentCount?: number } | null;
+  /** Total amount paid for this plan (sum of PaymentRecords) */
+  paidAmount?: number;
+  /** Outstanding balance = fee - paidAmount */
+  outstanding?: number;
+  planMonths?: number | null;
+};
+
+export type PaymentRow = {
+  id: string;
+  invoiceNumber: number;
+  amount: number;
+  method: string;
+  notes: string | null;
+  paidAt: Date;
+  studentPlanId: string;
+  studentPlan: {
+    planType: string;
+    totalSessions: number;
+    planMonths: number | null;
+    startDate: Date;
+    endDate: Date;
+    fee: number;
+    discountPercent: number;
+  };
 };
 
 export type AttendanceRow = {

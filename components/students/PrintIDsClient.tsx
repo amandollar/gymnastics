@@ -301,20 +301,22 @@ function IDCardBack({ qrDataUrl }: { qrDataUrl: string }) {
       </div>
 
       {/* Footer */}
-      <div className="absolute bottom-[0.4em] left-0 right-0 h-[3.2em] z-10 flex items-center justify-around px-[0.8em] rounded-b-[1.5em]">
-        <div className="flex flex-col items-center text-center max-w-[5.2em]">
-          <svg className="w-[0.9em] h-[0.9em] text-[#f05a22] mb-[0.05em]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-          <span className="text-[0.35em] font-black text-zinc-800 leading-tight">123 Gymnastics Way, Performance City, PC 12345</span>
+      <div className="absolute bottom-[0.3em] left-0 right-0 z-10 flex flex-col items-center justify-end px-[1.2em] pb-[0.4em] gap-[0.35em]">
+        {/* Row 1: Address */}
+        <div className="flex items-start gap-[0.3em] w-full justify-center">
+          <svg className="w-[0.7em] h-[0.7em] text-[#f05a22] shrink-0 mt-[0.05em]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          <span className="text-[0.44em] font-bold text-zinc-800 leading-snug text-center">
+            Office No 7, 2nd floor, Nine Hills Plaza, NIBM Annexe, Pune 411060
+          </span>
         </div>
-        <div className="h-[1.8em] w-[0.05em] bg-zinc-300" />
-        <div className="flex flex-col items-center text-center">
-          <svg className="w-[0.9em] h-[0.9em] text-[#f05a22] mb-[0.05em]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-          <span className="text-[0.35em] font-black text-zinc-800 leading-tight tracking-wider">+1 234 567 890</span>
-        </div>
-        <div className="h-[1.8em] w-[0.05em] bg-zinc-300" />
-        <div className="flex flex-col items-center text-center max-w-[5.8em]">
-          <svg className="w-[0.9em] h-[0.9em] text-[#f05a22] mb-[0.05em]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-          <span className="text-[0.35em] font-black text-zinc-800 leading-tight truncate w-full">info@tagymnastics.com</span>
+        {/* Horizontal divider */}
+        <div className="w-[60%] h-[0.04em] bg-zinc-300" />
+        {/* Row 2: Phone */}
+        <div className="flex items-center gap-[0.3em] justify-center">
+          <svg className="w-[0.7em] h-[0.7em] text-[#f05a22] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+          <span className="text-[0.44em] font-bold text-zinc-800 leading-snug tracking-wider">
+            7977177463 / 7757965651
+          </span>
         </div>
       </div>
     </div>
@@ -446,9 +448,7 @@ export default function PrintIDsClient({
       rows = rows.filter(
         (s) =>
           s.name.toLowerCase().includes(q) ||
-          s.parentName.toLowerCase().includes(q) ||
-          s.contactNumber.includes(q) ||
-          String(s.studentNumber).includes(q)
+          s.studentNumber.toString().startsWith(q)
       );
     }
 
@@ -926,7 +926,7 @@ export default function PrintIDsClient({
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                 <input
                   type="search"
-                  placeholder="Search by name, ID, parent, phone…"
+                  placeholder="Search by name or ID…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 pl-9 pr-4 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
