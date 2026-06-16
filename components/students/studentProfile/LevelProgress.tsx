@@ -66,7 +66,10 @@ export function LevelProgress({
       {/* Progress Roadmap Visualizer (Flat Segmented Bar) */}
       <div className="space-y-2 pt-1">
         {/* Segmented Track Line */}
-        <div className="grid grid-cols-7 gap-1.5 h-2">
+        <div
+          className="grid gap-1.5 h-2"
+          style={{ gridTemplateColumns: `repeat(${STUDENT_LEVELS.length}, minmax(0, 1fr))` }}
+        >
           {STUDENT_LEVELS.map((lvl, index) => {
             const isActiveOrPast = index <= currentIndex;
 

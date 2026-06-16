@@ -10,6 +10,7 @@ export const createStudentSchema = z.object({
     .regex(/^\d{10}$/, "Contact must be exactly 10 digits"),
   admissionDate: z.string().min(1, "Admission date is required"),
   level: z.enum([
+    "BEGINNER",
     "FOUNDATION_1",
     "FOUNDATION_2",
     "FOUNDATION_3",
@@ -32,6 +33,7 @@ export const updateStudentSchema = z.object({
     .regex(/^\d{10}$/, "Contact must be exactly 10 digits"),
   admissionDate: z.string().min(1, "Admission date is required"),
   level: z.enum([
+    "BEGINNER",
     "FOUNDATION_1",
     "FOUNDATION_2",
     "FOUNDATION_3",

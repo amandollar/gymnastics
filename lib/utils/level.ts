@@ -15,6 +15,18 @@ export interface LevelConfig {
 
 export const STUDENT_LEVELS: readonly LevelConfig[] = [
   {
+    value: "BEGINNER",
+    label: "Beginner",
+    shortLabel: "B0",
+    color: "from-zinc-400 to-zinc-500 dark:from-zinc-500 dark:to-zinc-600",
+    textColor: "text-zinc-500 dark:text-zinc-450",
+    borderColor: "border-zinc-500/30 dark:border-zinc-500/20",
+    badgeBg: "bg-zinc-50 dark:bg-zinc-955/20",
+    badgeText: "text-zinc-700 dark:text-zinc-400",
+    activeRing: "ring-zinc-500/50",
+    activeBg: "bg-zinc-500",
+  },
+  {
     value: "FOUNDATION_1",
     label: "Foundation 1",
     shortLabel: "F1",
