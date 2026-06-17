@@ -5,6 +5,7 @@ export type DashboardKpis = {
   activeStudents: number;
   gracePeriodStudents: number;
   freezeStudents: number;
+  inactiveStudents: number;
   admissionsThisMonth: number;
   todayAttendanceCount: number;
   monthlyRevenue: number;
@@ -13,6 +14,18 @@ export type DashboardKpis = {
 export type ChartDataPoint = {
   label: string;
   value: number;
+};
+
+export type DashboardStudent = {
+  id: string;
+  name: string;
+  studentNumber: number;
+  contactNumber: string;
+  avatarUrl: string | null;
+  gender: string | null;
+  sessionsCompleted: number;
+  totalSessions: number;
+  statusEntryDate: string;
 };
 
 export type DashboardData = {
@@ -24,7 +37,11 @@ export type DashboardData = {
   admissionsMonthly: { month: string; admissions: number }[];
   renewalsDaily: { day: string; renewals: number }[];
   renewalsMonthly: { month: string; renewals: number }[];
-  revenueMonthly: { month: string; revenue: number }[];
+  revenueDaily: { label: string; revenue: number }[];
+  revenueMonthly: { label: string; revenue: number }[];
+  recentActivity: { id: string; text: string; timestamp: string }[];
+  graceStudents: DashboardStudent[];
+  inactiveStudents: DashboardStudent[];
 };
 
 export async function getDashboardData(): Promise<DashboardData> {
@@ -36,6 +53,10 @@ export async function getDashboardData(): Promise<DashboardData> {
   const startOfCurMonth = new Date(Date.UTC(currentYear, currentMonth, 1));
   const endOfCurMonth = new Date(Date.UTC(currentYear, currentMonth + 1, 0, 23, 59, 59, 999));
 
+  // Year boundaries in UTC
+  const startOfCurYear = new Date(Date.UTC(currentYear, 0, 1));
+  const endOfCurYear = new Date(Date.UTC(currentYear, 11, 31, 23, 59, 59, 999));
+
   // Today boundaries
   const todayStr = now.toISOString().slice(0, 10);
   const todayDate = new Date(todayStr + "T00:00:00.000Z");
@@ -45,11 +66,17 @@ export async function getDashboardData(): Promise<DashboardData> {
     students,
     admissionsThisMonthCount,
     todayAttendanceCount,
-    revenuePlanSum,
+    revenuePaymentSum,
+    currentYearPayments,
   ] = await Promise.all([
     prisma.student.findMany({
       select: {
         id: true,
+        name: true,
+        studentNumber: true,
+        contactNumber: true,
+        avatarUrl: true,
+        gender: true,
         plans: {
           where: { isActive: true },
           take: 1,
@@ -66,6 +93,11 @@ export async function getDashboardData(): Promise<DashboardData> {
                 endDate: true,
               },
             },
+            attendances: {
+              orderBy: { date: "desc" },
+              take: 1,
+              select: { date: true },
+            },
           },
         },
       },
@@ -76,25 +108,79 @@ export async function getDashboardData(): Promise<DashboardData> {
     prisma.attendance.count({
       where: { date: todayDate },
     }),
-    prisma.studentPlan.aggregate({
-      where: { startDate: { gte: startOfCurMonth, lte: endOfCurMonth } },
-      _sum: { fee: true },
+    (prisma as any).paymentRecord.aggregate({
+      where: { paidAt: { gte: startOfCurMonth, lte: endOfCurMonth } },
+      _sum: { amount: true },
+    }),
+    (prisma as any).paymentRecord.findMany({
+      where: { paidAt: { gte: startOfCurYear, lte: endOfCurYear } },
+      select: { paidAt: true, amount: true },
     }),
   ]);
 
-  // Compute active vs grace vs freeze count in-memory
+  // Compute active vs grace vs freeze vs inactive count in-memory
   let activeStudents = 0;
   let gracePeriodStudents = 0;
   let freezeStudents = 0;
+  let inactiveStudents = 0;
+
+  const graceStudentsList: DashboardStudent[] = [];
+  const inactiveStudentsList: DashboardStudent[] = [];
+
   for (const s of students) {
     const activePlan = s.plans[0];
-    const status = computeStudentStatus(activePlan);
-    if (status === "ACTIVE") activeStudents++;
-    else if (status === "GRACE") gracePeriodStudents++;
-    else if (status === "FREEZE") freezeStudents++;
+    const status = computeStudentStatus(
+      activePlan
+        ? {
+            ...activePlan,
+            lastAttendanceDate: activePlan.attendances?.[0]?.date ?? null,
+          }
+        : null
+    );
+    if (status === "ACTIVE") {
+      activeStudents++;
+    } else if (status === "FREEZE") {
+      freezeStudents++;
+    } else if (status === "GRACE") {
+      gracePeriodStudents++;
+      if (activePlan) {
+        graceStudentsList.push({
+          id: s.id,
+          name: s.name,
+          studentNumber: s.studentNumber,
+          contactNumber: s.contactNumber,
+          avatarUrl: s.avatarUrl,
+          gender: s.gender,
+          sessionsCompleted: activePlan.sessionsCompleted,
+          totalSessions: activePlan.totalSessions,
+          statusEntryDate: activePlan.endDate.toISOString(),
+        });
+      }
+    } else if (status === "INACTIVE" || status === "EXPIRED") {
+      if (status === "INACTIVE") {
+        inactiveStudents++;
+      }
+      if (activePlan) {
+        let entryDate = activePlan.expiryDate;
+        if (activePlan.sessionsCompleted >= activePlan.totalSessions) {
+          entryDate = activePlan.attendances?.[0]?.date ?? activePlan.endDate;
+        }
+        inactiveStudentsList.push({
+          id: s.id,
+          name: s.name,
+          studentNumber: s.studentNumber,
+          contactNumber: s.contactNumber,
+          avatarUrl: s.avatarUrl,
+          gender: s.gender,
+          sessionsCompleted: activePlan.sessionsCompleted,
+          totalSessions: activePlan.totalSessions,
+          statusEntryDate: entryDate.toISOString(),
+        });
+      }
+    }
   }
 
-  const monthlyRevenue = revenuePlanSum._sum.fee ?? 0;
+  const monthlyRevenue = revenuePaymentSum._sum.amount ?? 0;
 
   // ─── Chart ranges calculations ─────────────────────────────────────────────
   
@@ -181,11 +267,35 @@ export async function getDashboardData(): Promise<DashboardData> {
     return { month: m.label, renewals: count };
   });
 
-  // 3. Monthly Revenue (in Lakhs)
-  const revenueMonthly = monthRanges.map((m) => {
-    const sumFee = allPlans.filter((p) => p.startDate >= m.start && p.startDate <= m.end).reduce((sum, p) => sum + p.fee, 0);
-    return { month: m.label, revenue: Number((sumFee / 100000).toFixed(2)) };
-  });
+  // 3. Daily Revenue for current month (real payment data)
+  const daysInCurMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const revenueDaily = [];
+  for (let d = 1; d <= daysInCurMonth; d++) {
+    const startOfDay = new Date(Date.UTC(currentYear, currentMonth, d, 0, 0, 0, 0));
+    const endOfDay = new Date(Date.UTC(currentYear, currentMonth, d, 23, 59, 59, 999));
+    const sumAmount = currentYearPayments
+      .filter((p: any) => p.paidAt >= startOfDay && p.paidAt <= endOfDay)
+      .reduce((sum: number, p: any) => sum + p.amount, 0);
+    revenueDaily.push({
+      label: String(d),
+      revenue: sumAmount,
+    });
+  }
+
+  // Monthly Revenue for current year (real payment data)
+  const monthsList = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const revenueMonthly = [];
+  for (let m = 0; m < 12; m++) {
+    const startOfM = new Date(Date.UTC(currentYear, m, 1));
+    const endOfM = new Date(Date.UTC(currentYear, m + 1, 0, 23, 59, 59, 999));
+    const sumAmount = currentYearPayments
+      .filter((p: any) => p.paidAt >= startOfM && p.paidAt <= endOfM)
+      .reduce((sum: number, p: any) => sum + p.amount, 0);
+    revenueMonthly.push({
+      label: monthsList[m],
+      revenue: sumAmount,
+    });
+  }
 
   // 4. Weekly Attendance (last 7 days)
   const attendanceWeekly = weekDayDataList.map((wd) => {
@@ -217,11 +327,100 @@ export async function getDashboardData(): Promise<DashboardData> {
     return { day: d.dayLabel, present: count };
   });
 
+  // 9. Recent Activity Data (Real admissions, payments, enquiries, renewals)
+  const [
+    recentStudents,
+    recentPayments,
+    recentEnquiries,
+    recentPlans,
+  ] = await Promise.all([
+    prisma.student.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      select: { id: true, name: true, createdAt: true },
+    }),
+    (prisma as any).paymentRecord.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      select: {
+        id: true,
+        amount: true,
+        createdAt: true,
+        student: { select: { name: true } },
+      },
+    }),
+    prisma.enquiry.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      select: { id: true, childName: true, parentName: true, createdAt: true },
+    }),
+    prisma.studentPlan.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 15,
+      select: {
+        id: true,
+        planType: true,
+        createdAt: true,
+        startDate: true,
+        student: {
+          select: {
+            name: true,
+            plans: {
+              select: { id: true, startDate: true },
+            },
+          },
+        },
+      },
+    }),
+  ]);
+
+  const recentRenewals = recentPlans.filter((plan: any) => {
+    return plan.student.plans.some(
+      (p: any) => p.startDate.getTime() < plan.startDate.getTime()
+    );
+  }).slice(0, 8);
+
+  const activities = [
+    ...recentStudents.map((s: any) => ({
+      id: `adm-${s.id}`,
+      text: `${s.name} enrolled as a new student`,
+      timestamp: s.createdAt,
+    })),
+    ...recentPayments.map((p: any) => ({
+      id: `pay-${p.id}`,
+      text: `Fee payment received — ₹${p.amount.toLocaleString("en-IN")} (${p.student.name})`,
+      timestamp: p.createdAt,
+    })),
+    ...recentEnquiries.map((e: any) => ({
+      id: `enq-${e.id}`,
+      text: `New enquiry registered for ${e.childName} (${e.parentName})`,
+      timestamp: e.createdAt,
+    })),
+    ...recentRenewals.map((r: any) => {
+      const planName = r.planType === "ONE_TO_ONE" ? "Personal training" : "Group class";
+      return {
+        id: `ren-${r.id}`,
+        text: `${r.student.name} renewed ${planName} plan`,
+        timestamp: r.createdAt,
+      };
+    }),
+  ];
+
+  const recentActivity = activities
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+    .slice(0, 8)
+    .map((act) => ({
+      id: act.id,
+      text: act.text,
+      timestamp: act.timestamp.toISOString(),
+    }));
+
   return {
     kpis: {
       activeStudents,
       gracePeriodStudents,
       freezeStudents,
+      inactiveStudents,
       admissionsThisMonth: admissionsThisMonthCount,
       todayAttendanceCount,
       monthlyRevenue,
@@ -233,6 +432,10 @@ export async function getDashboardData(): Promise<DashboardData> {
     admissionsMonthly,
     renewalsDaily,
     renewalsMonthly,
+    revenueDaily,
     revenueMonthly,
+    recentActivity,
+    graceStudents: graceStudentsList,
+    inactiveStudents: inactiveStudentsList,
   };
 }

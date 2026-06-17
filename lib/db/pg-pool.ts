@@ -44,6 +44,12 @@ export function createPgPool(connectionString?: string): Pool {
     connectionTimeoutMillis: 5_000,
   });
 
+  // Log unexpected errors on idle pg clients to prevent unhandled process crashes.
+  // The pool automatically evicts the broken client, so no further recovery is needed.
+  pool.on("error", (err) => {
+    console.error("Unexpected error on idle pg client:", err);
+  });
+
   globalForPg.pgPool = pool;
   return pool;
 }

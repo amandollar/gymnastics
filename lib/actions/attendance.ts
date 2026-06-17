@@ -218,3 +218,61 @@ export async function getAttendanceSessionDataAction() {
     return { students: [], attendedStudentIds: [] as string[] };
   }
 }
+
+export async function undoMarkAttendanceAction(studentId: string, dateStr: string) {
+  try {
+    const student = await prisma.student.findUnique({
+      where: { id: studentId },
+      include: {
+        plans: {
+          where: { isActive: true },
+          take: 1,
+        }
+      }
+    });
+
+    if (!student) {
+      return { success: false, message: "Student not found" };
+    }
+
+    const activePlan = student.plans[0];
+    if (!activePlan) {
+      return { success: false, message: "No active plan found for this student." };
+    }
+
+    const attendanceDate = new Date(dateStr + "T00:00:00.000Z");
+
+    await prisma.$transaction(async (tx) => {
+      // Delete attendance record
+      await tx.attendance.delete({
+        where: {
+          studentId_date: {
+            studentId,
+            date: attendanceDate,
+          }
+        }
+      });
+
+      // Decrement sessionsCompleted in the active plan (making sure we don't go below 0)
+      const currentCompleted = activePlan.sessionsCompleted;
+      const nextCompleted = Math.max(0, currentCompleted - 1);
+      await tx.studentPlan.update({
+        where: { id: activePlan.id },
+        data: {
+          sessionsCompleted: nextCompleted,
+        }
+      });
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath("/attendance");
+    revalidatePath("/students");
+    updateTag("attendance");
+    updateTag("students");
+
+    return { success: true, message: `Attendance undone successfully for ${student.name}` };
+  } catch (err: any) {
+    console.error("Undo attendance error:", err);
+    return { success: false, message: err.message || "Failed to undo attendance" };
+  }
+}

@@ -33,6 +33,11 @@ export async function listBatches(): Promise<BatchWithCount[]> {
               endDate: true,
             },
           },
+          attendances: {
+            orderBy: { date: "desc" },
+            take: 1,
+            select: { date: true },
+          },
         },
       },
     },
@@ -45,12 +50,15 @@ export async function listBatches(): Promise<BatchWithCount[]> {
     let inactiveCount = 0;
 
     b.studentPlans.forEach((plan: any) => {
-      const status = computeStudentStatus(plan);
+      const status = computeStudentStatus({
+        ...plan,
+        lastAttendanceDate: plan.attendances?.[0]?.date ?? null,
+      });
       if (status === "ACTIVE" || status === "FREEZE") {
         activeCount++;
       } else if (status === "GRACE") {
         graceCount++;
-      } else {
+      } else if (status === "INACTIVE") {
         inactiveCount++;
       }
     });

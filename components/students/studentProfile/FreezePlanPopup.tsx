@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useActionState } from "react";
 import { toDateInputValue } from "@/lib/utils/student";
 import { addFreezePeriodAction, unfreezePlanAction } from "@/lib/actions/plans";
 import type { PlanRow } from "./types";
+import { getFreezeDaysCount } from "./types";
 
 // ─── Unfreeze Button ──────────────────────────────────────────────────────────
 
@@ -168,6 +169,41 @@ export function FreezePlanPopup({
             ✕
           </button>
         </div>
+
+        {/* Already added freeze plans list */}
+        {((activePlan.freezePeriods && activePlan.freezePeriods.length > 0) ||
+          (activePlan.freezeStartDate && activePlan.freezeEndDate)) && (
+          <div className="space-y-2 max-h-32 overflow-y-auto pr-1 pb-2 border-b border-zinc-100 dark:border-zinc-800">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block mb-1">
+              Existing Freeze Periods
+            </span>
+            <div className="space-y-1.5">
+              {(!activePlan.freezePeriods || activePlan.freezePeriods.length === 0) &&
+                activePlan.freezeStartDate &&
+                activePlan.freezeEndDate && (
+                  <div key="legacy" className="flex items-center justify-between text-xs bg-zinc-50 dark:bg-zinc-950 px-2.5 py-1.5 rounded-lg border border-zinc-100/50 dark:border-zinc-800/40">
+                    <span className="text-zinc-700 dark:text-zinc-300">
+                      {new Date(activePlan.freezeStartDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} → {new Date(activePlan.freezeEndDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </span>
+                    <span className="text-[10px] font-semibold text-sky-600 dark:text-sky-400">
+                      {getFreezeDaysCount(activePlan.freezeStartDate, activePlan.freezeEndDate)} days
+                    </span>
+                  </div>
+                )}
+              {activePlan.freezePeriods &&
+                activePlan.freezePeriods.map((fp) => (
+                  <div key={fp.id} className="flex items-center justify-between text-xs bg-zinc-50 dark:bg-zinc-955 px-2.5 py-1.5 rounded-lg border border-zinc-100/50 dark:border-zinc-800/40">
+                    <span className="text-zinc-700 dark:text-zinc-300">
+                      {new Date(fp.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} → {new Date(fp.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </span>
+                    <span className="text-[10px] font-semibold text-sky-600 dark:text-sky-400">
+                      {getFreezeDaysCount(fp.startDate, fp.endDate)} days
+                    </span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
 
         <form action={action} className="space-y-4">
           <input type="hidden" name="studentPlanId" value={activePlan.id} />

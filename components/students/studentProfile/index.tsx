@@ -163,7 +163,8 @@ export default function StudentDetailClient({
             {canManage &&
               student.activePlan &&
               student.status !== "INACTIVE" &&
-              student.status !== "NO_PLAN" && (
+              student.status !== "NO_PLAN" &&
+              student.status !== "EXPIRED" && (
                 <button
                   type="button"
                   onClick={() => setShowFreeze(true)}
@@ -252,7 +253,8 @@ export default function StudentDetailClient({
                 {canManage &&
                   student.activePlan &&
                   student.status !== "INACTIVE" &&
-                  student.status !== "NO_PLAN" && (
+                  student.status !== "NO_PLAN" &&
+                  student.status !== "EXPIRED" && (
                     <button
                       type="button"
                       onClick={() => {

@@ -176,16 +176,6 @@ function IDCardFront({
     [student.dateOfBirth]
   );
 
-  const planTypeText = useMemo(() => {
-    if (!student.activePlan?.planType) return "N/A";
-    return student.activePlan.planType === "ONE_TO_ONE" ? "Personal training" : "Group class";
-  }, [student.activePlan]);
-
-  const batchText =
-    student.activePlan?.batch?.name ||
-    student.activePlan?.batch?.timing ||
-    "N/A";
-
   return (
     <div className="id-card-wrap-print relative overflow-hidden bg-white select-none shrink-0">
       {/* Background */}
@@ -222,8 +212,6 @@ function IDCardFront({
             ["Parent", student.parentName],
             ["Contact", student.contactNumber],
             ["DOB", dobText],
-            ["Plan", planTypeText],
-            ["Batch", batchText],
           ].map(([label, value]) => (
             <div key={label} className="flex items-center text-[0.58em] font-bold text-zinc-800">
               <span className="w-[6.2em] text-zinc-500 uppercase tracking-wider shrink-0 font-extrabold">{label}</span>
@@ -339,6 +327,7 @@ function StudentRow({
     GRACE: "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400",
     FREEZE: "bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-400",
     INACTIVE: "bg-orange-50 text-orange-700 dark:bg-orange-950/30 dark:text-orange-400",
+    EXPIRED: "bg-zinc-100 text-zinc-550 dark:bg-zinc-800 dark:text-zinc-455",
     NO_PLAN: "bg-zinc-100 text-zinc-550 dark:bg-zinc-800 dark:text-zinc-450",
   };
 
@@ -657,6 +646,7 @@ export default function PrintIDsClient({
     { value: "GRACE" as StudentStatus, label: "Grace" },
     { value: "FREEZE" as StudentStatus, label: "Freeze" },
     { value: "INACTIVE" as StudentStatus, label: "Inactive" },
+    { value: "EXPIRED" as StudentStatus, label: "Expired" },
     { value: "NO_PLAN" as StudentStatus, label: "No plan" },
   ];
 

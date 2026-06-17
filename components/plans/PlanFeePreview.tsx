@@ -19,58 +19,73 @@ export default function PlanFeePreview({
   const graceDays = preview.graceDays;
 
   return (
-    <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 overflow-hidden">
-      {/* Header row */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-zinc-800">
-        <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-          {title}
-        </p>
-        <div className="flex items-center gap-2 text-[11px] text-zinc-400 dark:text-zinc-500">
-          {graceDays > 0 ? (
+    <div className="space-y-2.5">
+      {graceDays > 0 ? (
+        <div className="grid grid-cols-2 gap-3 text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+          <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-100 dark:border-zinc-800/50 p-3.5">
+            grace period: {graceDays} days
+          </div>
+          <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-100 dark:border-zinc-800/50 p-3.5">
+            plan exp: {endDateStr} (inc. grace)
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-800/30 border border-zinc-100 dark:border-zinc-800/50 p-3.5 flex items-center justify-between text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+          <span>no grace period and expires: {endDateStr}</span>
+        </div>
+      )}
+
+      {/* Main Fee Card */}
+      <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 overflow-hidden">
+        {/* Header row */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-zinc-800">
+          <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+            {title}
+          </p>
+        </div>
+
+        {/* Line items */}
+        <div className="px-4 py-3 space-y-2 text-sm">
+          <div className="flex justify-between items-center text-zinc-500 dark:text-zinc-400">
+            <span>Per class</span>
+            <span className="font-medium text-zinc-700 dark:text-zinc-300">
+              {formatINR(preview.pricePerSession)}
+            </span>
+          </div>
+          <div className="flex justify-between items-center text-zinc-500 dark:text-zinc-400">
+            <span>Classes</span>
+            <span className="font-medium text-zinc-700 dark:text-zinc-300">
+              {preview.totalSessions}
+            </span>
+          </div>
+
+          {preview.discountPercent > 0 && (
             <>
-              <span>{graceDays}d grace</span>
-              <span className="text-zinc-300 dark:text-zinc-700">·</span>
-              <span>Grace deadline {endDateStr}</span>
-            </>
-          ) : (
-            <>
-              <span className="text-zinc-400 dark:text-zinc-500">No grace period</span>
-              <span className="text-zinc-300 dark:text-zinc-700">·</span>
-              <span>Expires {endDateStr}</span>
+              <div className="flex justify-between items-center text-zinc-500 dark:text-zinc-400">
+                <span>Subtotal</span>
+                <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                  {formatINR(preview.grossFees)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400">
+                <span>Discount ({preview.discountPercent}%)</span>
+                <span className="font-medium">
+                  −{formatINR(preview.grossFees - preview.fee)}
+                </span>
+              </div>
             </>
           )}
         </div>
-      </div>
 
-      {/* Line items */}
-      <div className="px-4 py-3 space-y-2 text-sm">
-        <div className="flex justify-between items-center text-zinc-500 dark:text-zinc-400">
-          <span>Per class</span>
-          <span className="font-medium text-zinc-700 dark:text-zinc-300">{formatINR(preview.pricePerSession)}</span>
+        {/* Total */}
+        <div className="flex justify-between items-center px-4 py-3 border-t border-zinc-100 dark:border-zinc-800">
+          <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            Total
+          </span>
+          <span className="text-xl font-bold text-brand-orange-500">
+            {formatINR(preview.fee)}
+          </span>
         </div>
-        <div className="flex justify-between items-center text-zinc-500 dark:text-zinc-400">
-          <span>Classes</span>
-          <span className="font-medium text-zinc-700 dark:text-zinc-300">{preview.totalSessions}</span>
-        </div>
-
-        {preview.discountPercent > 0 && (
-          <>
-            <div className="flex justify-between items-center text-zinc-500 dark:text-zinc-400">
-              <span>Subtotal</span>
-              <span className="font-medium text-zinc-700 dark:text-zinc-300">{formatINR(preview.grossFees)}</span>
-            </div>
-            <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400">
-              <span>Discount ({preview.discountPercent}%)</span>
-              <span className="font-medium">−{formatINR(preview.grossFees - preview.fee)}</span>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Total */}
-      <div className="flex justify-between items-center px-4 py-3 border-t border-zinc-100 dark:border-zinc-800">
-        <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Total</span>
-        <span className="text-xl font-bold text-brand-orange-500">{formatINR(preview.fee)}</span>
       </div>
     </div>
   );

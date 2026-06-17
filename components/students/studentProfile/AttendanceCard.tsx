@@ -43,8 +43,29 @@ export function AttendanceCard({
     } else if (latestAttendance) {
       end = latestAttendance;
     }
+
+    if (activePlan) {
+      const { sessionsCompleted, totalSessions, endDate, expiryDate } = activePlan;
+      let startLimit = new Date(expiryDate);
+      if (sessionsCompleted >= totalSessions) {
+        const activePlanAttendances = attendances.filter(a => a.studentPlanId === activePlan.id);
+        const lastAttendanceDate = activePlanAttendances.length > 0 
+          ? new Date(activePlanAttendances[activePlanAttendances.length - 1].date) 
+          : null;
+        if (lastAttendanceDate) {
+          startLimit = new Date(lastAttendanceDate);
+        } else {
+          startLimit = new Date(endDate);
+        }
+      }
+      const inactiveEnd = new Date(startLimit);
+      inactiveEnd.setDate(inactiveEnd.getDate() + 30);
+      if (inactiveEnd > end) {
+        end = inactiveEnd;
+      }
+    }
     return end;
-  }, [planEnd, latestAttendance]);
+  }, [planEnd, latestAttendance, activePlan, attendances]);
 
   const months = useMemo(() => {
     const list: { year: number; month: number }[] = [];
@@ -124,6 +145,33 @@ export function AttendanceCard({
     return current > graceStartLimit.getTime() && current <= graceEnd.getTime();
   };
 
+  const isDateInInactivePeriod = (year: number, month: number, day: number) => {
+    if (!activePlan) return false;
+    const current = new Date(year, month, day).getTime();
+    const { sessionsCompleted, totalSessions, endDate, expiryDate } = activePlan;
+
+    if (sessionsCompleted >= totalSessions) {
+      const activePlanAttendances = attendances.filter(a => a.studentPlanId === activePlan.id);
+      const lastAttendanceDate = activePlanAttendances.length > 0 
+        ? new Date(activePlanAttendances[activePlanAttendances.length - 1].date) 
+        : null;
+      const startLimit = lastAttendanceDate ? new Date(lastAttendanceDate) : new Date(endDate);
+      startLimit.setHours(23, 59, 59, 999);
+      const endLimit = new Date(startLimit);
+      endLimit.setDate(endLimit.getDate() + 30);
+      endLimit.setHours(23, 59, 59, 999);
+      return current > startLimit.getTime() && current <= endLimit.getTime();
+    } else {
+      if (!expiryDate) return false;
+      const startLimit = new Date(expiryDate);
+      startLimit.setHours(23, 59, 59, 999);
+      const endLimit = new Date(startLimit);
+      endLimit.setDate(endLimit.getDate() + 30);
+      endLimit.setHours(23, 59, 59, 999);
+      return current > startLimit.getTime() && current <= endLimit.getTime();
+    }
+  };
+
   const todayYMD = toYMD(new Date());
 
   return (
@@ -191,6 +239,7 @@ export function AttendanceCard({
                       const isPresent = sessionNum !== undefined;
                       const isFreeze = isDateInFreezePeriod(year, month, day);
                       const isGrace = isDateInGracePeriod(year, month, day);
+                      const isInactive = isDateInInactivePeriod(year, month, day);
                       const isClassDay =
                         isDateInActivePlanDuration(year, month, day) &&
                         isClassDayOfWeek(year, month, day);
@@ -203,6 +252,8 @@ export function AttendanceCard({
                         cellStyle = "bg-sky-50/60 dark:bg-sky-950/20 text-sky-700 dark:text-sky-400 font-semibold border border-sky-500/10";
                       } else if (isGrace) {
                         cellStyle = "bg-purple-50/60 dark:bg-purple-950/20 text-purple-700 dark:text-purple-400 font-semibold border border-purple-500/10";
+                      } else if (isInactive) {
+                        cellStyle = "bg-rose-950/10 dark:bg-rose-950/25 text-rose-900 dark:text-rose-400 font-semibold border border-rose-900/15";
                       } else if (isClassDay) {
                         cellStyle = "bg-brand-orange-50/60 dark:bg-brand-orange-950/20 text-brand-orange-700 dark:text-brand-orange-400 font-semibold border border-brand-orange-500/10";
                       }
@@ -248,15 +299,19 @@ export function AttendanceCard({
                 {((activePlan.freezeStartDate && activePlan.freezeEndDate) || (activePlan.freezePeriods && activePlan.freezePeriods.length > 0)) && (
                   <div className="flex items-center gap-1.5">
                     <span className="inline-block w-2.5 h-2.5 rounded bg-sky-400 dark:bg-sky-600" />
-                    <span>Frozen period</span>
+                    <span>Frozen</span>
                   </div>
                 )}
                 {activePlan.graceDays > 0 && (
                   <div className="flex items-center gap-1.5">
                     <span className="inline-block w-2.5 h-2.5 rounded bg-purple-400 dark:bg-purple-600" />
-                    <span>Grace period</span>
+                    <span>Grace</span>
                   </div>
                 )}
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-block w-2.5 h-2.5 rounded bg-rose-950/20 dark:bg-rose-905" />
+                  <span>Inactive</span>
+                </div>
               </>
             )}
           </div>

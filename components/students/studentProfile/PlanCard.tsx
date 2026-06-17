@@ -145,7 +145,7 @@ function RemoveConfirmPopup({
           <button
             type="submit"
             disabled={pending}
-            className="flex-1 rounded-xl bg-red-650 hover:bg-red-700 px-3 py-2.5 text-xs font-semibold text-white transition-colors cursor-pointer disabled:opacity-50"
+            className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 px-3 py-2.5 text-xs font-semibold text-white transition-colors cursor-pointer disabled:opacity-50"
           >
             {pending ? "Removing…" : "Confirm Remove"}
           </button>
@@ -286,7 +286,7 @@ export function PlanCard({
 }) {
   if (!plan) return null;
 
-  const daysLeft = computeDaysLeft(new Date(plan.expiryDate));
+  const daysLeft = plan.sessionsCompleted >= plan.totalSessions ? 0 : computeDaysLeft(new Date(plan.expiryDate));
   const progress = Math.min(
     100,
     Math.round((plan.sessionsCompleted / plan.totalSessions) * 100),
@@ -322,7 +322,7 @@ export function PlanCard({
             </span>
           )}
 
-          {canManage && status !== "INACTIVE" && status !== "NO_PLAN" && (
+          {canManage && status !== "INACTIVE" && status !== "NO_PLAN" && status !== "EXPIRED" && (
             <button
               type="button"
               onClick={() => setShowFreeze(true)}
@@ -368,14 +368,6 @@ export function PlanCard({
                     </span>
                     <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
                       {plan.batch.timing}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block mb-1.5">
-                      Active Students
-                    </span>
-                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                      {plan.batch.activeCount ?? 0} active
                     </p>
                   </div>
                 </>
@@ -492,6 +484,46 @@ export function PlanCard({
             </div>
           </div>
         </div>
+
+        {/* Grace Period Highlight */}
+        {plan.graceDays > 0 && (
+          <div className="min-[1200px]:col-span-2 rounded-2xl bg-purple-50/70 dark:bg-purple-950/20 border border-purple-100/60 dark:border-purple-900/20 p-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm transition-colors">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8.5 w-8.5 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-650 dark:text-purple-400 flex items-center justify-center font-bold text-xs shrink-0">
+                {plan.graceDays}d
+              </div>
+              <div>
+                <span className="font-bold text-purple-950 dark:text-purple-300 block">
+                  Grace Period Active
+                </span>
+                <span className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                  Extra days allowed to complete remaining sessions
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-4.5">
+              <div className="text-right sm:text-left">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block mb-0.5">
+                  Grace Deadline
+                </span>
+                <span className="font-bold text-zinc-800 dark:text-zinc-200">
+                  {new Date(plan.expiryDate).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
+              </div>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                daysLeft > 0
+                  ? "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-350"
+                  : "bg-zinc-200 text-zinc-700 dark:bg-zinc-805 dark:text-zinc-400"
+              }`}>
+                {daysLeft > 0 ? `${daysLeft}d left` : "Expired"}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* CARD 3: Pricing Info Card */}
         <div className="space-y-2 min-[1200px]:col-span-2">

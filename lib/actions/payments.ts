@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { revalidatePath, updateTag } from "next/cache";
 import { createPayment, getStudentsWithDues, getPaymentById } from "@/lib/services/payments";
 import type { PaymentMethod } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
 async function assertCanManage() {
   const session = await auth();
@@ -125,5 +126,70 @@ export async function getPaymentByIdAction(paymentId: string) {
     return JSON.parse(JSON.stringify(payment)); // clean serialization
   } catch {
     return null;
+  }
+}
+
+export async function getRevenueChartDataAction(
+  view: "daily" | "monthly",
+  year: number,
+  month?: number
+): Promise<{ success: boolean; data?: { label: string; revenue: number }[]; message?: string }> {
+  try {
+    await assertCanManage();
+
+    if (view === "daily") {
+      if (month === undefined) {
+        return { success: false, message: "Month is required for daily view" };
+      }
+      const start = new Date(Date.UTC(year, month, 1));
+      const end = new Date(Date.UTC(year, month + 1, 0, 23, 59, 59, 999));
+
+      const payments = await (prisma as any).paymentRecord.findMany({
+        where: { paidAt: { gte: start, lte: end } },
+        select: { paidAt: true, amount: true },
+      });
+
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const data = [];
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dayStart = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+        const dayEnd = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
+        const dayAmount = payments
+          .filter((p: any) => p.paidAt >= dayStart && p.paidAt <= dayEnd)
+          .reduce((sum: number, p: any) => sum + p.amount, 0);
+
+        data.push({
+          label: String(day),
+          revenue: dayAmount,
+        });
+      }
+      return { success: true, data };
+    } else {
+      const start = new Date(Date.UTC(year, 0, 1));
+      const end = new Date(Date.UTC(year, 11, 31, 23, 59, 59, 999));
+
+      const payments = await (prisma as any).paymentRecord.findMany({
+        where: { paidAt: { gte: start, lte: end } },
+        select: { paidAt: true, amount: true },
+      });
+
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      const data = [];
+      for (let m = 0; m < 12; m++) {
+        const monthStart = new Date(Date.UTC(year, m, 1));
+        const monthEnd = new Date(Date.UTC(year, m + 1, 0, 23, 59, 59, 999));
+        const monthAmount = payments
+          .filter((p: any) => p.paidAt >= monthStart && p.paidAt <= monthEnd)
+          .reduce((sum: number, p: any) => sum + p.amount, 0);
+
+        data.push({
+          label: months[m],
+          revenue: monthAmount,
+        });
+      }
+      return { success: true, data };
+    }
+  } catch (error: any) {
+    return { success: false, message: error.message || "Failed to fetch revenue data" };
   }
 }

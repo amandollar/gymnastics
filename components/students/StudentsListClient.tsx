@@ -16,6 +16,7 @@ import {
   updateStudentNotesAndMedicalAction,
 } from "@/lib/actions/students";
 import { StudentLevel } from "@prisma/client";
+import { markAttendanceAction, undoMarkAttendanceAction } from "@/lib/actions/attendance";
 import { STUDENT_LEVELS, getLevelConfig } from "@/lib/utils/level";
 import { FreezePlanPopup } from "./studentProfile/FreezePlanPopup";
 import { UpgradeLevelModal } from "./studentProfile/UpgradeLevelModal";
@@ -53,10 +54,12 @@ function RowMenu({
   student,
   canManage,
   batches,
+  onMarkPresent,
 }: {
   student: StudentListItem;
   canManage: boolean;
   batches: { id: string; name: string; timing?: string }[];
+  onMarkPresent: (student: StudentListItem) => void;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -232,7 +235,10 @@ function RowMenu({
           <button
             type="button"
             role="menuitem"
-            onClick={() => { setOpen(false); /* TODO: trigger mark present */ }}
+            onClick={() => {
+              setOpen(false);
+              onMarkPresent(student);
+            }}
             className={itemClass}
           >
             <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -241,25 +247,8 @@ function RowMenu({
             Mark Present
           </button>
 
-          {/* Update Payment */}
-          {canManage && (
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => { setOpen(false); /* TODO: trigger update payment */ }}
-              className={itemClass}
-            >
-              <svg className="w-4 h-4 text-sky-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <rect x="2" y="6" width="20" height="13" rx="2" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M2 10h20" />
-                <circle cx="7" cy="15" r="1" fill="currentColor" />
-              </svg>
-              Update Payment
-            </button>
-          )}
-
           {/* Freeze Plan */}
-          {canManage && student.activePlan && student.status !== "INACTIVE" && student.status !== "NO_PLAN" && (
+          {canManage && student.activePlan && student.status !== "INACTIVE" && student.status !== "NO_PLAN" && student.status !== "EXPIRED" && (
             <button
               type="button"
               role="menuitem"
@@ -538,6 +527,77 @@ export default function StudentsListClient({
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StudentStatus | "ALL">("ALL");
+
+  const [toast, setToast] = useState<{
+    studentId: string;
+    studentName: string;
+    message: string;
+    dateStr: string;
+  } | null>(null);
+  const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (undoTimeoutRef.current) {
+        clearTimeout(undoTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleMarkPresent = async (student: StudentListItem) => {
+    if (undoTimeoutRef.current) {
+      clearTimeout(undoTimeoutRef.current);
+      undoTimeoutRef.current = null;
+    }
+    setToast(null);
+
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+    const res = await markAttendanceAction(student.id, todayStr);
+    if (res.success) {
+      setToast({
+        studentId: student.id,
+        studentName: student.name,
+        message: `Marked ${student.name} present`,
+        dateStr: todayStr,
+      });
+
+      router.refresh();
+
+      undoTimeoutRef.current = setTimeout(() => {
+        setToast(null);
+      }, 3000);
+    } else {
+      alert(res.message || "Failed to mark attendance");
+    }
+  };
+
+  const handleUndo = async () => {
+    if (!toast) return;
+
+    if (undoTimeoutRef.current) {
+      clearTimeout(undoTimeoutRef.current);
+      undoTimeoutRef.current = null;
+    }
+
+    const res = await undoMarkAttendanceAction(toast.studentId, toast.dateStr);
+    if (res.success) {
+      setToast({
+        studentId: "",
+        studentName: "",
+        message: `Undone attendance for ${toast.studentName}`,
+        dateStr: "",
+      });
+      router.refresh();
+      setTimeout(() => {
+        setToast(null);
+      }, 1500);
+    } else {
+      alert(res.message || "Failed to undo attendance");
+      setToast(null);
+    }
+  };
   const [batchFilter, setBatchFilter] = useState<string>("ALL");
   const [planTypeFilter, setPlanTypeFilter] = useState<string>("ALL");
   const [sortField, setSortField] = useState<SortField>("NONE");
@@ -865,6 +925,7 @@ export default function StudentsListClient({
                   <option value="GRACE">Grace</option>
                   <option value="FREEZE">Freeze</option>
                   <option value="INACTIVE">Inactive</option>
+                  <option value="EXPIRED">Expired</option>
                   <option value="NO_PLAN">No plan</option>
                 </select>
               </div>
@@ -944,6 +1005,7 @@ export default function StudentsListClient({
             <option value="GRACE">Grace</option>
             <option value="FREEZE">Freeze</option>
             <option value="INACTIVE">Inactive</option>
+            <option value="EXPIRED">Expired</option>
             <option value="NO_PLAN">No plan</option>
           </select>
           <select
@@ -1005,7 +1067,11 @@ export default function StudentsListClient({
           filtered.map((s) => (
             <div
               key={s.id}
-              className="rounded-lg border-0 bg-white dark:bg-zinc-900 p-4 shadow-sm"
+              className={`rounded-lg border-0 p-4 shadow-sm ${
+                s.status === "EXPIRED"
+                  ? "bg-zinc-100/50 dark:bg-zinc-900/40 text-zinc-400 dark:text-zinc-500 opacity-60"
+                  : "bg-white dark:bg-zinc-900"
+              }`}
             >
               <div className="flex items-start justify-between gap-2">
                 <Link href={`/students/${s.id}`} prefetch={false} className="flex items-start gap-3 min-w-0">
@@ -1033,17 +1099,19 @@ export default function StudentsListClient({
                             ? "bg-sky-500"
                             : s.status === "INACTIVE"
                             ? "bg-orange-500"
-                            : "bg-zinc-400"
+                            : s.status === "EXPIRED"
+                            ? "bg-zinc-400"
+                            : "bg-zinc-450"
                         }`} />
                         <span>
-                          {s.status === "ACTIVE" ? "Active" : s.status === "GRACE" ? "Grace" : s.status === "FREEZE" ? "Freeze" : s.status === "INACTIVE" ? "Inactive" : "No plan"}
+                          {s.status === "ACTIVE" ? "Active" : s.status === "GRACE" ? "Grace" : s.status === "FREEZE" ? "Freeze" : s.status === "INACTIVE" ? "Inactive" : s.status === "EXPIRED" ? "Expired" : "No plan"}
                         </span>
                       </span>
                     </div>
                   </div>
                 </Link>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <RowMenu student={s} canManage={canManage} batches={batches} />
+                  <RowMenu student={s} canManage={canManage} batches={batches} onMarkPresent={handleMarkPresent} />
                 </div>
               </div>
 
@@ -1150,7 +1218,11 @@ export default function StudentsListClient({
                     }
                     router.push(`/students/${s.id}`);
                   }}
-                  className="hover:bg-zinc-50/80 dark:hover:bg-zinc-800/30 cursor-pointer transition-colors"
+                  className={`hover:bg-zinc-50/80 dark:hover:bg-zinc-800/30 cursor-pointer transition-colors ${
+                    s.status === "EXPIRED"
+                      ? "text-zinc-400 dark:text-zinc-555 bg-zinc-50/30 dark:bg-zinc-950/20 opacity-60"
+                      : ""
+                  }`}
                 >
                   <td className="px-4 py-3">
                     <Link href={`/students/${s.id}`} prefetch={false} className="flex items-center gap-3 hover:opacity-90">
@@ -1164,13 +1236,25 @@ export default function StudentsListClient({
                     <Link
                       href={`/students/${s.id}`}
                       prefetch={false}
-                      className="font-medium text-zinc-900 dark:text-zinc-100 hover:underline"
+                      className={`font-medium hover:underline ${
+                        s.status === "EXPIRED"
+                          ? "text-zinc-400 dark:text-zinc-500"
+                          : "text-zinc-900 dark:text-zinc-100"
+                      }`}
                     >
                       {s.name}
                     </Link>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">{s.contactNumber}</p>
+                    <p className={`text-xs ${
+                      s.status === "EXPIRED"
+                        ? "text-zinc-450 dark:text-zinc-500/80"
+                        : "text-zinc-500 dark:text-zinc-400"
+                    }`}>{s.contactNumber}</p>
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300">
+                  <td className={`px-4 py-3 ${
+                    s.status === "EXPIRED"
+                      ? "text-zinc-400/80 dark:text-zinc-500/80"
+                      : "text-zinc-600 dark:text-zinc-300"
+                  }`}>
                     {formatAge(new Date(s.dateOfBirth))}
                   </td>
                   <td className="px-4 py-3">
@@ -1199,18 +1283,34 @@ export default function StudentsListClient({
                       )
                     )}
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300">
+                  <td className={`px-4 py-3 ${
+                    s.status === "EXPIRED"
+                      ? "text-zinc-400/80 dark:text-zinc-500/80"
+                      : "text-zinc-600 dark:text-zinc-300"
+                  }`}>
                     {s.sessionsPending ?? "—"}
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300">
+                  <td className={`px-4 py-3 ${
+                    s.status === "EXPIRED"
+                      ? "text-zinc-400/80 dark:text-zinc-500/80"
+                      : "text-zinc-600 dark:text-zinc-300"
+                  }`}>
                     {s.activePlan
                       ? computeDaysLeft(new Date(s.activePlan.expiryDate))
                       : "—"}
                   </td>
-                  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300">
+                  <td className={`px-4 py-3 ${
+                    s.status === "EXPIRED"
+                      ? "text-zinc-400/80 dark:text-zinc-500/80"
+                      : "text-zinc-600 dark:text-zinc-300"
+                  }`}>
                     {s.activePlan ? (
                       <div className="flex flex-col gap-0.5">
-                        <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                        <span className={`font-semibold ${
+                          s.status === "EXPIRED"
+                            ? "text-zinc-400 dark:text-zinc-500"
+                            : "text-zinc-900 dark:text-zinc-100"
+                        }`}>
                           {formatINR(s.activePlan.fee)}
                         </span>
                         {(() => {
@@ -1239,7 +1339,7 @@ export default function StudentsListClient({
                   <td className="px-4 py-3" data-prevent-row-click="true">
                     <div className="flex items-center justify-end gap-1">
                       {/* Three-dot dropdown */}
-                      <RowMenu student={s} canManage={canManage} batches={batches} />
+                      <RowMenu student={s} canManage={canManage} batches={batches} onMarkPresent={handleMarkPresent} />
                     </div>
                   </td>
                 </tr>
@@ -1248,6 +1348,22 @@ export default function StudentsListClient({
           </tbody>
         </table>
       </div>
+      {/* Undo Toast Notification (Bottom of screen) */}
+      {toast && (
+        <div
+          className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-sm z-50 rounded-2xl border px-4 py-3.5 text-sm font-semibold shadow-lg bg-zinc-900 text-white border-zinc-800 flex items-center justify-between gap-4 animate-fade-in"
+        >
+          <span className="truncate">{toast.message}</span>
+          {toast.studentId && (
+            <button
+              onClick={handleUndo}
+              className="text-brand-orange-400 hover:text-brand-orange-350 active:scale-95 text-xs font-bold uppercase tracking-wider shrink-0 transition-all cursor-pointer"
+            >
+              Undo
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

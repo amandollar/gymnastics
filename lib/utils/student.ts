@@ -5,6 +5,7 @@ export type StudentStatus =
   | "GRACE"
   | "FREEZE"
   | "INACTIVE"
+  | "EXPIRED"
   | "NO_PLAN";
 
 export interface ActivePlanSnapshot {
@@ -22,6 +23,7 @@ export interface ActivePlanSnapshot {
   freezeStartDate?: Date | null;
   freezeEndDate?: Date | null;
   freezePeriods?: { startDate: Date; endDate: Date }[];
+  lastAttendanceDate?: Date | null;
 }
 
 export function computeStudentAge(
@@ -105,14 +107,21 @@ export function computeStudentStatus(
     freezeStartDate,
     freezeEndDate,
     freezePeriods,
+    lastAttendanceDate,
   } = activePlan;
-
-  // 1. Sessions exhausted → always INACTIVE regardless of dates
-  if (sessionsCompleted >= totalSessions) return "INACTIVE";
 
   const today = startOfDay(new Date());
   const end = startOfDay(new Date(endDate));
   const expiry = startOfDay(new Date(expiryDate));
+
+  // 1. Sessions exhausted → INACTIVE or EXPIRED regardless of dates
+  if (sessionsCompleted >= totalSessions) {
+    const inactiveStart = lastAttendanceDate ? startOfDay(new Date(lastAttendanceDate)) : end;
+    const expiredDate = new Date(inactiveStart);
+    expiredDate.setDate(expiredDate.getDate() + 30);
+    if (today > expiredDate) return "EXPIRED";
+    return "INACTIVE";
+  }
 
   // 2. Check active freeze window (legacy field or explicit array)
   if (freezeStartDate && freezeEndDate) {
@@ -129,8 +138,13 @@ export function computeStudentStatus(
     }
   }
 
-  // 3. Grace period completely exhausted
-  if (today > expiry) return "INACTIVE";
+  // 3. Grace period completely exhausted → INACTIVE or EXPIRED
+  if (today > expiry) {
+    const expiredDate = new Date(expiry);
+    expiredDate.setDate(expiredDate.getDate() + 30);
+    if (today > expiredDate) return "EXPIRED";
+    return "INACTIVE";
+  }
 
   // 4. Within grace window (after end date but before expiry)
   if (today > end) return "GRACE";
@@ -158,6 +172,10 @@ export const STATUS_STYLES: Record<
   INACTIVE: {
     label: "Inactive",
     className: "bg-orange-50 text-orange-800 ring-1 ring-orange-200/80",
+  },
+  EXPIRED: {
+    label: "Expired",
+    className: "bg-zinc-100 text-zinc-400 ring-1 ring-zinc-200/50",
   },
   NO_PLAN: {
     label: "No plan",

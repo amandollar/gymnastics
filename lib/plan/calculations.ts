@@ -124,9 +124,9 @@ export function computePlanFields(input: PlanComputeInput): PlanComputeResult {
   const planMonths: 1 | 3 | null =
     diffDays <= 31 ? 1 : diffDays <= 93 ? 3 : null;
 
-  // Grace days: from DB map, or formula fallback
+  // Grace days: from DB map, or formula fallback (only for REGULAR grouped class)
   const graceDays =
-    planMonths !== null
+    input.planType === "REGULAR" && planMonths !== null
       ? lookupGraceDays(
           input.gracePeriodMap ?? {},
           sessionsPerWeek,

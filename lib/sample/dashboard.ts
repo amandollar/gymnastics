@@ -5,6 +5,8 @@ export const kpiStats = {
   admissionsThisMonth: 12,       // new admissions in current month
   activeStudents: 224,           // currently active membership
   gracePeriodStudents: 24,       // in grace period (plan expired but within grace window)
+  freezeStudents: 8,
+  inactiveStudents: 15,
   activeTrainers: 14,
   monthlyRevenue: 4_85_200,
   revenueChange: 8.4,
