@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { getSession, getSessionUser } from "@/lib/auth-session";
 import { getStudentById, getPricingMaps, getGracePeriodMap, listBatches } from "@/lib/services/cached";
 import EditStudentForm from "@/components/students/EditStudentForm";
+import { computeStudentStatus } from "@/lib/utils/student";
 
 export default async function EditStudentPage({
   params,
@@ -26,6 +27,23 @@ export default async function EditStudentPage({
   
   if (!student) notFound();
 
+  // Compute plan status server-side so UpdatePlanTab can decide what to show
+  const activePlan = (student as any).activePlan;
+  const planStatus = computeStudentStatus(
+    activePlan
+      ? {
+          sessionsCompleted: activePlan.sessionsCompleted,
+          totalSessions: activePlan.totalSessions,
+          endDate: activePlan.endDate,
+          expiryDate: activePlan.expiryDate,
+          freezeStartDate: activePlan.freezeStartDate,
+          freezeEndDate: activePlan.freezeEndDate,
+          freezePeriods: activePlan.freezePeriods,
+          lastAttendanceDate: null,
+        }
+      : null
+  );
+
   return (
     <div className="mx-auto max-w-7xl min-w-0 w-full">
       <EditStudentForm
@@ -33,6 +51,7 @@ export default async function EditStudentPage({
         pricingMaps={JSON.parse(JSON.stringify(pricingMaps))}
         gracePeriodMap={JSON.parse(JSON.stringify(gracePeriodMap))}
         batches={JSON.parse(JSON.stringify(batches))}
+        planStatus={planStatus}
       />
     </div>
   );

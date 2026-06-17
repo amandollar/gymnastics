@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath, updateTag } from "next/cache";
 import { getMonthlyAttendanceData, getYearlyMonthlyBreakdown } from "@/lib/services/cached";
+import { computeStudentStatus } from "@/lib/utils/student";
 
 export async function fetchChartDataAction(year: number, month: number) {
   const [monthData, yearlyBreakdown] = await Promise.all([
@@ -44,26 +45,53 @@ export async function searchStudentsForAttendanceAction(query: string) {
         plans: {
           where: { isActive: true },
           take: 1,
+          include: {
+            freezePeriods: true,
+            attendances: {
+              orderBy: { date: "desc" },
+              take: 1,
+              select: { date: true },
+            }
+          }
         }
       },
       orderBy: { studentNumber: "asc" },
       take: 10,
     });
 
-    return students.map((s) => ({
-      id: s.id,
-      studentNumber: s.studentNumber,
-      name: s.name,
-      avatarUrl: s.avatarUrl,
-      gender: s.gender,
-      activePlan: s.plans[0] ? {
-        id: s.plans[0].id,
-        planType: s.plans[0].planType,
-        expiryDate: s.plans[0].expiryDate,
-        sessionsCompleted: s.plans[0].sessionsCompleted,
-        totalSessions: s.plans[0].totalSessions,
-      } : null,
-    }));
+    return students.map((s) => {
+      const activePlan = s.plans[0] ?? null;
+      const status = computeStudentStatus(
+        activePlan
+          ? {
+              sessionsCompleted: activePlan.sessionsCompleted,
+              totalSessions: activePlan.totalSessions,
+              endDate: activePlan.endDate,
+              expiryDate: activePlan.expiryDate,
+              freezeStartDate: activePlan.freezeStartDate,
+              freezeEndDate: activePlan.freezeEndDate,
+              freezePeriods: activePlan.freezePeriods,
+              lastAttendanceDate: activePlan.attendances?.[0]?.date ?? null,
+            }
+          : null
+      );
+
+      return {
+        id: s.id,
+        studentNumber: s.studentNumber,
+        name: s.name,
+        avatarUrl: s.avatarUrl,
+        gender: s.gender,
+        status,
+        activePlan: activePlan ? {
+          id: activePlan.id,
+          planType: activePlan.planType,
+          expiryDate: activePlan.expiryDate,
+          sessionsCompleted: activePlan.sessionsCompleted,
+          totalSessions: activePlan.totalSessions,
+        } : null,
+      };
+    });
   } catch (err) {
     console.error("Search error:", err);
     return [];
@@ -78,6 +106,14 @@ export async function markAttendanceAction(studentId: string, dateStr: string) {
         plans: {
           where: { isActive: true },
           take: 1,
+          include: {
+            freezePeriods: true,
+            attendances: {
+              orderBy: { date: "desc" },
+              take: 1,
+              select: { date: true },
+            }
+          }
         }
       }
     });
@@ -89,6 +125,24 @@ export async function markAttendanceAction(studentId: string, dateStr: string) {
     const activePlan = student.plans[0];
     if (!activePlan) {
       return { success: false, message: "No active plan found for this student. Please assign a plan first." };
+    }
+
+    const status = computeStudentStatus({
+      sessionsCompleted: activePlan.sessionsCompleted,
+      totalSessions: activePlan.totalSessions,
+      endDate: activePlan.endDate,
+      expiryDate: activePlan.expiryDate,
+      freezeStartDate: activePlan.freezeStartDate,
+      freezeEndDate: activePlan.freezeEndDate,
+      freezePeriods: activePlan.freezePeriods,
+      lastAttendanceDate: activePlan.attendances?.[0]?.date ?? null,
+    });
+
+    if (status !== "ACTIVE" && status !== "GRACE" && status !== "FREEZE") {
+      return {
+        success: false,
+        message: `Cannot mark attendance. Student plan is ${status.toLowerCase().replace("_", " ")}.`
+      };
     }
 
     const attendanceDate = new Date(dateStr + "T00:00:00.000Z");
@@ -185,6 +239,21 @@ export async function getAttendanceSessionDataAction() {
               planType: true,
               sessionsCompleted: true,
               totalSessions: true,
+              endDate: true,
+              expiryDate: true,
+              freezeStartDate: true,
+              freezeEndDate: true,
+              freezePeriods: {
+                select: {
+                  startDate: true,
+                  endDate: true,
+                }
+              },
+              attendances: {
+                orderBy: { date: "desc" },
+                take: 1,
+                select: { date: true },
+              }
             },
           },
         },
@@ -196,18 +265,46 @@ export async function getAttendanceSessionDataAction() {
       }),
     ]);
 
+    const validStudents = students
+      .map((s) => {
+        const activePlan = s.plans[0] ?? null;
+        const status = computeStudentStatus(
+          activePlan
+            ? {
+                sessionsCompleted: activePlan.sessionsCompleted,
+                totalSessions: activePlan.totalSessions,
+                endDate: activePlan.endDate,
+                expiryDate: activePlan.expiryDate,
+                freezeStartDate: activePlan.freezeStartDate,
+                freezeEndDate: activePlan.freezeEndDate,
+                freezePeriods: activePlan.freezePeriods,
+                lastAttendanceDate: activePlan.attendances?.[0]?.date ?? null,
+              }
+            : null
+        );
+
+        return {
+          id: s.id,
+          studentNumber: s.studentNumber,
+          name: s.name,
+          status,
+          activePlan: activePlan
+            ? {
+                planType: activePlan.planType as string,
+                sessionsCompleted: activePlan.sessionsCompleted,
+                totalSessions: activePlan.totalSessions,
+              }
+            : null,
+        };
+      })
+      .filter((s) => s.status === "ACTIVE" || s.status === "GRACE" || s.status === "FREEZE");
+
     return {
-      students: students.map((s) => ({
-        id: s.id,
-        studentNumber: s.studentNumber,
-        name: s.name,
-        activePlan: s.plans[0]
-          ? {
-              planType: s.plans[0].planType as string,
-              sessionsCompleted: s.plans[0].sessionsCompleted,
-              totalSessions: s.plans[0].totalSessions,
-            }
-          : null,
+      students: validStudents.map(({ id, studentNumber, name, activePlan }) => ({
+        id,
+        studentNumber,
+        name,
+        activePlan,
       })),
       // Deduplicated list of student IDs already marked present today
       attendedStudentIds: [...new Set(todayAttendance.map((a) => a.studentId))],

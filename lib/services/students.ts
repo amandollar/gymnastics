@@ -353,6 +353,26 @@ export async function assignPlanToStudent(
     throw new Error("End date must be after start date");
   }
 
+  // Check for overlapping plans
+  const overlapping = await prisma.studentPlan.findFirst({
+    where: {
+      studentId,
+      startDate: { lte: input.endDate },
+      endDate: { gte: input.startDate },
+    },
+    select: { id: true, startDate: true, endDate: true },
+  });
+  if (overlapping) {
+    const endStr = new Date(overlapping.endDate).toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+    throw new Error(
+      `This student already has a plan that overlaps these dates. The existing plan ends on ${endStr}. Please start the new plan after that date.`
+    );
+  }
+
   const { getPricingMaps } = await import("@/lib/services/pricing");
   const [pricingMaps, gracePeriodMap] = await Promise.all([
     getPricingMaps(),

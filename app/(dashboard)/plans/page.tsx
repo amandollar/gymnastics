@@ -31,6 +31,9 @@ export default async function PlansPage() {
     parentName: s.parentName,
     gender: s.gender,
     avatarUrl: s.avatarUrl,
+    planEndsAt: (s as any).activePlan?.expiryDate
+      ? new Date((s as any).activePlan.expiryDate).toISOString()
+      : null,
   }));
 
   return (

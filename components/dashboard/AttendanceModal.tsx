@@ -575,15 +575,15 @@ export default function AttendanceModal({
           {manualSearchQuery.trim() && searchResults.length > 0 && (
             <div className="space-y-1 max-h-36 overflow-y-auto border border-zinc-800/80 rounded-xl p-1 bg-black/85 backdrop-blur-md shadow-2xl mb-1">
               {searchResults.map((student) => {
-                const hasActivePlan = !!student.activePlan;
+                const hasValidPlan = student.status === "ACTIVE" || student.status === "GRACE" || student.status === "FREEZE";
                 return (
                   <button
                     key={student.id}
                     type="button"
-                    disabled={!hasActivePlan}
+                    disabled={!hasValidPlan}
                     onClick={() => handleSelectStudentManual(student.id)}
                     className={`w-full text-left flex items-center justify-between p-2 rounded-lg border transition-colors cursor-pointer text-xs ${
-                      hasActivePlan
+                      hasValidPlan
                         ? "border-transparent hover:bg-white/10 text-white"
                         : "border-transparent text-zinc-650 opacity-40 cursor-not-allowed"
                     }`}
@@ -593,15 +593,15 @@ export default function AttendanceModal({
                         {student.name}
                       </p>
                       <p className="text-[9px] text-zinc-400">
-                        ID: TAG{String(student.studentNumber).padStart(3, "0")} · {hasActivePlan ? (student.activePlan.planType === "ONE_TO_ONE" ? "Personal training" : "Group class") : "No Active Plan"}
+                        ID: TAG{String(student.studentNumber).padStart(3, "0")} · {hasValidPlan ? (student.activePlan.planType === "ONE_TO_ONE" ? "Personal training" : "Group class") : `Plan is ${student.status?.toLowerCase().replace("_", " ")}`}
                       </p>
                     </div>
                     <span className={`px-2 py-0.5 rounded-md font-bold text-[8px] uppercase tracking-wider ${
-                      hasActivePlan 
+                      hasValidPlan 
                         ? "bg-brand-orange-500/20 text-brand-orange-400" 
                         : "bg-zinc-800 text-zinc-600"
                     }`}>
-                      {hasActivePlan ? "Mark" : "Inactive"}
+                      {hasValidPlan ? "Mark" : "Blocked"}
                     </span>
                   </button>
                 );

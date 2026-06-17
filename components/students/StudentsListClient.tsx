@@ -232,20 +232,32 @@ function RowMenu({
           )}
 
           {/* Mark Present */}
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              onMarkPresent(student);
-            }}
-            className={itemClass}
-          >
-            <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            Mark Present
-          </button>
+          {(() => {
+            const isPermitted = student.status === "ACTIVE" || student.status === "GRACE" || student.status === "FREEZE";
+            return (
+              <button
+                type="button"
+                role="menuitem"
+                disabled={!isPermitted}
+                onClick={() => {
+                  if (isPermitted) {
+                    setOpen(false);
+                    onMarkPresent(student);
+                  }
+                }}
+                className={`flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-left transition-colors ${
+                  isPermitted
+                    ? "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer"
+                    : "text-zinc-400 dark:text-zinc-650 opacity-50 cursor-not-allowed"
+                }`}
+              >
+                <svg className={`w-4 h-4 shrink-0 ${isPermitted ? "text-emerald-500" : "text-zinc-400 dark:text-zinc-600"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                Mark Present
+              </button>
+            );
+          })()}
 
           {/* Freeze Plan */}
           {canManage && student.activePlan && student.status !== "INACTIVE" && student.status !== "NO_PLAN" && student.status !== "EXPIRED" && (
@@ -1069,12 +1081,12 @@ export default function StudentsListClient({
               key={s.id}
               className={`rounded-lg border-0 p-4 shadow-sm ${
                 s.status === "EXPIRED"
-                  ? "bg-zinc-100/50 dark:bg-zinc-900/40 text-zinc-400 dark:text-zinc-500 opacity-60"
+                  ? "bg-zinc-100/50 dark:bg-zinc-900/40 text-zinc-400 dark:text-zinc-500"
                   : "bg-white dark:bg-zinc-900"
               }`}
             >
               <div className="flex items-start justify-between gap-2">
-                <Link href={`/students/${s.id}`} prefetch={false} className="flex items-start gap-3 min-w-0">
+                <Link href={`/students/${s.id}`} prefetch={false} className={`flex items-start gap-3 min-w-0 ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
                   <StudentAvatar student={s} size={48} />
                   <div className="min-w-0">
                     <p className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">
@@ -1116,12 +1128,25 @@ export default function StudentsListClient({
               </div>
 
               {/* Details grid */}
-              <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+              <div className={`mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
                 <div>
                   <span className="text-zinc-400 dark:text-zinc-550">Plan:</span>{" "}
                   <span className="font-medium text-zinc-700 dark:text-zinc-300">
                     {s.activePlan ? (
-                      s.activePlan.planType === "ONE_TO_ONE" ? "personal" : "grouped"
+                      (s.status === "INACTIVE" || s.status === "EXPIRED") && canManage ? (
+                        <Link
+                          href={`/plans?student=${s.id}`}
+                          prefetch={false}
+                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-2 py-0.5 text-[10px] font-bold text-white transition-colors shadow-sm mt-0.5"
+                        >
+                          <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                          </svg>
+                          New plan
+                        </Link>
+                      ) : (
+                        s.activePlan.planType === "ONE_TO_ONE" ? "personal" : "grouped"
+                      )
                     ) : (
                       canManage ? (
                         <Link
@@ -1220,11 +1245,11 @@ export default function StudentsListClient({
                   }}
                   className={`hover:bg-zinc-50/80 dark:hover:bg-zinc-800/30 cursor-pointer transition-colors ${
                     s.status === "EXPIRED"
-                      ? "text-zinc-400 dark:text-zinc-555 bg-zinc-50/30 dark:bg-zinc-950/20 opacity-60"
+                      ? "text-zinc-400 dark:text-zinc-555 bg-zinc-50/30 dark:bg-zinc-950/20"
                       : ""
                   }`}
                 >
-                  <td className="px-4 py-3">
+                  <td className={`px-4 py-3 ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
                     <Link href={`/students/${s.id}`} prefetch={false} className="flex items-center gap-3 hover:opacity-90">
                       <StudentAvatar student={s} size={40} />
                       <span className="font-medium text-zinc-500 dark:text-zinc-400 tabular-nums">
@@ -1232,7 +1257,7 @@ export default function StudentsListClient({
                       </span>
                     </Link>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className={`px-4 py-3 ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
                     <Link
                       href={`/students/${s.id}`}
                       prefetch={false}
@@ -1252,22 +1277,38 @@ export default function StudentsListClient({
                   </td>
                   <td className={`px-4 py-3 ${
                     s.status === "EXPIRED"
-                      ? "text-zinc-400/80 dark:text-zinc-500/80"
+                      ? "text-zinc-400/80 dark:text-zinc-500/80 opacity-60"
                       : "text-zinc-600 dark:text-zinc-300"
                   }`}>
                     {formatAge(new Date(s.dateOfBirth))}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className={`px-4 py-3 ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${getLevelConfig(s.level).badgeBg} ${getLevelConfig(s.level).badgeText} ring-1 ring-zinc-200/40 dark:ring-zinc-800/40`}>
                       {getLevelConfig(s.level).shortLabel}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className={`px-4 py-3 ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
                     <StudentStatusBadge status={s.status} />
                   </td>
                   <td className="px-4 py-3 text-zinc-650 dark:text-zinc-350">
                     {s.activePlan ? (
-                      s.activePlan.planType === "ONE_TO_ONE" ? "personal" : "grouped"
+                      (s.status === "INACTIVE" || s.status === "EXPIRED") && canManage ? (
+                        <Link
+                          href={`/plans?student=${s.id}`}
+                          prefetch={false}
+                          data-prevent-row-click="true"
+                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 text-xs font-semibold text-white transition-colors shadow-sm"
+                        >
+                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                          </svg>
+                          New plan
+                        </Link>
+                      ) : (
+                        <span className={s.status === "EXPIRED" ? "opacity-60" : ""}>
+                          {s.activePlan.planType === "ONE_TO_ONE" ? "personal" : "grouped"}
+                        </span>
+                      )
                     ) : (
                       canManage ? (
                         <Link
@@ -1285,14 +1326,14 @@ export default function StudentsListClient({
                   </td>
                   <td className={`px-4 py-3 ${
                     s.status === "EXPIRED"
-                      ? "text-zinc-400/80 dark:text-zinc-500/80"
+                      ? "text-zinc-400/80 dark:text-zinc-500/80 opacity-60"
                       : "text-zinc-600 dark:text-zinc-300"
                   }`}>
                     {s.sessionsPending ?? "—"}
                   </td>
                   <td className={`px-4 py-3 ${
                     s.status === "EXPIRED"
-                      ? "text-zinc-400/80 dark:text-zinc-500/80"
+                      ? "text-zinc-400/80 dark:text-zinc-500/80 opacity-60"
                       : "text-zinc-600 dark:text-zinc-300"
                   }`}>
                     {s.activePlan
@@ -1301,7 +1342,7 @@ export default function StudentsListClient({
                   </td>
                   <td className={`px-4 py-3 ${
                     s.status === "EXPIRED"
-                      ? "text-zinc-400/80 dark:text-zinc-500/80"
+                      ? "text-zinc-400/80 dark:text-zinc-500/80 opacity-60"
                       : "text-zinc-600 dark:text-zinc-300"
                   }`}>
                     {s.activePlan ? (
@@ -1321,7 +1362,7 @@ export default function StudentsListClient({
                               {formatINR(dues)} due
                             </span>
                           ) : (
-                            <span className="text-xs font-medium text-zinc-400 dark:text-zinc-550 flex items-center gap-1">
+                            <span className="text-xs font-medium text-zinc-400 dark:text-zinc-555 flex items-center gap-1">
                               <svg className="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                               </svg>

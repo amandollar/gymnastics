@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useMemo } from "react";
 import Link from "next/link";
+import { AlertCircle, PlusCircle } from "lucide-react";
 import { updateStudentActivePlanAction } from "@/lib/actions/students";
 import { toDateInputValue, parseDateInput } from "@/lib/utils/student";
 import {
@@ -13,6 +14,7 @@ import {
 import { PLAN_DAY_OPTIONS } from "@/components/plans/plan-form-shared";
 import BatchPicker from "@/components/plans/BatchPicker";
 import type { BatchWithCount } from "@/lib/services/batches";
+import type { StudentStatus } from "@/lib/utils/student";
 
 function parseDaysFromBatchName(name: string): WeekdayName[] | null {
   const words = name.trim().split(/\s+/);
@@ -64,6 +66,7 @@ type ActivePlan = {
   planType: PlanTypeKey;
   startDate: string | Date;
   endDate: string | Date;
+  expiryDate: string | Date;
   selectedDays: WeekdayName[];
   graceDays: number;
   fee: number;
@@ -72,9 +75,160 @@ type ActivePlan = {
   batchId?: string | null;
 };
 
+// ─── Expired Plan Summary Banner ──────────────────────────────────────────────
 
+function ExpiredPlanBanner({
+  plan,
+  studentId,
+}: {
+  plan: ActivePlan;
+  studentId: string;
+}) {
+  const startDate = new Date(plan.startDate).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  const endDate = new Date(plan.endDate).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+  const expiryDate = new Date(plan.expiryDate).toLocaleDateString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+
+  const planTypeLabel =
+    plan.planType === "REGULAR" ? "Group class" : "Personal training";
+
+  const daysLabel = Array.isArray(plan.selectedDays)
+    ? (plan.selectedDays as string[])
+        .map((d) => d.slice(0, 3))
+        .join(", ")
+    : "—";
+
+  return (
+    <div className="space-y-4 max-w-3xl mx-auto">
+      {/* Expired banner */}
+      <div className="rounded-3xl border border-rose-200 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-950/20 p-5">
+        <div className="flex items-start gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-900/40 mt-0.5">
+            <AlertCircle className="h-4 w-4 text-rose-600 dark:text-rose-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-rose-800 dark:text-rose-300">
+              Plan Expired
+            </p>
+            <p className="text-xs text-rose-600 dark:text-rose-400 mt-0.5">
+              This plan has ended. Grace period expired on {expiryDate}.
+            </p>
+          </div>
+          <span className="shrink-0 inline-flex items-center rounded-full bg-rose-100 dark:bg-rose-900/50 px-2.5 py-1 text-[11px] font-bold text-rose-700 dark:text-rose-300 ring-1 ring-rose-200 dark:ring-rose-800">
+            Expired
+          </span>
+        </div>
+
+        {/* Plan summary row */}
+        <div className="mt-4 grid grid-cols-3 gap-3 rounded-2xl bg-white/60 dark:bg-zinc-900/40 border border-rose-100 dark:border-rose-900/30 px-4 py-3">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-rose-500 dark:text-rose-500 mb-0.5">
+              Type
+            </p>
+            <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+              {planTypeLabel}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-rose-500 dark:text-rose-500 mb-0.5">
+              Period
+            </p>
+            <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+              {startDate} → {endDate}
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-rose-500 dark:text-rose-500 mb-0.5">
+              Fee
+            </p>
+            <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+              ₹{plan.fee.toLocaleString("en-IN")}
+            </p>
+          </div>
+          <div className="col-span-3 border-t border-rose-100 dark:border-rose-900/30 pt-2 mt-1">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-rose-500 dark:text-rose-500 mb-0.5">
+              Class days
+            </p>
+            <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+              {daysLabel} · {plan.totalSessions} sessions total
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Create new plan CTA */}
+      <div className="rounded-3xl bg-white dark:bg-zinc-900 p-6 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+            Ready to create a new plan?
+          </p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+            The previous plan has ended. You can now assign a fresh plan.
+          </p>
+        </div>
+        <Link
+          href={`/plans?student=${studentId}`}
+          className="inline-flex items-center gap-2 rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors shadow-sm shrink-0"
+        >
+          <PlusCircle className="h-4 w-4" />
+          Create new plan
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function UpdatePlanTab({
+  studentId,
+  activePlan,
+  pricingMaps,
+  gracePeriodMap,
+  batches,
+  planStatus,
+}: {
+  studentId: string;
+  activePlan: ActivePlan;
+  pricingMaps: any;
+  gracePeriodMap: any;
+  batches: BatchWithCount[];
+  planStatus?: StudentStatus;
+}) {
+  // If the plan is INACTIVE or EXPIRED, show the expired banner + create new plan CTA
+  const isPlanExpired =
+    planStatus === "INACTIVE" || planStatus === "EXPIRED";
+
+  if (isPlanExpired) {
+    return <ExpiredPlanBanner plan={activePlan} studentId={studentId} />;
+  }
+
+  // Otherwise render the editable form (ACTIVE, GRACE, FREEZE)
+  return (
+    <EditPlanForm
+      studentId={studentId}
+      activePlan={activePlan}
+      pricingMaps={pricingMaps}
+      gracePeriodMap={gracePeriodMap}
+      batches={batches}
+    />
+  );
+}
+
+// ─── Edit Plan Form (only shown when plan is ACTIVE / GRACE / FREEZE) ──────────
+
+function EditPlanForm({
   studentId,
   activePlan,
   pricingMaps,
@@ -315,20 +469,16 @@ export default function UpdatePlanTab({
           <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 pb-1 pl-8">Difference</span>
 
           {/* ── Fee row ── */}
-          {/* row label */}
           <div className="col-span-4 -mt-2 -mb-1">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400/70 dark:text-zinc-600">Fee</span>
           </div>
 
-          {/* current fee */}
           <span className="text-lg font-bold text-zinc-800 dark:text-zinc-200">
             ₹{oldFee.toLocaleString("en-IN")}
           </span>
 
-          {/* arrow */}
           <span className="self-center px-3 text-zinc-300 dark:text-zinc-600 text-base font-light select-none">→</span>
 
-          {/* new fee */}
           <span className={`text-lg font-bold pl-8 ${
             preview
               ? feeDiff > 0
@@ -341,7 +491,6 @@ export default function UpdatePlanTab({
             {preview ? `₹${newFee.toLocaleString("en-IN")}` : "—"}
           </span>
 
-          {/* fee diff */}
           <span className={`text-lg font-bold pl-8 ${
             !preview || feeDiff === 0
               ? "text-zinc-300 dark:text-zinc-700"
@@ -364,15 +513,12 @@ export default function UpdatePlanTab({
             <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400/70 dark:text-zinc-600">Sessions</span>
           </div>
 
-          {/* current sessions */}
           <span className="text-lg font-bold text-zinc-800 dark:text-zinc-200">
             {oldSessions}
           </span>
 
-          {/* arrow */}
           <span className="self-center px-3 text-zinc-300 dark:text-zinc-600 text-base font-light select-none">→</span>
 
-          {/* new sessions */}
           <span className={`text-lg font-bold pl-8 ${
             preview
               ? sessionDiff > 0
@@ -385,7 +531,6 @@ export default function UpdatePlanTab({
             {preview ? newSessions : "—"}
           </span>
 
-          {/* session diff */}
           <span className={`text-lg font-bold pl-8 ${
             !preview || sessionDiff === 0
               ? "text-zinc-300 dark:text-zinc-700"

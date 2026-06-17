@@ -477,6 +477,7 @@ export default function StudentDetailClient({
               <AttendanceCard
                 attendances={student.attendances}
                 activePlan={student.activePlan}
+                allPlans={student.plans}
               />
               <PlanCard
                 plan={student.activePlan}
@@ -486,6 +487,56 @@ export default function StudentDetailClient({
                 canManage={canManage}
                 setShowFreeze={setShowFreeze}
               />
+              {/* CTA when plan has ended — let managers assign a fresh one */}
+              {canManage &&
+                (student.status === "INACTIVE" || student.status === "EXPIRED") && (
+                  <div className="rounded-3xl bg-white dark:bg-zinc-900 shadow-sm px-6 py-5 flex flex-col sm:flex-row items-center gap-4 justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-brand-orange-50 dark:bg-brand-orange-950/40">
+                        <svg
+                          className="w-4 h-4 text-brand-orange-500"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 4.5v15m7.5-7.5h-15"
+                          />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                          Plan has ended
+                        </p>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                          Assign a new plan to re-enroll this student.
+                        </p>
+                      </div>
+                    </div>
+                    <Link
+                      href={`/plans?student=${student.id}`}
+                      className="inline-flex items-center gap-2 rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 px-4.5 py-2.5 text-sm font-semibold text-white transition-colors shadow-sm shrink-0"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 4.5v15m7.5-7.5h-15"
+                        />
+                      </svg>
+                      Create new plan
+                    </Link>
+                  </div>
+                )}
             </>
           )}
 

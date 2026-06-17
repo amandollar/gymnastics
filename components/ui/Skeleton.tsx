@@ -117,8 +117,8 @@ export function SkeletonCalendar() {
     <div className="animate-pulse space-y-3">
       {/* Day headers */}
       <div className="grid grid-cols-7 gap-1">
-        {["S", "M", "T", "W", "T", "F", "S"].map((d) => (
-          <SkeletonBlock key={d} className="h-5 rounded" />
+        {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+          <SkeletonBlock key={i} className="h-5 rounded" />
         ))}
       </div>
       {/* 5 weeks of cells */}

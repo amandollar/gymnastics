@@ -159,27 +159,27 @@ export const STATUS_STYLES: Record<
 > = {
   ACTIVE: {
     label: "Active",
-    className: "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200/80",
+    className: "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200/80 dark:bg-emerald-950/20 dark:text-emerald-400 dark:ring-emerald-900/30",
   },
   GRACE: {
     label: "Grace",
-    className: "bg-amber-50 text-amber-800 ring-1 ring-amber-200/80",
+    className: "bg-amber-50 text-amber-800 ring-1 ring-amber-200/80 dark:bg-amber-950/20 dark:text-amber-400 dark:ring-amber-900/30",
   },
   FREEZE: {
     label: "Freeze",
-    className: "bg-sky-50 text-sky-800 ring-1 ring-sky-200/80",
+    className: "bg-sky-50 text-sky-800 ring-1 ring-sky-200/80 dark:bg-sky-950/20 dark:text-sky-400 dark:ring-sky-900/30",
   },
   INACTIVE: {
     label: "Inactive",
-    className: "bg-orange-50 text-orange-800 ring-1 ring-orange-200/80",
+    className: "bg-orange-50 text-orange-800 ring-1 ring-orange-200/80 dark:bg-orange-950/20 dark:text-orange-400 dark:ring-orange-900/30",
   },
   EXPIRED: {
     label: "Expired",
-    className: "bg-zinc-100 text-zinc-400 ring-1 ring-zinc-200/50",
+    className: "bg-zinc-100 text-zinc-400 ring-1 ring-zinc-200/50 dark:bg-zinc-800/30 dark:text-zinc-500 dark:ring-zinc-700/30",
   },
   NO_PLAN: {
     label: "No plan",
-    className: "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200/80",
+    className: "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200/80 dark:bg-zinc-800/30 dark:text-zinc-400 dark:ring-zinc-700/30",
   },
 };
 

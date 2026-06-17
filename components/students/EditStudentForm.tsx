@@ -9,12 +9,14 @@ import BasicDetailsTab from "./BasicDetailsTab";
 import UpdatePlanTab from "./UpdatePlanTab";
 import type { PlanTypeKey, WeekdayName } from "@/lib/plan/calculations";
 import type { BatchWithCount } from "@/lib/services/batches";
+import type { StudentStatus } from "@/lib/utils/student";
 
 type StudentPlanData = {
   id: string;
   planType: PlanTypeKey;
   startDate: string | Date;
   endDate: string | Date;
+  expiryDate: string | Date;
   selectedDays: WeekdayName[];
   graceDays: number;
   fee: number;
@@ -45,11 +47,13 @@ export default function EditStudentForm({
   pricingMaps,
   gracePeriodMap = {},
   batches = [],
+  planStatus,
 }: {
   student: StudentData;
   pricingMaps: any;
   gracePeriodMap?: any;
   batches?: BatchWithCount[];
+  planStatus?: StudentStatus;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -137,10 +141,10 @@ export default function EditStudentForm({
                 No active plan found for this student.
               </p>
               <Link
-                href={`/students/${student.id}`}
+                href={`/plans?student=${student.id}`}
                 className="inline-flex items-center justify-center rounded-xl bg-brand-orange-500 px-4.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-orange-600 transition-colors"
               >
-                Go to profile to assign a plan
+                Assign a plan
               </Link>
             </div>
           ) : (
@@ -150,6 +154,7 @@ export default function EditStudentForm({
               pricingMaps={pricingMaps}
               gracePeriodMap={gracePeriodMap}
               batches={batches}
+              planStatus={planStatus}
             />
           )}
         </div>

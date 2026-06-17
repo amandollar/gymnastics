@@ -9,63 +9,66 @@ import type { PlanRow, AttendanceRow } from "./types";
 export function AttendanceCard({
   attendances,
   activePlan,
+  allPlans,
 }: {
   attendances: AttendanceRow[];
   activePlan: PlanRow | null;
+  allPlans?: PlanRow[];
 }) {
   const [showLogs, setShowLogs] = useState(false);
+
+  // Use all plans to determine calendar span; fall back to just activePlan
+  const plans = allPlans && allPlans.length > 0 ? allPlans : activePlan ? [activePlan] : [];
 
   const dates = attendances.map((a) => new Date(a.date).getTime());
   const earliestAttendance = dates.length > 0 ? new Date(Math.min(...dates)) : null;
   const latestAttendance = dates.length > 0 ? new Date(Math.max(...dates)) : null;
 
-  const planStart = activePlan ? new Date(activePlan.startDate) : null;
-  const planEnd = activePlan ? new Date(activePlan.endDate) : null;
-
+  // Calendar start = min of all plan starts and earliest attendance
   const calendarStart = useMemo(() => {
-    let start = new Date();
-    if (planStart && earliestAttendance) {
-      start = planStart < earliestAttendance ? planStart : earliestAttendance;
-    } else if (planStart) {
-      start = planStart;
-    } else if (earliestAttendance) {
-      start = earliestAttendance;
-    }
-    return start;
-  }, [planStart, earliestAttendance]);
+    const planStarts = plans.map((p) => new Date(p.startDate).getTime());
+    const minPlanStart = planStarts.length > 0 ? Math.min(...planStarts) : null;
+    const candidates = [
+      minPlanStart ? new Date(minPlanStart) : null,
+      earliestAttendance,
+    ].filter(Boolean) as Date[];
+    if (candidates.length === 0) return new Date();
+    return new Date(Math.min(...candidates.map((d) => d.getTime())));
+  }, [plans, earliestAttendance]);
 
+  // Calendar end = max of all plan expiry dates, inactive windows, and latest attendance
   const calendarEnd = useMemo(() => {
     let end = new Date();
-    if (planEnd && latestAttendance) {
-      end = planEnd > latestAttendance ? planEnd : latestAttendance;
-    } else if (planEnd) {
-      end = planEnd;
-    } else if (latestAttendance) {
+
+    // Extend to cover all plan expiry dates
+    for (const plan of plans) {
+      const { sessionsCompleted, totalSessions, endDate, expiryDate } = plan;
+      let planEnd: Date;
+      if (sessionsCompleted >= totalSessions) {
+        // Sessions exhausted — show 30 days past last attendance (or end date)
+        const planAttendances = attendances.filter(
+          (a) => a.studentPlanId === plan.id
+        );
+        const lastAtt =
+          planAttendances.length > 0
+            ? new Date(planAttendances[planAttendances.length - 1].date)
+            : new Date(endDate);
+        planEnd = new Date(lastAtt);
+        planEnd.setDate(planEnd.getDate() + 30);
+      } else {
+        // Extend to show 30 days after expiry (inactive window)
+        planEnd = new Date(expiryDate);
+        planEnd.setDate(planEnd.getDate() + 30);
+      }
+      if (planEnd.getTime() > end.getTime()) end = planEnd;
+    }
+
+    if (latestAttendance && latestAttendance.getTime() > end.getTime()) {
       end = latestAttendance;
     }
 
-    if (activePlan) {
-      const { sessionsCompleted, totalSessions, endDate, expiryDate } = activePlan;
-      let startLimit = new Date(expiryDate);
-      if (sessionsCompleted >= totalSessions) {
-        const activePlanAttendances = attendances.filter(a => a.studentPlanId === activePlan.id);
-        const lastAttendanceDate = activePlanAttendances.length > 0 
-          ? new Date(activePlanAttendances[activePlanAttendances.length - 1].date) 
-          : null;
-        if (lastAttendanceDate) {
-          startLimit = new Date(lastAttendanceDate);
-        } else {
-          startLimit = new Date(endDate);
-        }
-      }
-      const inactiveEnd = new Date(startLimit);
-      inactiveEnd.setDate(inactiveEnd.getDate() + 30);
-      if (inactiveEnd > end) {
-        end = inactiveEnd;
-      }
-    }
     return end;
-  }, [planEnd, latestAttendance, activePlan, attendances]);
+  }, [plans, latestAttendance, attendances]);
 
   const months = useMemo(() => {
     const list: { year: number; month: number }[] = [];
@@ -93,86 +96,100 @@ export function AttendanceCard({
     return map;
   }, [attendances]);
 
-  const isDateInActivePlanDuration = (year: number, month: number, day: number) => {
-    if (!planStart || !planEnd) return false;
+  // Helper: find which plan (if any) a date falls within
+  const getPlanForDate = (year: number, month: number, day: number): PlanRow | null => {
     const current = new Date(year, month, day).getTime();
-    const start = new Date(planStart.getFullYear(), planStart.getMonth(), planStart.getDate()).getTime();
-    const end = new Date(planEnd.getFullYear(), planEnd.getMonth(), planEnd.getDate()).getTime();
-    return current >= start && current <= end;
-  };
-
-  const isClassDayOfWeek = (year: number, month: number, day: number) => {
-    if (!activePlan || !Array.isArray(activePlan.selectedDays)) return false;
-    const d = new Date(year, month, day);
-    const dayName = d.toLocaleDateString("en-US", { weekday: "long" });
-    return (activePlan.selectedDays as string[]).includes(dayName);
-  };
-
-  const isDateInFreezePeriod = (year: number, month: number, day: number) => {
-    if (!activePlan) return false;
-    const current = new Date(year, month, day).getTime();
-
-    if (activePlan.freezePeriods && activePlan.freezePeriods.length > 0) {
-      for (const fp of activePlan.freezePeriods) {
-        const start = new Date(fp.startDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(fp.endDate);
-        end.setHours(0, 0, 0, 0);
-        if (current >= start.getTime() && current <= end.getTime()) {
-          return true;
-        }
+    for (const plan of plans) {
+      const start = new Date(plan.startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(plan.endDate);
+      end.setHours(23, 59, 59, 999);
+      if (current >= start.getTime() && current <= end.getTime()) {
+        return plan;
       }
     }
+    return null;
+  };
 
-    if (activePlan.freezeStartDate && activePlan.freezeEndDate) {
-      const start = new Date(activePlan.freezeStartDate);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(activePlan.freezeEndDate);
-      end.setHours(0, 0, 0, 0);
-      return current >= start.getTime() && current <= end.getTime();
+  const isClassDayOfWeek = (year: number, month: number, day: number, plan: PlanRow | null): boolean => {
+    if (!plan || !Array.isArray(plan.selectedDays)) return false;
+    const d = new Date(year, month, day);
+    const dayName = d.toLocaleDateString("en-US", { weekday: "long" });
+    return (plan.selectedDays as string[]).includes(dayName);
+  };
+
+  const isDateInFreezePeriod = (year: number, month: number, day: number): boolean => {
+    const current = new Date(year, month, day).getTime();
+    for (const plan of plans) {
+      if (plan.freezePeriods && plan.freezePeriods.length > 0) {
+        for (const fp of plan.freezePeriods) {
+          const start = new Date(fp.startDate);
+          start.setHours(0, 0, 0, 0);
+          const end = new Date(fp.endDate);
+          end.setHours(0, 0, 0, 0);
+          if (current >= start.getTime() && current <= end.getTime()) return true;
+        }
+      }
+      if (plan.freezeStartDate && plan.freezeEndDate) {
+        const start = new Date(plan.freezeStartDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(plan.freezeEndDate);
+        end.setHours(0, 0, 0, 0);
+        if (current >= start.getTime() && current <= end.getTime()) return true;
+      }
     }
-
     return false;
   };
 
-  const isDateInGracePeriod = (year: number, month: number, day: number) => {
-    if (!activePlan || !planEnd || !activePlan.expiryDate) return false;
+  const isDateInGracePeriod = (year: number, month: number, day: number): boolean => {
     const current = new Date(year, month, day).getTime();
-    const graceStartLimit = new Date(planEnd);
-    graceStartLimit.setHours(23, 59, 59, 999);
-    const graceEnd = new Date(activePlan.expiryDate);
-    graceEnd.setHours(23, 59, 59, 999);
-    return current > graceStartLimit.getTime() && current <= graceEnd.getTime();
+    for (const plan of plans) {
+      const planEnd = new Date(plan.endDate);
+      planEnd.setHours(23, 59, 59, 999);
+      const graceEnd = new Date(plan.expiryDate);
+      graceEnd.setHours(23, 59, 59, 999);
+      if (current > planEnd.getTime() && current <= graceEnd.getTime()) return true;
+    }
+    return false;
   };
 
-  const isDateInInactivePeriod = (year: number, month: number, day: number) => {
-    if (!activePlan) return false;
+  const isDateInInactivePeriod = (year: number, month: number, day: number): boolean => {
     const current = new Date(year, month, day).getTime();
-    const { sessionsCompleted, totalSessions, endDate, expiryDate } = activePlan;
-
-    if (sessionsCompleted >= totalSessions) {
-      const activePlanAttendances = attendances.filter(a => a.studentPlanId === activePlan.id);
-      const lastAttendanceDate = activePlanAttendances.length > 0 
-        ? new Date(activePlanAttendances[activePlanAttendances.length - 1].date) 
-        : null;
-      const startLimit = lastAttendanceDate ? new Date(lastAttendanceDate) : new Date(endDate);
-      startLimit.setHours(23, 59, 59, 999);
-      const endLimit = new Date(startLimit);
-      endLimit.setDate(endLimit.getDate() + 30);
-      endLimit.setHours(23, 59, 59, 999);
-      return current > startLimit.getTime() && current <= endLimit.getTime();
-    } else {
-      if (!expiryDate) return false;
-      const startLimit = new Date(expiryDate);
-      startLimit.setHours(23, 59, 59, 999);
-      const endLimit = new Date(startLimit);
-      endLimit.setDate(endLimit.getDate() + 30);
-      endLimit.setHours(23, 59, 59, 999);
-      return current > startLimit.getTime() && current <= endLimit.getTime();
+    for (const plan of plans) {
+      const { sessionsCompleted, totalSessions, endDate, expiryDate } = plan;
+      if (sessionsCompleted >= totalSessions) {
+        const planAttendances = attendances.filter((a) => a.studentPlanId === plan.id);
+        const lastAttendanceDate =
+          planAttendances.length > 0
+            ? new Date(planAttendances[planAttendances.length - 1].date)
+            : null;
+        const startLimit = lastAttendanceDate ? new Date(lastAttendanceDate) : new Date(endDate);
+        startLimit.setHours(23, 59, 59, 999);
+        const endLimit = new Date(startLimit);
+        endLimit.setDate(endLimit.getDate() + 30);
+        endLimit.setHours(23, 59, 59, 999);
+        if (current > startLimit.getTime() && current <= endLimit.getTime()) return true;
+      } else {
+        if (!expiryDate) continue;
+        const startLimit = new Date(expiryDate);
+        startLimit.setHours(23, 59, 59, 999);
+        const endLimit = new Date(startLimit);
+        endLimit.setDate(endLimit.getDate() + 30);
+        endLimit.setHours(23, 59, 59, 999);
+        if (current > startLimit.getTime() && current <= endLimit.getTime()) return true;
+      }
     }
+    return false;
   };
 
   const todayYMD = toYMD(new Date());
+
+  const hasAnyFreezeData = plans.some(
+    (p) =>
+      (p.freezeStartDate && p.freezeEndDate) ||
+      (p.freezePeriods && p.freezePeriods.length > 0)
+  );
+  const hasAnyGraceDays = plans.some((p) => p.graceDays > 0);
 
   return (
     <div className="rounded-3xl bg-white dark:bg-zinc-900 p-5 shadow-sm space-y-4">
@@ -240,9 +257,8 @@ export function AttendanceCard({
                       const isFreeze = isDateInFreezePeriod(year, month, day);
                       const isGrace = isDateInGracePeriod(year, month, day);
                       const isInactive = isDateInInactivePeriod(year, month, day);
-                      const isClassDay =
-                        isDateInActivePlanDuration(year, month, day) &&
-                        isClassDayOfWeek(year, month, day);
+                      const planForDate = getPlanForDate(year, month, day);
+                      const isClassDay = isClassDayOfWeek(year, month, day, planForDate);
                       const isToday = dateKey === todayYMD;
 
                       let cellStyle = "text-zinc-400 dark:text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800/40";
@@ -288,21 +304,19 @@ export function AttendanceCard({
               <span className="inline-block w-2.5 h-2.5 rounded bg-brand-orange-500" />
               <span>Attended</span>
             </div>
-            {activePlan && (
+            {plans.length > 0 && (
               <>
-                {Array.isArray(activePlan.selectedDays) && activePlan.selectedDays.length > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <span className="inline-block w-2.5 h-2.5 rounded bg-brand-orange-200 dark:bg-brand-orange-800" />
-                    <span>Class days</span>
-                  </div>
-                )}
-                {((activePlan.freezeStartDate && activePlan.freezeEndDate) || (activePlan.freezePeriods && activePlan.freezePeriods.length > 0)) && (
+                <div className="flex items-center gap-1.5">
+                  <span className="inline-block w-2.5 h-2.5 rounded bg-brand-orange-200 dark:bg-brand-orange-800" />
+                  <span>Class days</span>
+                </div>
+                {hasAnyFreezeData && (
                   <div className="flex items-center gap-1.5">
                     <span className="inline-block w-2.5 h-2.5 rounded bg-sky-400 dark:bg-sky-600" />
                     <span>Frozen</span>
                   </div>
                 )}
-                {activePlan.graceDays > 0 && (
+                {hasAnyGraceDays && (
                   <div className="flex items-center gap-1.5">
                     <span className="inline-block w-2.5 h-2.5 rounded bg-purple-400 dark:bg-purple-600" />
                     <span>Grace</span>
