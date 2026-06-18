@@ -60,7 +60,19 @@ function getMethodLabel(method: string) {
   }
 }
 
-export function FeeReceipt({ data }: { data: ReceiptData }) {
+export function FeeReceipt({
+  data,
+  academyProfile,
+}: {
+  data: ReceiptData;
+  academyProfile: {
+    email: string | null;
+    phone: string | null;
+    phone2: string | null;
+    address: string | null;
+    website?: string | null;
+  };
+}) {
   const { invoiceNumber, paidAt, amount, method, notes, student, studentPlan } =
     data;
   const discountPercent = studentPlan.discountPercent;
@@ -112,7 +124,7 @@ export function FeeReceipt({ data }: { data: ReceiptData }) {
         printColorAdjust: "exact",
       }}
     >
-      {/* ── Top Row: Logo & Title ── */}
+      {/* ── Top Row: Logo & Title with contact details row below name ── */}
       <div
         style={{
           display: "flex",
@@ -133,17 +145,63 @@ export function FeeReceipt({ data }: { data: ReceiptData }) {
             borderRadius: "50%",
           }}
         />
-        <h1
-          style={{
-            margin: 0,
-            fontSize: "30px",
-            fontWeight: 800,
-            color: "#1e293b",
-            letterSpacing: "-0.5px",
-          }}
-        >
-          The Academy Of Gymnastics
-        </h1>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: "30px",
+              fontWeight: 800,
+              color: "#1e293b",
+              letterSpacing: "-0.5px",
+            }}
+          >
+            The Academy Of Gymnastics
+          </h1>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "14px",
+              fontSize: "11px",
+              color: "#475569",
+              fontWeight: 650,
+            }}
+          >
+            {/* Phone Icon & Details */}
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <svg style={{ width: "14px", height: "14px", color: "#f16d28", flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
+              <span>
+                {academyProfile.phone && academyProfile.phone2
+                  ? `${academyProfile.phone} / ${academyProfile.phone2}`
+                  : academyProfile.phone || academyProfile.phone2 || "7977177463 / 7757965651"}
+              </span>
+            </div>
+
+            {/* Email Icon & Details */}
+            {academyProfile.email && (
+              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                <svg style={{ width: "14px", height: "14px", color: "#f16d28", flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <span className="lowercase">{academyProfile.email}</span>
+              </div>
+            )}
+
+            {/* Website Icon & Details */}
+            {academyProfile.website && (
+              <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                <svg style={{ width: "14px", height: "14px", color: "#f16d28", flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                </svg>
+                <span>{academyProfile.website}</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* ── Second Row: Invoice count, date, location & contact (aligned to right) ── */}
@@ -175,12 +233,17 @@ export function FeeReceipt({ data }: { data: ReceiptData }) {
           <p style={{ margin: "0 0 8px", fontWeight: 600 }}>
             {formatDateReceipt(paidAt)}
           </p>
-          <p style={{ margin: 0 }}>Office No 7, 2nd floor, Nine Hills Plaza</p>
-          <p style={{ margin: 0 }}>opposite Tribeca High street NIBM Annexe</p>
-          <p style={{ margin: "0 0 6px" }}>Pune 411060</p>
-          <p style={{ margin: 0, fontWeight: 600 }}>
-            Contact no: 7977177463 / 7757965651
-          </p>
+          {academyProfile.address ? (
+            academyProfile.address.split("\n").map((line, idx) => (
+              <p key={idx} style={{ margin: 0 }}>{line}</p>
+            ))
+          ) : (
+            <>
+              <p style={{ margin: 0 }}>Office No 7, 2nd floor, Nine Hills Plaza</p>
+              <p style={{ margin: 0 }}>opposite Tribeca High street NIBM Annexe</p>
+              <p style={{ margin: "0 0 6px" }}>Pune 411060</p>
+            </>
+          )}
         </div>
       </div>
 

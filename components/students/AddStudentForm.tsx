@@ -193,7 +193,7 @@ export default function AddStudentForm() {
                     name="level"
                     required
                     className={inputClass}
-                    defaultValue="FOUNDATION_1"
+                    defaultValue="BEGINNER"
                   >
                     {STUDENT_LEVELS.map((lvl) => (
                       <option key={lvl.value} value={lvl.value}>

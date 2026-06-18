@@ -219,3 +219,14 @@ model PaymentRecord {
   @@index([studentId])
   @@index([studentPlanId])
 }
+
+model AcademyProfile {
+  id        String   @id @default(cuid())
+  email     String?
+  phone     String?
+  phone2    String?
+  address   String?
+  website   String?
+  updatedAt DateTime @updatedAt
+}
+

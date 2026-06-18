@@ -245,7 +245,19 @@ function IDCardFront({
 
 // ─── Single ID card (back) ────────────────────────────────────────────────────
 
-function IDCardBack({ qrDataUrl }: { qrDataUrl: string }) {
+function IDCardBack({
+  qrDataUrl,
+  academyProfile,
+}: {
+  qrDataUrl: string;
+  academyProfile: {
+    email: string | null;
+    phone: string | null;
+    phone2: string | null;
+    address: string | null;
+    website?: string | null;
+  };
+}) {
   return (
     <div className="id-card-wrap-print relative overflow-hidden bg-zinc-955 select-none shrink-0">
       {/* Background */}
@@ -275,37 +287,53 @@ function IDCardBack({ qrDataUrl }: { qrDataUrl: string }) {
         </div>
       </div>
 
-      {/* T&C */}
-      <div className="absolute top-[18.2em] left-[1.6em] right-[1.6em] text-left z-10">
-        <h3 className="text-[0.55em] font-black text-[#f05a22] uppercase tracking-wider mb-[0.25em]">
-          Terms &amp; Conditions
-        </h3>
-        <ul className="text-[0.45em] text-zinc-300 list-disc pl-[0.9em] space-y-[0.2em] font-semibold leading-normal tracking-wide">
-          <li>This ID card is the property of The Academy of Gymnastics.</li>
-          <li>It must be worn or displayed at all times while on the premises.</li>
-          <li>This card is non-transferable and must be returned upon request or at the end of association.</li>
-          <li>If found, please return to the nearest TAG center.</li>
-        </ul>
+      {/* Contact & Address info (relocated to dark area) */}
+      <div className="absolute top-[18.0em] left-[1.8em] right-[1.8em] text-left z-10 flex flex-col gap-[0.45em]">
+        {/* Row 1: Address */}
+        <div className="flex items-start gap-[0.4em] w-full">
+          <svg className="w-[0.8em] h-[0.8em] text-[#f05a22] shrink-0 mt-[0.05em]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+          <span className="text-[0.48em] font-extrabold text-white leading-normal">
+            {(academyProfile.address || "Office No 7, 2nd floor, Nine Hills Plaza\nopposite Tribeca High street NIBM Annexe\nPune 411060").replace(/\n/g, " , ")}
+          </span>
+        </div>
+        {/* Row 2: Phone */}
+        <div className="flex items-center gap-[0.4em]">
+          <svg className="w-[0.8em] h-[0.8em] text-[#f05a22] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+          <span className="text-[0.48em] font-extrabold text-white leading-none tracking-wider">
+            {academyProfile.phone && academyProfile.phone2
+              ? `${academyProfile.phone} / ${academyProfile.phone2}`
+              : academyProfile.phone || academyProfile.phone2 || "7977177463 / 7757965651"}
+          </span>
+        </div>
+        {/* Row 3: Email */}
+        {academyProfile.email && (
+          <div className="flex items-center gap-[0.4em]">
+            <svg className="w-[0.8em] h-[0.8em] text-[#f05a22] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <span className="text-[0.48em] font-extrabold text-white leading-none lowercase">
+              {academyProfile.email}
+            </span>
+          </div>
+        )}
+        {/* Row 4: Website */}
+        {academyProfile.website && (
+          <div className="flex items-center gap-[0.4em]">
+            <svg className="w-[0.8em] h-[0.8em] text-[#f05a22] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+            </svg>
+            <span className="text-[0.48em] font-extrabold text-white leading-none lowercase">
+              {academyProfile.website}
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Footer */}
-      <div className="absolute bottom-[0.3em] left-0 right-0 z-10 flex flex-col items-center justify-end px-[1.2em] pb-[0.4em] gap-[0.35em]">
-        {/* Row 1: Address */}
-        <div className="flex items-start gap-[0.3em] w-full justify-center">
-          <svg className="w-[0.7em] h-[0.7em] text-[#f05a22] shrink-0 mt-[0.05em]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-          <span className="text-[0.44em] font-bold text-zinc-800 leading-snug text-center">
-            Office No 7, 2nd floor, Nine Hills Plaza, NIBM Annexe, Pune 411060
-          </span>
-        </div>
-        {/* Horizontal divider */}
-        <div className="w-[60%] h-[0.04em] bg-zinc-300" />
-        {/* Row 2: Phone */}
-        <div className="flex items-center gap-[0.3em] justify-center">
-          <svg className="w-[0.7em] h-[0.7em] text-[#f05a22] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-          <span className="text-[0.44em] font-bold text-zinc-800 leading-snug tracking-wider">
-            7977177463 / 7757965651
-          </span>
-        </div>
+      {/* Bottom Footer Strip: Terms & Conditions relocated as para */}
+      <div className="absolute bottom-[1.4em] left-0 right-0 z-10 flex flex-col items-center justify-center px-[1.6em]">
+        <p className="text-[0.48em] font-extrabold text-zinc-700 leading-[1.3] text-center max-w-[92%]">
+          * Property of The Academy of Gymnastics. Must be displayed on premises. Non-transferable. If found, return to the nearest TAG center.
+        </p>
       </div>
     </div>
   );
@@ -400,9 +428,17 @@ function StudentRow({
 export default function PrintIDsClient({
   students,
   batches,
+  academyProfile,
 }: {
   students: PrintStudent[];
   batches: Batch[];
+  academyProfile: {
+    email: string | null;
+    phone: string | null;
+    phone2: string | null;
+    address: string | null;
+    website?: string | null;
+  };
 }) {
   // ── Filter states ──────────────────────────────────────────────────────────
   const [statusFilters, setStatusFilters] = useState<Set<StudentStatus>>(new Set());
@@ -880,7 +916,7 @@ export default function PrintIDsClient({
                 style={{ fontSize: printBack ? "6.8px" : "12px" }}
               >
                 <IDCardFront student={previewStudent} qrDataUrl={previewQr?.front || ""} />
-                {printBack && <IDCardBack qrDataUrl={previewQr?.back || ""} />}
+                {printBack && <IDCardBack qrDataUrl={previewQr?.back || ""} academyProfile={academyProfile} />}
               </div>
             </div>
           )}
@@ -963,7 +999,7 @@ export default function PrintIDsClient({
             return (
               <div key={student.id} className="card-pair">
                 <IDCardFront student={student} qrDataUrl={qr.front} />
-                {printBack && <IDCardBack qrDataUrl={qr.back} />}
+                {printBack && <IDCardBack qrDataUrl={qr.back} academyProfile={academyProfile} />}
               </div>
             );
           })}

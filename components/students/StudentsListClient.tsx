@@ -525,7 +525,13 @@ function RowMenu({
 
 // ─── Main component ────────────────────────────────────────────────────────────
 
-type SortField = "NONE" | "ROLL" | "NAME" | "AGE" | "LEVEL" | "SESSIONS_LEFT" | "DAYS_LEFT" | "ADMISSION";
+type SortField = "NONE" | "ROLL" | "NAME" | "AGE" | "LEVEL" | "SESSIONS_LEFT" | "DAYS_LEFT" | "ADMISSION" | "FEE";
+
+function getDuesRemaining(s: StudentListItem) {
+  if (!s.activePlan) return 0;
+  const totalPaid = s.activePlan.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
+  return Math.max(0, s.activePlan.fee - totalPaid);
+}
 
 export default function StudentsListClient({
   students,
@@ -740,6 +746,12 @@ export default function StudentsListClient({
         const idxB = STUDENT_LEVELS.findIndex((lvl) => lvl.value === b.level);
         return sortOrder === "asc" ? idxA - idxB : idxB - idxA;
       });
+    } else if (sortField === "FEE") {
+      rows.sort((a, b) => {
+        const duesA = getDuesRemaining(a);
+        const duesB = getDuesRemaining(b);
+        return sortOrder === "asc" ? duesA - duesB : duesB - duesA;
+      });
     }
 
     return rows;
@@ -756,12 +768,12 @@ export default function StudentsListClient({
     }
   };
 
-  const renderHeader = (label: string, field: SortField) => {
+  const renderHeader = (label: string, field: SortField, className?: string) => {
     const isActive = sortField === field;
     return (
       <th
         onClick={() => handleHeaderSort(field)}
-        className="px-4 py-3 cursor-pointer select-none group hover:bg-zinc-100/50 dark:hover:bg-zinc-800/60 transition-colors"
+        className={`px-4 py-3 cursor-pointer select-none group hover:bg-zinc-100/50 dark:hover:bg-zinc-800/60 transition-colors ${className || ""}`}
       >
         <div className="flex items-center gap-1">
           <span>{label}</span>
@@ -880,7 +892,7 @@ export default function StudentsListClient({
         </div>
 
         {/* Mobile View: Filter Trigger Button & Popup */}
-        <div className="relative lg:hidden">
+        <div className="relative md:hidden">
           <button
             type="button"
             onClick={() => setFilterOpen(!filterOpen)}
@@ -983,30 +995,54 @@ export default function StudentsListClient({
                 <label className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
                   Sort By
                 </label>
-                <select
-                  value={sortField}
-                  onChange={(e) => {
-                    setSortField(e.target.value as SortField);
-                    setSortOrder("asc");
-                  }}
-                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
-                >
-                  <option value="NONE">Sort by newest</option>
-                  <option value="NAME">Sort by name</option>
-                  <option value="AGE">Sort by age</option>
-                  <option value="LEVEL">Sort by level</option>
-                  <option value="ADMISSION">Sort by admission</option>
-                  <option value="ROLL">Sort by roll</option>
-                  <option value="SESSIONS_LEFT">Sess. Left</option>
-                  <option value="DAYS_LEFT">Days left</option>
-                </select>
+                <div className="flex gap-2">
+                  <select
+                    value={sortField}
+                    onChange={(e) => {
+                      const newField = e.target.value as SortField;
+                      setSortField(newField);
+                      if (newField === "NONE") {
+                        setSortOrder("asc");
+                      }
+                    }}
+                    className="flex-1 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
+                  >
+                    <option value="NONE">Sort by newest</option>
+                    <option value="NAME">Sort by name</option>
+                    <option value="AGE">Sort by age</option>
+                    <option value="LEVEL">Sort by level</option>
+                    <option value="ADMISSION">Sort by admission</option>
+                    <option value="ROLL">Sort by roll</option>
+                    <option value="SESSIONS_LEFT">Sess. Left</option>
+                    <option value="DAYS_LEFT">Days left</option>
+                    <option value="FEE">Dues remaining</option>
+                  </select>
+                  {sortField !== "NONE" && (
+                    <button
+                      type="button"
+                      onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                      className="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-zinc-750 dark:text-zinc-250 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                      title={sortOrder === "asc" ? "Sort Ascending" : "Sort Descending"}
+                    >
+                      {sortOrder === "asc" ? (
+                        <svg className="w-5 h-5 text-brand-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9M3 12h6M13 12l4-4 4 4M17 8v12" />
+                        </svg>
+                      ) : (
+                        <svg className="w-5 h-5 text-brand-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9M3 12h6M13 12l4 4 4-4M17 16V4" />
+                        </svg>
+                      )}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Desktop View: Inline filters (visible on lg:flex, hidden on mobile/tablet) */}
-        <div className="hidden lg:flex items-center gap-2">
+        {/* Desktop/Tablet View: Inline filters (visible on md:flex, hidden on mobile) */}
+        <div className="hidden md:flex items-center gap-2">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StudentStatus | "ALL")}
@@ -1042,23 +1078,47 @@ export default function StudentsListClient({
             <option value="REGULAR">Grouped</option>
             <option value="ONE_TO_ONE">Personal</option>
           </select>
-          <select
-            value={sortField}
-            onChange={(e) => {
-              setSortField(e.target.value as SortField);
-              setSortOrder("asc");
-            }}
-            className="md:hidden rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
-          >
-            <option value="NONE">Sort by newest</option>
-            <option value="NAME">Sort by name</option>
-            <option value="AGE">Sort by age</option>
-            <option value="LEVEL">Sort by level</option>
-            <option value="ADMISSION">Sort by admission</option>
-            <option value="ROLL">Sort by roll</option>
-            <option value="SESSIONS_LEFT">Sess. Left</option>
-            <option value="DAYS_LEFT">Days left</option>
-          </select>
+          <div className="lg:hidden flex gap-2">
+            <select
+              value={sortField}
+              onChange={(e) => {
+                const newField = e.target.value as SortField;
+                setSortField(newField);
+                if (newField === "NONE") {
+                  setSortOrder("asc");
+                }
+              }}
+              className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20"
+            >
+              <option value="NONE">Sort by newest</option>
+              <option value="NAME">Sort by name</option>
+              <option value="AGE">Sort by age</option>
+              <option value="LEVEL">Sort by level</option>
+              <option value="ADMISSION">Sort by admission</option>
+              <option value="ROLL">Sort by roll</option>
+              <option value="SESSIONS_LEFT">Sess. Left</option>
+              <option value="DAYS_LEFT">Days left</option>
+              <option value="FEE">Dues remaining</option>
+            </select>
+            {sortField !== "NONE" && (
+              <button
+                type="button"
+                onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+                className="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                title={sortOrder === "asc" ? "Sort Ascending" : "Sort Descending"}
+              >
+                {sortOrder === "asc" ? (
+                  <svg className="w-5 h-5 text-brand-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9M3 12h6M13 12l4-4 4 4M17 8v12" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 text-brand-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 4h13M3 8h9M3 12h6M13 12l4 4 4-4M17 16V4" />
+                  </svg>
+                )}
+              </button>
+            )}
+          </div>
           {isFilterApplied && (
             <button
               type="button"
@@ -1210,25 +1270,25 @@ export default function StudentsListClient({
 
       {/* Desktop table */}
       <div className="hidden md:block rounded-lg border-0 bg-white dark:bg-zinc-900 shadow-sm overflow-x-auto transition-colors">
-        <table className="w-full text-left text-sm min-w-[720px]">
+        <table className="w-full text-left text-sm min-w-[980px]">
           <thead>
             <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-800/40 text-xs font-medium text-zinc-500 dark:text-zinc-400">
-              {renderHeader("Student", "ROLL")}
-              {renderHeader("Name", "NAME")}
-              {renderHeader("Age", "AGE")}
-              {renderHeader("Level", "LEVEL")}
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Plan</th>
-              {renderHeader("Sess. Left", "SESSIONS_LEFT")}
-              {renderHeader("Days left", "DAYS_LEFT")}
-              <th className="px-4 py-3">Fee</th>
-              <th className="px-4 py-3 text-right"></th>
+              {renderHeader("Student", "ROLL", "w-24 min-w-[90px] whitespace-nowrap")}
+              {renderHeader("Name", "NAME", "min-w-[180px] whitespace-nowrap")}
+              {renderHeader("Age", "AGE", "w-16 min-w-[60px] whitespace-nowrap")}
+              {renderHeader("Level", "LEVEL", "w-20 min-w-[75px] whitespace-nowrap")}
+              <th className="px-4 py-3 w-24 min-w-[95px] whitespace-nowrap">Status</th>
+              <th className="px-4 py-3 min-w-[125px] whitespace-nowrap">Plan</th>
+              {renderHeader("Sess. Left", "SESSIONS_LEFT", "w-28 min-w-[105px] whitespace-nowrap")}
+              {renderHeader("Days left", "DAYS_LEFT", "w-28 min-w-[105px] whitespace-nowrap")}
+              {renderHeader("Fee", "FEE", "min-w-[110px] whitespace-nowrap")}
+              <th className="px-4 py-3 w-12 text-right whitespace-nowrap"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-10 text-center text-zinc-500 dark:text-zinc-400">
+                <td colSpan={9} className="px-4 py-10 text-center text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
                   No students found.
                 </td>
               </tr>
@@ -1249,19 +1309,19 @@ export default function StudentsListClient({
                       : ""
                   }`}
                 >
-                  <td className={`px-4 py-3 ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
-                    <Link href={`/students/${s.id}`} prefetch={false} className="flex items-center gap-3 hover:opacity-90">
+                  <td className={`px-4 py-3 w-24 min-w-[90px] whitespace-nowrap ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
+                    <Link href={`/students/${s.id}`} prefetch={false} className="flex items-center gap-3 hover:opacity-90 whitespace-nowrap">
                       <StudentAvatar student={s} size={40} />
-                      <span className="font-medium text-zinc-500 dark:text-zinc-400 tabular-nums">
+                      <span className="font-medium text-zinc-500 dark:text-zinc-400 tabular-nums whitespace-nowrap">
                         {s.studentNumber}
                       </span>
                     </Link>
                   </td>
-                  <td className={`px-4 py-3 ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
+                  <td className={`px-4 py-3 min-w-[180px] whitespace-nowrap ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
                     <Link
                       href={`/students/${s.id}`}
                       prefetch={false}
-                      className={`font-medium hover:underline ${
+                      className={`font-medium hover:underline whitespace-nowrap ${
                         s.status === "EXPIRED"
                           ? "text-zinc-400 dark:text-zinc-500"
                           : "text-zinc-900 dark:text-zinc-100"
@@ -1269,35 +1329,35 @@ export default function StudentsListClient({
                     >
                       {s.name}
                     </Link>
-                    <p className={`text-xs ${
+                    <p className={`text-xs whitespace-nowrap ${
                       s.status === "EXPIRED"
                         ? "text-zinc-450 dark:text-zinc-500/80"
                         : "text-zinc-500 dark:text-zinc-400"
                     }`}>{s.contactNumber}</p>
                   </td>
-                  <td className={`px-4 py-3 ${
+                  <td className={`px-4 py-3 w-16 min-w-[60px] whitespace-nowrap ${
                     s.status === "EXPIRED"
                       ? "text-zinc-400/80 dark:text-zinc-500/80 opacity-60"
                       : "text-zinc-600 dark:text-zinc-300"
                   }`}>
                     {formatAge(new Date(s.dateOfBirth))}
                   </td>
-                  <td className={`px-4 py-3 ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${getLevelConfig(s.level).badgeBg} ${getLevelConfig(s.level).badgeText} ring-1 ring-zinc-200/40 dark:ring-zinc-800/40`}>
+                  <td className={`px-4 py-3 w-20 min-w-[75px] whitespace-nowrap ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold ${getLevelConfig(s.level).badgeBg} ${getLevelConfig(s.level).badgeText} ring-1 ring-zinc-200/40 dark:ring-zinc-800/40 whitespace-nowrap`}>
                       {getLevelConfig(s.level).shortLabel}
                     </span>
                   </td>
-                  <td className={`px-4 py-3 ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
+                  <td className={`px-4 py-3 w-24 min-w-[95px] whitespace-nowrap ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
                     <StudentStatusBadge status={s.status} />
                   </td>
-                  <td className="px-4 py-3 text-zinc-650 dark:text-zinc-350">
+                  <td className="px-4 py-3 min-w-[125px] whitespace-nowrap text-zinc-650 dark:text-zinc-350">
                     {s.activePlan ? (
                       (s.status === "INACTIVE" || s.status === "EXPIRED") && canManage ? (
                         <Link
                           href={`/plans?student=${s.id}`}
                           prefetch={false}
                           data-prevent-row-click="true"
-                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 text-xs font-semibold text-white transition-colors shadow-sm"
+                          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 text-xs font-semibold text-white transition-colors shadow-sm whitespace-nowrap"
                         >
                           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -1305,7 +1365,7 @@ export default function StudentsListClient({
                           New plan
                         </Link>
                       ) : (
-                        <span className={s.status === "EXPIRED" ? "opacity-60" : ""}>
+                        <span className={`whitespace-nowrap ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
                           {s.activePlan.planType === "ONE_TO_ONE" ? "personal" : "grouped"}
                         </span>
                       )
@@ -1315,7 +1375,7 @@ export default function StudentsListClient({
                           href={`/plans?student=${s.id}`}
                           prefetch={false}
                           data-prevent-row-click="true"
-                          className="inline-flex items-center gap-1 rounded-lg bg-brand-orange-500 hover:bg-brand-orange-600 px-2.5 py-1 text-xs font-semibold text-white transition-colors shadow-sm"
+                          className="inline-flex items-center gap-1 rounded-lg bg-brand-orange-500 hover:bg-brand-orange-600 px-2.5 py-1 text-xs font-semibold text-white transition-colors shadow-sm whitespace-nowrap"
                         >
                           Assign plan
                         </Link>
@@ -1324,14 +1384,14 @@ export default function StudentsListClient({
                       )
                     )}
                   </td>
-                  <td className={`px-4 py-3 ${
+                  <td className={`px-4 py-3 w-28 min-w-[105px] whitespace-nowrap ${
                     s.status === "EXPIRED"
                       ? "text-zinc-400/80 dark:text-zinc-500/80 opacity-60"
                       : "text-zinc-600 dark:text-zinc-300"
                   }`}>
                     {s.sessionsPending ?? "—"}
                   </td>
-                  <td className={`px-4 py-3 ${
+                  <td className={`px-4 py-3 w-28 min-w-[105px] whitespace-nowrap ${
                     s.status === "EXPIRED"
                       ? "text-zinc-400/80 dark:text-zinc-500/80 opacity-60"
                       : "text-zinc-600 dark:text-zinc-300"
@@ -1340,14 +1400,14 @@ export default function StudentsListClient({
                       ? computeDaysLeft(new Date(s.activePlan.expiryDate))
                       : "—"}
                   </td>
-                  <td className={`px-4 py-3 ${
+                  <td className={`px-4 py-3 min-w-[110px] whitespace-nowrap ${
                     s.status === "EXPIRED"
                       ? "text-zinc-400/80 dark:text-zinc-500/80 opacity-60"
                       : "text-zinc-600 dark:text-zinc-300"
                   }`}>
                     {s.activePlan ? (
-                      <div className="flex flex-col gap-0.5">
-                        <span className={`font-semibold ${
+                      <div className="flex flex-col gap-0.5 whitespace-nowrap">
+                        <span className={`font-semibold whitespace-nowrap ${
                           s.status === "EXPIRED"
                             ? "text-zinc-400 dark:text-zinc-500"
                             : "text-zinc-900 dark:text-zinc-100"
@@ -1358,11 +1418,11 @@ export default function StudentsListClient({
                           const totalPaid = s.activePlan.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
                           const dues = Math.max(0, s.activePlan.fee - totalPaid);
                           return dues > 0 ? (
-                            <span className="text-xs font-semibold text-rose-500 dark:text-rose-400">
+                            <span className="text-xs font-semibold text-rose-500 dark:text-rose-400 whitespace-nowrap">
                               {formatINR(dues)} due
                             </span>
                           ) : (
-                            <span className="text-xs font-medium text-zinc-400 dark:text-zinc-555 flex items-center gap-1">
+                            <span className="text-xs font-medium text-zinc-400 dark:text-zinc-555 flex items-center gap-1 whitespace-nowrap">
                               <svg className="w-3.5 h-3.5 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3.5}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                               </svg>
@@ -1377,8 +1437,8 @@ export default function StudentsListClient({
                   </td>
 
                   {/* ── Actions ── */}
-                  <td className="px-4 py-3" data-prevent-row-click="true">
-                    <div className="flex items-center justify-end gap-1">
+                  <td className="px-4 py-3 w-12 whitespace-nowrap" data-prevent-row-click="true">
+                    <div className="flex items-center justify-end gap-1 whitespace-nowrap">
                       {/* Three-dot dropdown */}
                       <RowMenu student={s} canManage={canManage} batches={batches} onMarkPresent={handleMarkPresent} />
                     </div>

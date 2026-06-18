@@ -3,7 +3,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { createPgPool } from "@/lib/db/pg-pool";
 
 /** Bump when schema models change — invalidates stale dev singletons */
-const PRISMA_CLIENT_VERSION = "2026-freeze-v1";
+const PRISMA_CLIENT_VERSION = "2026-settings-v3";
 
 const globalForPrisma = global as unknown as {
   prisma?: PrismaClient;
@@ -34,6 +34,12 @@ function createPrismaClient() {
   if (typeof (client as PrismaClient & { batch?: unknown }).batch === "undefined") {
     throw new Error(
       "Prisma Client is out of date (missing Batch model). Run: npm run db:generate — then restart the dev server."
+    );
+  }
+
+  if (typeof (client as PrismaClient & { academyProfile?: unknown }).academyProfile === "undefined") {
+    throw new Error(
+      "Prisma Client is out of date (missing AcademyProfile model). Run: npx prisma generate — then restart the dev server."
     );
   }
 

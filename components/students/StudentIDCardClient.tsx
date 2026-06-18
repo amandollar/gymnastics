@@ -14,6 +14,8 @@ import {
   Dumbbell,
   Clock,
   MapPin,
+  Mail,
+  Globe,
 } from "lucide-react";
 import { getStudentAvatarUrl } from "@/lib/utils/avatar";
 
@@ -48,8 +50,16 @@ function formatStudentId(num: number): string {
 
 export default function StudentIDCardClient({
   student,
+  academyProfile,
 }: {
   student: StudentData;
+  academyProfile: {
+    email: string | null;
+    phone: string | null;
+    phone2: string | null;
+    address: string | null;
+    website?: string | null;
+  };
 }) {
   const [frontQr, setFrontQr] = useState<string>("");
   const [backQr, setBackQr] = useState<string>("");
@@ -71,13 +81,6 @@ export default function StudentIDCardClient({
       year: "numeric",
     });
   }, [student.dateOfBirth]);
-
-  const planTypeText = useMemo(() => {
-    if (!student.activePlan?.planType) return "N/A";
-    return student.activePlan.planType === "ONE_TO_ONE"
-      ? "Personal training"
-      : "Group class";
-  }, [student.activePlan]);
 
   const statusText = useMemo(() => {
     return String(student.status).replace(/_/g, " ");
@@ -273,34 +276,6 @@ export default function StudentIDCardClient({
                     {dateOfBirthText}
                   </span>
                 </div>
-
-                {/* Plan */}
-                <div className="flex items-center text-[0.58em] font-bold text-zinc-800">
-                  <span className="w-[6.2em] text-zinc-500 uppercase tracking-wider shrink-0 font-extrabold">
-                    Plan
-                  </span>
-                  <span className="text-zinc-400 mr-[0.5em] font-medium">
-                    :
-                  </span>
-                  <span className="text-zinc-950 font-black truncate">
-                    {planTypeText}
-                  </span>
-                </div>
-
-                {/* Batch */}
-                <div className="flex items-center text-[0.58em] font-bold text-zinc-800">
-                  <span className="w-[6.2em] text-zinc-500 uppercase tracking-wider shrink-0 font-extrabold">
-                    Batch
-                  </span>
-                  <span className="text-zinc-400 mr-[0.5em] font-medium">
-                    :
-                  </span>
-                  <span className="text-zinc-950 font-black truncate">
-                    {student.activePlan?.batch?.name ||
-                      student.activePlan?.batch?.timing ||
-                      "N/A"}
-                  </span>
-                </div>
               </div>
             </div>
 
@@ -384,45 +359,49 @@ export default function StudentIDCardClient({
               </div>
             </div>
 
-            {/* Terms & Conditions */}
-            <div className="absolute top-[18.2em] left-[1.6em] right-[1.6em] text-left z-10">
-              <h3 className="text-[0.55em] font-black text-[#f05a22] uppercase tracking-wider mb-[0.25em]">
-                Terms & Conditions
-              </h3>
-              <ul className="text-[0.45em] text-zinc-300 list-disc pl-[0.9em] space-y-[0.2em] font-semibold leading-normal tracking-wide">
-                <li>
-                  This ID card is the property of The Academy of Gymnastics.
-                </li>
-                <li>
-                  It must be worn or displayed at all times while on the
-                  premises.
-                </li>
-                <li>
-                  This card is non-transferable and must be returned upon
-                  request or at the end of association.
-                </li>
-                <li>If found, please return to the nearest TAG center.</li>
-              </ul>
+            {/* Contact & Address info (relocated to dark area) */}
+            <div className="absolute top-[18.0em] left-[1.8em] right-[1.8em] text-left z-10 flex flex-col gap-[0.45em]">
+              {/* Row 1: Address */}
+              <div className="flex items-start gap-[0.4em] w-full">
+                <MapPin className="w-[0.8em] h-[0.8em] text-[#f05a22] shrink-0 mt-[0.05em]" />
+                <span className="text-[0.48em] font-extrabold text-white leading-normal">
+                  {(academyProfile.address || "Office No 7, 2nd floor, Nine Hills Plaza\nopposite Tribeca High street NIBM Annexe\nPune 411060").replace(/\n/g, " , ")}
+                </span>
+              </div>
+              {/* Row 2: Phone */}
+              <div className="flex items-center gap-[0.4em]">
+                <Phone className="w-[0.8em] h-[0.8em] text-[#f05a22] shrink-0" />
+                <span className="text-[0.48em] font-extrabold text-white leading-none tracking-wider">
+                  {academyProfile.phone && academyProfile.phone2
+                    ? `${academyProfile.phone} / ${academyProfile.phone2}`
+                    : academyProfile.phone || academyProfile.phone2 || "7977177463 / 7757965651"}
+                </span>
+              </div>
+              {/* Row 3: Email */}
+              {academyProfile.email && (
+                <div className="flex items-center gap-[0.4em]">
+                  <Mail className="w-[0.8em] h-[0.8em] text-[#f05a22] shrink-0" />
+                  <span className="text-[0.48em] font-extrabold text-white leading-none lowercase">
+                    {academyProfile.email}
+                  </span>
+                </div>
+              )}
+              {/* Row 4: Website */}
+              {academyProfile.website && (
+                <div className="flex items-center gap-[0.4em]">
+                  <Globe className="w-[0.8em] h-[0.8em] text-[#f05a22] shrink-0" />
+                  <span className="text-[0.48em] font-extrabold text-white leading-none lowercase">
+                    {academyProfile.website}
+                  </span>
+                </div>
+              )}
             </div>
 
-            {/* Bottom Footer Strip */}
-            <div className="absolute bottom-[0.3em] left-0 right-0 z-10 flex flex-col items-center justify-end px-[1.2em] pb-[0.4em] gap-[0.35em]">
-              {/* Row 1: Address */}
-              <div className="flex items-start gap-[0.3em] w-full justify-center">
-                <MapPin className="w-[0.7em] h-[0.7em] text-[#f05a22] shrink-0 mt-[0.05em]" />
-                <span className="text-[0.44em] font-bold text-zinc-800 leading-snug text-center">
-                  Office No 7, 2nd floor, Nine Hills Plaza, NIBM Annexe, Pune 411060
-                </span>
-              </div>
-              {/* Horizontal divider */}
-              <div className="w-[60%] h-[0.04em] bg-zinc-300" />
-              {/* Row 2: Phone */}
-              <div className="flex items-center gap-[0.3em] justify-center">
-                <Phone className="w-[0.7em] h-[0.7em] text-[#f05a22] shrink-0" />
-                <span className="text-[0.44em] font-bold text-zinc-800 leading-snug tracking-wider">
-                  7977177463 / 7757965651
-                </span>
-              </div>
+            {/* Bottom Footer Strip: Terms & Conditions relocated as para */}
+            <div className="absolute bottom-[1.4em] left-0 right-0 z-10 flex flex-col items-center justify-center px-[1.6em]">
+              <p className="text-[0.48em] font-extrabold text-zinc-700 leading-[1.3] text-center max-w-[92%]">
+                * Property of The Academy of Gymnastics. Must be displayed on premises. Non-transferable. If found, return to the nearest TAG center.
+              </p>
             </div>
           </div>
         </div>

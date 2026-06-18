@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth-session";
 import { getPaymentById } from "@/lib/services/payments";
+import { getAcademyProfile } from "@/lib/services/academy";
 import { FeeReceipt } from "@/components/students/studentProfile/FeeReceipt";
 
 export const metadata = {
@@ -16,7 +17,10 @@ export default async function FeeReceiptPage({
   if (!session) redirect("/login");
 
   const { paymentId } = await params;
-  const payment = await getPaymentById(paymentId);
+  const [payment, academyProfile] = await Promise.all([
+    getPaymentById(paymentId),
+    getAcademyProfile(),
+  ]);
 
   if (!payment) notFound();
 
@@ -38,7 +42,7 @@ export default async function FeeReceiptPage({
           body { margin: 0; }
         }
       `}</style>
-      <FeeReceipt data={payment} />
+      <FeeReceipt data={payment} academyProfile={academyProfile} />
     </>
   );
 }

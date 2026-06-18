@@ -2,6 +2,7 @@ import { redirect, notFound } from "next/navigation";
 import { getSession, getSessionUser } from "@/lib/auth-session";
 import StudentDetailClient from "@/components/students/studentProfile";
 import { getStudentById } from "@/lib/services/cached";
+import { getAcademyProfile } from "@/lib/services/academy";
 
 export default async function StudentDetailPage({
   params,
@@ -11,9 +12,10 @@ export default async function StudentDetailPage({
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const [{ id }, user] = await Promise.all([
+  const [{ id }, user, academyProfile] = await Promise.all([
     params,
     getSessionUser(),
+    getAcademyProfile(),
   ]);
 
   const canManage = user?.role === "ADMIN" || user?.role === "MANAGER";
@@ -26,6 +28,7 @@ export default async function StudentDetailPage({
       <StudentDetailClient
         canManage={canManage}
         student={JSON.parse(JSON.stringify(student))}
+        academyProfile={academyProfile}
       />
     </div>
   );

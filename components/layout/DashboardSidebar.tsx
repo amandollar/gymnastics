@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import DashboardNav from "./DashboardNav";
 import ThemeSelector from "./ThemeSelector";
-import { PanelLeftClose, PanelLeftOpen, LogOut } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 export default function DashboardSidebar({
   isAdmin,
@@ -124,17 +124,6 @@ export default function DashboardSidebar({
             </div>
           )}
         </div>
-        {!isCollapsed && (
-          <form action={signOutAction} className="shrink-0">
-            <button
-              type="submit"
-              className="p-1.5 rounded-lg text-zinc-400 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-              title="Sign out"
-            >
-              <LogOut className="h-4.5 w-4.5" strokeWidth={2} />
-            </button>
-          </form>
-        )}
       </div>
     </aside>
   );

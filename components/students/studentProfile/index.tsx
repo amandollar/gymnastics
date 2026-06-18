@@ -17,7 +17,7 @@ import { AttendanceCard } from "./AttendanceCard";
 import { PlanCard } from "./PlanCard";
 import { FreezePlanPopup } from "./FreezePlanPopup";
 import { PlanHistory } from "./PlanHistory";
-import { StudentLevel } from "@prisma/client";
+import { StudentLevel, AcademyProfile } from "@prisma/client";
 import { LevelProgress } from "./LevelProgress";
 import { PaymentHistory } from "./PaymentHistory";
 import { getPaymentByIdAction } from "@/lib/actions/payments";
@@ -50,9 +50,11 @@ type StudentData = {
 export default function StudentDetailClient({
   student,
   canManage,
+  academyProfile,
 }: {
   student: StudentData;
   canManage: boolean;
+  academyProfile: AcademyProfile;
 }) {
   const [showFreeze, setShowFreeze] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -479,22 +481,14 @@ export default function StudentDetailClient({
                 activePlan={student.activePlan}
                 allPlans={student.plans}
               />
-              <PlanCard
-                plan={student.activePlan}
-                sessionsPending={student.sessionsPending}
-                status={student.status}
-                student={student}
-                canManage={canManage}
-                setShowFreeze={setShowFreeze}
-              />
               {/* CTA when plan has ended — let managers assign a fresh one */}
               {canManage &&
                 (student.status === "INACTIVE" || student.status === "EXPIRED") && (
-                  <div className="rounded-3xl bg-white dark:bg-zinc-900 shadow-sm px-6 py-5 flex flex-col sm:flex-row items-center gap-4 justify-between">
+                  <div className="rounded-3xl bg-rose-50/60 dark:bg-rose-950/25 border border-rose-200/80 dark:border-rose-900/30 shadow-sm px-6 py-5 flex flex-col sm:flex-row items-center gap-4 justify-between transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-brand-orange-50 dark:bg-brand-orange-950/40">
+                      <div className="flex shrink-0 items-center justify-center text-rose-600 dark:text-rose-400">
                         <svg
-                          className="w-4 h-4 text-brand-orange-500"
+                          className="w-6 h-6"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -503,15 +497,15 @@ export default function StudentDetailClient({
                           <path
                             strokeLinecap="round"
                             strokeLinejoin="round"
-                            d="M12 4.5v15m7.5-7.5h-15"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                           />
                         </svg>
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                        <p className="text-sm font-semibold text-rose-950 dark:text-rose-200">
                           Plan has ended
                         </p>
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                        <p className="text-xs text-rose-650 dark:text-rose-400/80 mt-0.5">
                           Assign a new plan to re-enroll this student.
                         </p>
                       </div>
@@ -537,6 +531,14 @@ export default function StudentDetailClient({
                     </Link>
                   </div>
                 )}
+              <PlanCard
+                plan={student.activePlan}
+                sessionsPending={student.sessionsPending}
+                status={student.status}
+                student={student}
+                canManage={canManage}
+                setShowFreeze={setShowFreeze}
+              />
             </>
           )}
 
@@ -606,7 +608,7 @@ export default function StudentDetailClient({
               display: "none",
             }}
           >
-            <FeeReceipt data={printData} />
+            <FeeReceipt data={printData} academyProfile={academyProfile} />
           </div>
         </>
       )}

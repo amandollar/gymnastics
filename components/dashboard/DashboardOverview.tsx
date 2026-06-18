@@ -29,6 +29,7 @@ import {
 import type { DashboardData } from "@/lib/services/dashboard";
 import { useRouter } from "next/navigation";
 import { FeeReceipt } from "@/components/students/studentProfile/FeeReceipt";
+import type { AcademyProfile } from "@prisma/client";
 import {
   getPaymentByIdAction,
   getRevenueChartDataAction,
@@ -82,11 +83,13 @@ const chartTooltipStyle = {
 interface DashboardOverviewProps {
   firstName: string;
   dashboardData: DashboardData;
+  academyProfile: AcademyProfile;
 }
 
 export default function DashboardOverview({
   firstName,
   dashboardData,
+  academyProfile,
 }: DashboardOverviewProps) {
   const isMobile = useMediaQuery("(max-width: 639px)");
   const chartH = isMobile ? CHART_H_SM : CHART_H;
@@ -1404,7 +1407,7 @@ export default function DashboardOverview({
               display: "none",
             }}
           >
-            <FeeReceipt data={printData} />
+            <FeeReceipt data={printData} academyProfile={academyProfile} />
           </div>
         </>
       )}
