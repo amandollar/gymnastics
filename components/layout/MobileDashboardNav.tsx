@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import DashboardNav, { HomeIcon, SettingsIcon, UsersIcon, EnquiryIcon, GymIcon } from "./DashboardNav";
-import { Menu, X, CheckCircle } from "lucide-react";
+import DashboardNav, { HomeIcon, SettingsIcon, UsersIcon, EnquiryIcon, GymIcon, DocIcon, CheckIcon } from "./DashboardNav";
+import { Menu, X } from "lucide-react";
 
 export function MobileMenuButton({ onOpen }: { onOpen: () => void }) {
   return (
@@ -80,7 +80,7 @@ export function MobileNavDrawer({
 
 export function MobileBottomNav({
   isAdmin,
-  signOutAction,
+  signOutAction: _signOutAction,
 }: {
   isAdmin: boolean;
   signOutAction: () => Promise<void>;
@@ -93,71 +93,78 @@ export function MobileBottomNav({
       aria-label="Main navigation"
     >
       <div
-        className={`grid h-14 ${
-          isAdmin ? "grid-cols-6" : "grid-cols-5"
-        }`}
+        className="flex h-14 items-center overflow-x-auto scrollbar-none px-2 gap-1"
       >
         <Link
           href="/dashboard"
-          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
+          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
             pathname === "/dashboard" ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
           }`}
         >
-          <HomeIcon />
-          Home
-        </Link>
-        <Link
-          href="/students"
-          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
-            pathname.startsWith("/students")
-              ? "text-brand-orange-500"
-              : "text-zinc-500 dark:text-zinc-400"
-          }`}
-        >
-          <UsersIcon />
-          Students
-        </Link>
-        <Link
-          href="/attendance"
-          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
-            pathname.startsWith("/attendance")
-              ? "text-brand-orange-500"
-              : "text-zinc-500 dark:text-zinc-400"
-          }`}
-        >
-          <CheckCircle className="h-4.5 w-4.5" strokeWidth={2} />
-          Attendance
-        </Link>
-        <Link
-          href="/coaches"
-          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
-            pathname.startsWith("/coaches")
-              ? "text-brand-orange-500"
-              : "text-zinc-500 dark:text-zinc-400"
-          }`}
-        >
-          <GymIcon />
-          Coaches
+          <HomeIcon className="h-4.5 w-4.5 shrink-0" />
+          Dashboard
         </Link>
         <Link
           href="/enquiries"
-          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
+          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
             pathname.startsWith("/enquiries")
               ? "text-brand-orange-500"
               : "text-zinc-500 dark:text-zinc-400"
           }`}
         >
-          <EnquiryIcon />
+          <EnquiryIcon className="h-4.5 w-4.5 shrink-0" />
           Enquiries
+        </Link>
+        <Link
+          href="/students"
+          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
+            pathname.startsWith("/students")
+              ? "text-brand-orange-500"
+              : "text-zinc-500 dark:text-zinc-400"
+          }`}
+        >
+          <UsersIcon className="h-4.5 w-4.5 shrink-0" />
+          Students
+        </Link>
+        <Link
+          href="/coaches"
+          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
+            pathname.startsWith("/coaches")
+              ? "text-brand-orange-500"
+              : "text-zinc-500 dark:text-zinc-400"
+          }`}
+        >
+          <GymIcon className="h-4.5 w-4.5 shrink-0" />
+          Coaches
+        </Link>
+        <Link
+          href="/attendance"
+          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
+            pathname.startsWith("/attendance")
+              ? "text-brand-orange-500"
+              : "text-zinc-500 dark:text-zinc-400"
+          }`}
+        >
+          <CheckIcon className="h-4.5 w-4.5 shrink-0" />
+          Attendance
+        </Link>
+        <Link
+          href="/plans"
+          className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
+            pathname === "/plans" ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
+          }`}
+        >
+          <DocIcon className="h-4.5 w-4.5 shrink-0" />
+          Plans
         </Link>
         {isAdmin && (
           <Link
             href="/settings"
-            className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium ${
+            className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
               pathname === "/settings" ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
             }`}
           >
-            <SettingsIcon />
+            <SettingsIcon className="h-4.5 w-4.5 shrink-0" />
             Settings
           </Link>
         )}

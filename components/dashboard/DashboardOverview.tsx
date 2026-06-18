@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -25,6 +26,9 @@ import {
   Tooltip,
   XAxis,
   YAxis,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
 import type { DashboardData } from "@/lib/services/dashboard";
 import { useRouter } from "next/navigation";
@@ -37,6 +41,7 @@ import {
 import AttendanceModal from "./AttendanceModal";
 import CollectFeeModal from "./CollectFeeModal";
 import StudentAvatar from "@/components/students/StudentAvatar";
+import AddEnquiryModal from "@/components/enquiries/AddEnquiryModal";
 
 const CHART_H = 260;
 const CHART_H_SM = 224;
@@ -84,12 +89,14 @@ interface DashboardOverviewProps {
   firstName: string;
   dashboardData: DashboardData;
   academyProfile: AcademyProfile;
+  canManage?: boolean;
 }
 
 export default function DashboardOverview({
   firstName,
   dashboardData,
   academyProfile,
+  canManage = false,
 }: DashboardOverviewProps) {
   const isMobile = useMediaQuery("(max-width: 639px)");
   const chartH = isMobile ? CHART_H_SM : CHART_H;
@@ -105,6 +112,20 @@ export default function DashboardOverview({
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  const [isDark, setIsDark] = useState(false);
+  useEffect(() => {
+    setIsDark(document.documentElement.classList.contains("dark"));
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === "class") {
+          setIsDark(document.documentElement.classList.contains("dark"));
+        }
+      });
+    });
+    observer.observe(document.documentElement, { attributes: true });
+    return () => observer.disconnect();
   }, []);
 
   // View States for daily/weekly vs monthly toggles
@@ -257,6 +278,7 @@ export default function DashboardOverview({
   // Modals visibility state
   const [qrOpen, setQrOpen] = useState(false);
   const [feeOpen, setFeeOpen] = useState(false);
+  const [addEnquiryOpen, setAddEnquiryOpen] = useState(false);
 
   const router = useRouter();
 
@@ -270,7 +292,7 @@ export default function DashboardOverview({
   } | null>(null);
 
   // Printing state
-  const [printData, setPrintData] = useState<any | null>(null);
+  const [printData, setPrintData] = useState<Awaited<ReturnType<typeof getPaymentByIdAction>> | null>(null);
 
   const handlePrint = async (paymentId: string) => {
     try {
@@ -356,9 +378,7 @@ export default function DashboardOverview({
   const graceCount = dashboardData.kpis.gracePeriodStudents;
   const freezeCount = dashboardData.kpis.freezeStudents;
   const inactiveCount = dashboardData.kpis.inactiveStudents;
-  const totalStudents = activeCount + graceCount + freezeCount + inactiveCount;
-
-  const activePercent =
+  const totalStudents = activeCount + graceCount + freezeCount + inactiveCount;  const activePercent =
     totalStudents > 0 ? Math.round((activeCount / totalStudents) * 100) : 0;
   const gracePercent =
     totalStudents > 0 ? Math.round((graceCount / totalStudents) * 100) : 0;
@@ -366,6 +386,20 @@ export default function DashboardOverview({
     totalStudents > 0 ? Math.round((freezeCount / totalStudents) * 100) : 0;
   const inactivePercent =
     totalStudents > 0 ? Math.round((inactiveCount / totalStudents) * 100) : 0;
+
+  const activeColor = isDark ? "#ffffff" : "#202023";
+  const graceColor = isDark ? "#a855f7" : "#9333ea";
+  const freezeColor = isDark ? "#38bdf8" : "#0ea5e9";
+  const inactiveColor = "#f16d28";
+
+  const pieData = useMemo(() => {
+    return [
+      { name: "Active", value: activeCount, color: activeColor },
+      { name: "Grace", value: graceCount, color: graceColor },
+      { name: "Freeze", value: freezeCount, color: freezeColor },
+      { name: "Inactive", value: inactiveCount, color: inactiveColor },
+    ].filter((d) => d.value > 0);
+  }, [activeCount, graceCount, freezeCount, inactiveCount, activeColor, graceColor, freezeColor, inactiveColor]);
 
   return (
     <div className="space-y-2.5 min-w-0 w-full pb-6">
@@ -384,7 +418,7 @@ export default function DashboardOverview({
         {/* Header Row 2: Pill Bar and Stats */}
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between pt-3 pb-2 sm:pt-6 sm:pb-3">
           {/* Left Part: Premium standalone pills side-by-side with extra gap, scaled proportionally */}
-          <div className="flex flex-col gap-2.5 w-full max-w-sm lg:max-w-[220px] xl:max-w-sm pt-2 shrink-0">
+          <div className="flex xs-hide flex-col gap-2.5 w-full max-w-sm lg:max-w-[220px] xl:max-w-sm pt-2 shrink-0">
             {totalStudents === 0 ? (
               <div className="h-[30px] sm:h-10 w-full bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 flex items-center justify-center text-[10px] sm:text-xs font-semibold rounded-full">
                 No active students
@@ -417,7 +451,7 @@ export default function DashboardOverview({
                     {gracePercent >= 10 ? `${gracePercent}%` : ""}
                     {/* Premium Custom Tooltip */}
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 hidden group-hover:block bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100 text-[11px] p-2.5 rounded-xl shadow-xl border border-zinc-200 dark:border-zinc-800 w-56 text-center z-50 pointer-events-none normal-case leading-normal font-normal">
-                      <span className="font-bold block mb-1 text-purple-650 dark:text-purple-400">
+                      <span className="font-bold block mb-1 text-purple-655 dark:text-purple-400">
                         Grace
                       </span>
                       Plan duration has ended, but student is provided extra
@@ -521,11 +555,59 @@ export default function DashboardOverview({
             </div>
           </div>
 
+          {/* Mobile Pie Chart view (xs-only-flex) */}
+          {totalStudents === 0 ? (
+            <div className="hidden xs-only-flex h-[30px] sm:h-10 w-full bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 items-center justify-center text-[10px] sm:text-xs font-semibold rounded-full">
+              No active students
+            </div>
+          ) : (
+            <div className="hidden xs-only-flex items-center justify-center gap-8 py-2 w-full">
+              {/* Pie Chart */}
+              <div className="w-[100px] h-[100px] shrink-0 flex items-center justify-center">
+                <PieChart width={100} height={100}>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={24}
+                    outerRadius={46}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </div>
+
+              {/* Labels list on the right (Single column) */}
+              <div className="flex flex-col justify-center gap-2 text-[9px] font-bold uppercase tracking-wider text-zinc-450 dark:text-zinc-500">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: activeColor }} />
+                  <span>active ({activeCount})</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: graceColor }} />
+                  <span>grace ({graceCount})</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: freezeColor }} />
+                  <span>freeze ({freezeCount})</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: inactiveColor }} />
+                  <span>inactive ({inactiveCount})</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Right Part: Three Primary Stats */}
-          <div className="flex flex-wrap items-center gap-x-6 lg:gap-x-4 xl:gap-x-6 gap-y-2 justify-start lg:justify-end shrink-0">
+          <div className="grid grid-cols-3 gap-1 sm:flex sm:flex-wrap sm:items-center sm:gap-x-6 lg:gap-x-4 xl:gap-x-6 sm:justify-end shrink-0 w-full sm:w-auto">
             {/* Stat 1: Admissions This Month */}
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
+            <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
+              <div className="flex items-center gap-1.5 sm:justify-start">
                 <span className="hidden sm:inline-flex items-center justify-center p-1 rounded-md bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border border-zinc-200/40 dark:border-zinc-800/40">
                   <UserPlus className="h-4 w-4" />
                 </span>
@@ -533,14 +615,14 @@ export default function DashboardOverview({
                   {dashboardData.kpis.admissionsThisMonth}
                 </span>
               </div>
-              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-left sm:pl-7 mt-0.5">
+              <p className="text-[9px] sm:text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-center sm:text-left sm:pl-7 mt-0.5">
                 Joined This Mo.
               </p>
             </div>
 
             {/* Stat 2: Today's Attendance (Counts, no percentage) */}
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
+            <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
+              <div className="flex items-center gap-1.5 sm:justify-start">
                 <span className="hidden sm:inline-flex items-center justify-center p-1 rounded-md bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border border-zinc-200/40 dark:border-zinc-800/40">
                   <UserCheck className="h-4 w-4" />
                 </span>
@@ -548,14 +630,14 @@ export default function DashboardOverview({
                   {dashboardData.kpis.todayAttendanceCount}
                 </span>
               </div>
-              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-left sm:pl-7 mt-0.5">
+              <p className="text-[9px] sm:text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-center sm:text-left sm:pl-7 mt-0.5">
                 Attended Today
               </p>
             </div>
 
             {/* Stat 3: Monthly Revenue */}
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
+            <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
+              <div className="flex items-center gap-1.5 sm:justify-start">
                 <span className="hidden sm:inline-flex items-center justify-center p-1 rounded-md bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border border-zinc-200/40 dark:border-zinc-800/40">
                   <IndianRupee className="h-4 w-4" />
                 </span>
@@ -563,7 +645,7 @@ export default function DashboardOverview({
                   {formatShortRevenue(dashboardData.kpis.monthlyRevenue)}
                 </span>
               </div>
-              <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-left sm:pl-7 mt-0.5">
+              <p className="text-[9px] sm:text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-center sm:text-left sm:pl-7 mt-0.5">
                 Revenue This Mo.
               </p>
             </div>
@@ -597,25 +679,48 @@ export default function DashboardOverview({
         </button>
 
         {/* Action 2: New Enquiry (Sky Blue) */}
-        <Link
-          href="/enquiries/new"
-          className="group flex flex-col xl:flex-row items-center gap-2.5 xl:gap-4.5 py-3 px-3 xl:py-4 xl:px-4.5 rounded-3xl border-0 bg-sky-200/90 dark:bg-sky-950/60 hover:bg-sky-300/80 dark:hover:bg-sky-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center xl:text-left w-full"
-        >
-          <img
-            src="/enquiry.webp"
-            alt="New Enquiry"
-            className="h-16 w-16 xl:h-18 xl:w-18 object-cover rounded-xl shrink-0 shadow-3xs"
-          />
-          <div className="flex flex-col justify-center min-w-0">
-            <span className="font-bold text-xs xl:text-[14px] text-sky-955 dark:text-sky-100 leading-tight">
-              New Enquiry
-            </span>
-          </div>
-          <ChevronRight
-            className="hidden xl:block h-5 w-5 ml-auto text-sky-955 dark:text-sky-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0"
-            strokeWidth={2.5}
-          />
-        </Link>
+        {canManage ? (
+          <button
+            onClick={() => setAddEnquiryOpen(true)}
+            className="group flex flex-col xl:flex-row items-center gap-2.5 xl:gap-4.5 py-3 px-3 xl:py-4 xl:px-4.5 rounded-3xl border-0 bg-sky-200/90 dark:bg-sky-950/60 hover:bg-sky-300/80 dark:hover:bg-sky-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center xl:text-left w-full"
+          >
+            <img
+              src="/enquiry.webp"
+              alt="New Enquiry"
+              className="h-16 w-16 xl:h-18 xl:w-18 object-cover rounded-xl shrink-0 shadow-3xs"
+            />
+            <div className="flex flex-col justify-center min-w-0">
+              <span className="font-bold text-xs xl:text-[14px] text-sky-955 dark:text-sky-100 leading-tight">
+                New Enquiry
+              </span>
+            </div>
+            <ChevronRight
+              className="hidden xl:block h-5 w-5 ml-auto text-sky-955 dark:text-sky-200 opacity-60 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all duration-200 shrink-0"
+              strokeWidth={2.5}
+            />
+          </button>
+        ) : (
+          <button
+            disabled
+            title="Only administrators and managers can add enquiries"
+            className="flex flex-col xl:flex-row items-center gap-2.5 xl:gap-4.5 py-3 px-3 xl:py-4 xl:px-4.5 rounded-3xl border-0 bg-zinc-100 dark:bg-zinc-900/50 text-zinc-400 dark:text-zinc-650 opacity-40 cursor-not-allowed text-center xl:text-left w-full"
+          >
+            <img
+              src="/enquiry.webp"
+              alt="New Enquiry"
+              className="h-16 w-16 xl:h-18 xl:w-18 object-cover rounded-xl shrink-0 shadow-3xs grayscale"
+            />
+            <div className="flex flex-col justify-center min-w-0">
+              <span className="font-bold text-xs xl:text-[14px] leading-tight">
+                New Enquiry
+              </span>
+            </div>
+            <ChevronRight
+              className="hidden xl:block h-5 w-5 ml-auto opacity-20 shrink-0"
+              strokeWidth={2.5}
+            />
+          </button>
+        )}
 
         {/* Action 3: New Admission (Emerald Green) */}
         <Link
@@ -1300,6 +1405,14 @@ export default function DashboardOverview({
           isOpen={feeOpen}
           onClose={() => setFeeOpen(false)}
           handlePrint={handlePrint}
+        />
+      )}
+
+      {/* Add Enquiry Popup Modal */}
+      {addEnquiryOpen && (
+        <AddEnquiryModal
+          isOpen={addEnquiryOpen}
+          onClose={() => setAddEnquiryOpen(false)}
         />
       )}
 

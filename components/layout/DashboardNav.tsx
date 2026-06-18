@@ -1,8 +1,7 @@
 "use client";
 
-import type { ReactNode } from "react";
 import Link from "next/link";
-import { Home, Users, FileText, CheckCircle, IndianRupee, Settings, Dumbbell, ClipboardList } from "lucide-react";
+import { Home, Users, FileText, CheckCircle, Settings, Dumbbell, ClipboardList } from "lucide-react";
 
 export const navLinkClass = (active: boolean, isCollapsed = false) =>
   `flex items-center ${isCollapsed ? "justify-center" : "gap-2.5"} rounded-lg ${isCollapsed ? "px-2" : "px-3"} ${
@@ -12,9 +11,6 @@ export const navLinkClass = (active: boolean, isCollapsed = false) =>
       ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
       : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:text-zinc-900 dark:hover:text-zinc-50"
   }`;
-
-const disabledClass = (isCollapsed = false) =>
-  `flex items-center ${isCollapsed ? "justify-center" : "justify-between"} rounded-lg ${isCollapsed ? "px-2 py-3.5" : "px-3 py-2.5"} text-sm font-medium text-zinc-400 dark:text-zinc-600 cursor-not-allowed`;
 
 export default function DashboardNav({
   pathname,
@@ -29,7 +25,6 @@ export default function DashboardNav({
 }) {
   const close = onNavigate ?? (() => {});
   const iconClass = `shrink-0 transition-all ${isCollapsed ? "h-5 w-5" : "h-4 w-4"}`;
-  const disabledIconClass = `shrink-0 opacity-60 transition-all ${isCollapsed ? "h-5 w-5" : "h-4 w-4"}`;
 
   return (
     <nav className={`transition-all ${isCollapsed ? "space-y-2 p-1.5" : "space-y-0.5 p-3"}`}>
@@ -43,6 +38,15 @@ export default function DashboardNav({
         {!isCollapsed && "Dashboard"}
       </Link>
       <Link
+        href="/enquiries"
+        onClick={close}
+        className={navLinkClass(pathname.startsWith("/enquiries"), isCollapsed)}
+        title={isCollapsed ? "Enquiries" : undefined}
+      >
+        <EnquiryIcon className={iconClass} />
+        {!isCollapsed && "Enquiries"}
+      </Link>
+      <Link
         href="/students"
         onClick={close}
         className={navLinkClass(pathname.startsWith("/students"), isCollapsed)}
@@ -50,15 +54,6 @@ export default function DashboardNav({
       >
         <UsersIcon className={iconClass} />
         {!isCollapsed && "Students"}
-      </Link>
-      <Link
-        href="/plans"
-        onClick={close}
-        className={navLinkClass(pathname === "/plans", isCollapsed)}
-        title={isCollapsed ? "Plans" : undefined}
-      >
-        <DocIcon className={iconClass} />
-        {!isCollapsed && "Plans"}
       </Link>
       <Link
         href="/coaches"
@@ -78,15 +73,14 @@ export default function DashboardNav({
         <CheckIcon className={iconClass} />
         {!isCollapsed && "Attendance"}
       </Link>
-      <DisabledItem icon={<CurrencyIcon className={disabledIconClass} />} label="Fees" isCollapsed={isCollapsed} />
       <Link
-        href="/enquiries"
+        href="/plans"
         onClick={close}
-        className={navLinkClass(pathname.startsWith("/enquiries"), isCollapsed)}
-        title={isCollapsed ? "Enquiries" : undefined}
+        className={navLinkClass(pathname === "/plans", isCollapsed)}
+        title={isCollapsed ? "Plans" : undefined}
       >
-        <EnquiryIcon className={iconClass} />
-        {!isCollapsed && "Enquiries"}
+        <DocIcon className={iconClass} />
+        {!isCollapsed && "Plans"}
       </Link>
       {isAdmin && (
         <Link
@@ -103,33 +97,6 @@ export default function DashboardNav({
   );
 }
 
-function DisabledItem({
-  icon,
-  label,
-  isCollapsed = false,
-}: {
-  icon: ReactNode;
-  label: string;
-  isCollapsed?: boolean;
-}) {
-  return (
-    <div
-      className={disabledClass(isCollapsed)}
-      title={isCollapsed ? `${label} (Soon)` : undefined}
-    >
-      <span className="flex items-center gap-2.5">
-        {icon}
-        {!isCollapsed && label}
-      </span>
-      {!isCollapsed && (
-        <span className="rounded-md bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
-          Soon
-        </span>
-      )}
-    </div>
-  );
-}
-
 function HomeIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {}) {
   return <Home className={className} strokeWidth={2} />;
 }
@@ -142,16 +109,12 @@ export function GymIcon({ className = "h-4 w-4 shrink-0" }: { className?: string
   return <Dumbbell className={className} strokeWidth={2} />;
 }
 
-function DocIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {}) {
+export function DocIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {}) {
   return <FileText className={className} strokeWidth={2} />;
 }
 
-function CheckIcon({ className = "h-4 w-4 shrink-0 opacity-60" }: { className?: string } = {}) {
+export function CheckIcon({ className = "h-4 w-4 shrink-0 opacity-60" }: { className?: string } = {}) {
   return <CheckCircle className={className} strokeWidth={2} />;
-}
-
-function CurrencyIcon({ className = "h-4 w-4 shrink-0 opacity-60" }: { className?: string } = {}) {
-  return <IndianRupee className={className} strokeWidth={2} />;
 }
 
 function SettingsIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {}) {
