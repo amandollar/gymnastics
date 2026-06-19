@@ -13,7 +13,10 @@ export function PaymentHistory({
   if (!payments || payments.length === 0) return null;
 
   return (
-    <div className="rounded-3xl bg-white dark:bg-zinc-900 shadow-sm overflow-hidden">
+    <div
+      className="bg-white dark:bg-zinc-900 shadow-sm border border-zinc-200/60 dark:border-zinc-800/80 overflow-hidden"
+      style={{ borderRadius: "1.5rem" }}
+    >
       <h2 className="text-[11px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider p-5 pb-3">
         Payment History
       </h2>

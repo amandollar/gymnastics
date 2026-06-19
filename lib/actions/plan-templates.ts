@@ -39,7 +39,7 @@ export async function createPlanTemplateAction(
       description: parsed.data.description,
     });
 
-    revalidatePath("/plans");
+    revalidatePath("/admin/plans");
     updateTag("plan-templates");
     return { success: true, message: "Plan template created" };
   } catch (e) {
@@ -54,7 +54,7 @@ export async function deletePlanTemplateAction(id: string) {
   try {
     await assertAdmin();
     await deletePlanTemplate(id);
-    revalidatePath("/plans");
+    revalidatePath("/admin/plans");
     updateTag("plan-templates");
     return { success: true };
   } catch (e) {

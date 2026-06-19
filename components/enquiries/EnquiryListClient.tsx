@@ -758,7 +758,7 @@ export default function EnquiryListClient({
               <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-zinc-100 dark:border-zinc-800 pt-3">
                 {canManage && e.status !== "CONVERTED" && (
                   <Link
-                    href={`/students/new?childName=${encodeURIComponent(
+                    href={`/admin/students/new?childName=${encodeURIComponent(
                       e.childName,
                     )}&parentName=${encodeURIComponent(
                       e.parentName,
@@ -896,7 +896,7 @@ export default function EnquiryListClient({
                       {/* Convert Quick button */}
                       {canManage && e.status !== "CONVERTED" && (
                         <Link
-                          href={`/students/new?childName=${encodeURIComponent(
+                          href={`/admin/students/new?childName=${encodeURIComponent(
                             e.childName,
                           )}&parentName=${encodeURIComponent(
                             e.parentName,

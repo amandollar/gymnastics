@@ -96,18 +96,18 @@ export function MobileBottomNav({
         className="flex h-14 items-center overflow-x-auto scrollbar-none px-2 gap-1"
       >
         <Link
-          href="/dashboard"
+          href="/admin/dashboard"
           className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
-            pathname === "/dashboard" ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
+            pathname === "/admin/dashboard" ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
           }`}
         >
           <HomeIcon className="h-4.5 w-4.5 shrink-0" />
           Dashboard
         </Link>
         <Link
-          href="/enquiries"
+          href="/admin/enquiries"
           className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
-            pathname.startsWith("/enquiries")
+            pathname.startsWith("/admin/enquiries")
               ? "text-brand-orange-500"
               : "text-zinc-500 dark:text-zinc-400"
           }`}
@@ -116,9 +116,9 @@ export function MobileBottomNav({
           Enquiries
         </Link>
         <Link
-          href="/students"
+          href="/admin/students"
           className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
-            pathname.startsWith("/students")
+            pathname.startsWith("/admin/students")
               ? "text-brand-orange-500"
               : "text-zinc-500 dark:text-zinc-400"
           }`}
@@ -127,9 +127,9 @@ export function MobileBottomNav({
           Students
         </Link>
         <Link
-          href="/coaches"
+          href="/admin/coaches"
           className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
-            pathname.startsWith("/coaches")
+            pathname.startsWith("/admin/coaches")
               ? "text-brand-orange-500"
               : "text-zinc-500 dark:text-zinc-400"
           }`}
@@ -138,9 +138,9 @@ export function MobileBottomNav({
           Coaches
         </Link>
         <Link
-          href="/attendance"
+          href="/admin/attendance"
           className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
-            pathname.startsWith("/attendance")
+            pathname.startsWith("/admin/attendance")
               ? "text-brand-orange-500"
               : "text-zinc-500 dark:text-zinc-400"
           }`}
@@ -149,9 +149,9 @@ export function MobileBottomNav({
           Attendance
         </Link>
         <Link
-          href="/plans"
+          href="/admin/plans"
           className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
-            pathname === "/plans" ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
+            pathname === "/admin/plans" ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
           }`}
         >
           <DocIcon className="h-4.5 w-4.5 shrink-0" />
@@ -159,9 +159,9 @@ export function MobileBottomNav({
         </Link>
         {isAdmin && (
           <Link
-            href="/settings"
+            href="/admin/settings"
             className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
-              pathname === "/settings" ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
+              pathname === "/admin/settings" ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
             }`}
           >
             <SettingsIcon className="h-4.5 w-4.5 shrink-0" />

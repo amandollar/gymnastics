@@ -35,7 +35,7 @@ export async function createBatchAction(
     if (!name) return { success: false, message: "Batch name is required" };
     if (!timing) return { success: false, message: "Batch timing is required" };
     await createBatch(name, timing);
-    revalidatePath("/plans");
+    revalidatePath("/admin/plans");
     updateTag("batches");
     return { success: true, message: "Batch created successfully" };
   } catch (e) {
@@ -59,7 +59,7 @@ export async function renameBatchAction(
     if (!name) return { success: false, message: "Batch name is required" };
     if (!timing) return { success: false, message: "Batch timing is required" };
     await renameBatch(id, name, timing);
-    revalidatePath("/plans");
+    revalidatePath("/admin/plans");
     updateTag("batches");
     return { success: true, message: "Batch updated" };
   } catch (e) {
@@ -79,7 +79,7 @@ export async function deleteBatchAction(
     const id = (formData.get("id") as string | null)?.trim() ?? "";
     if (!id) return { success: false, message: "Batch ID is required" };
     await deleteBatch(id);
-    revalidatePath("/plans");
+    revalidatePath("/admin/plans");
     updateTag("batches");
     updateTag("students");
     return { success: true, message: "Batch deleted and students unassigned" };

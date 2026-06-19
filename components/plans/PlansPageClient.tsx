@@ -163,7 +163,7 @@ export default function PlansPageClient({
       {canManage && (
         <p className="text-xs text-zinc-400 dark:text-zinc-500 px-1">
           You can also assign plans from a student&apos;s profile under{" "}
-          <Link href="/students" className="text-zinc-500 dark:text-zinc-400 hover:underline underline-offset-2">
+          <Link href="/admin/students" className="text-zinc-500 dark:text-zinc-400 hover:underline underline-offset-2">
             Students
           </Link>
           .

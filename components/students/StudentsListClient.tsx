@@ -20,6 +20,8 @@ import { markAttendanceAction, undoMarkAttendanceAction } from "@/lib/actions/at
 import { STUDENT_LEVELS, getLevelConfig } from "@/lib/utils/level";
 import { FreezePlanPopup } from "./studentProfile/FreezePlanPopup";
 import { UpgradeLevelModal } from "./studentProfile/UpgradeLevelModal";
+import { Key } from "lucide-react";
+import StudentCredentialsModal from "./studentProfile/StudentCredentialsModal";
 
 export type StudentListItem = {
   id: string;
@@ -46,6 +48,8 @@ export type StudentListItem = {
   createdAt: Date | string;
   notes?: string | null;
   medicalHistory?: string | null;
+  password?: string | null;
+  isTempPassword?: boolean;
 };
 
 // ─── Three-dot dropdown ────────────────────────────────────────────────────────
@@ -70,6 +74,7 @@ function RowMenu({
   // Modal states for Freeze Plan and Upgrade Level
   const [showFreeze, setShowFreeze] = useState(false);
   const [showUpgradeLevel, setShowUpgradeLevel] = useState(false);
+  const [showCredentials, setShowCredentials] = useState(false);
 
   // Modal states for Update Batch
   const [isUpdateBatchOpen, setIsUpdateBatchOpen] = useState(false);
@@ -204,7 +209,7 @@ function RowMenu({
           {/* Edit details */}
           {canManage && (
             <Link
-              href={`/students/${student.id}/edit`}
+              href={`/admin/students/${student.id}/edit`}
               role="menuitem"
               onClick={() => setOpen(false)}
               className={itemClass}
@@ -295,6 +300,22 @@ function RowMenu({
             </button>
           )}
 
+          {/* Manage Credentials */}
+          {canManage && (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                setShowCredentials(true);
+              }}
+              className={itemClass}
+            >
+              <Key className="w-4 h-4 text-zinc-550 dark:text-zinc-400 shrink-0" />
+              Manage Credentials
+            </button>
+          )}
+
           <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" />
 
           {/* Get ID Card */}
@@ -303,7 +324,7 @@ function RowMenu({
             role="menuitem"
             onClick={() => {
               setOpen(false);
-              window.open(`/students/${student.id}/id-card`, "_blank");
+              window.open(`/admin/students/${student.id}/id-card`, "_blank");
             }}
             className={itemClass}
           >
@@ -335,6 +356,19 @@ function RowMenu({
           studentId={student.id}
           studentName={student.name}
           currentLevel={student.level}
+        />
+      )}
+
+      {/* Credentials Modal */}
+      {showCredentials && (
+        <StudentCredentialsModal
+          isOpen={showCredentials}
+          onClose={() => setShowCredentials(false)}
+          studentId={student.id}
+          studentNumber={student.studentNumber}
+          studentName={student.name}
+          hasPasswordSet={!!student.password}
+          isTempPassword={!!student.isTempPassword}
         />
       )}
 
@@ -811,19 +845,19 @@ export default function StudentsListClient({
               {/* Desktop action buttons */}
               <div className="hidden sm:flex items-center gap-2">
                 <Link
-                  href="/students/bulk-upload"
+                  href="/admin/students/bulk-upload"
                   className="inline-flex items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                 >
                   Bulk upload
                 </Link>
                 <Link
-                  href="/students/print-ids"
+                  href="/admin/students/print-ids"
                   className="inline-flex items-center gap-1.5 justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                 >
                   Print IDs
                 </Link>
                 <Link
-                  href="/students/new"
+                  href="/admin/students/new"
                   className="inline-flex items-center justify-center rounded-lg bg-brand-orange-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-orange-600 transition-colors"
                 >
                   Add student
@@ -849,21 +883,21 @@ export default function StudentsListClient({
                     className="absolute right-0 mt-2 w-48 rounded-2xl border border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-2xl py-1.5 overflow-hidden z-50 animate-scale-in"
                   >
                     <Link
-                      href="/students/bulk-upload"
+                      href="/admin/students/bulk-upload"
                       onClick={() => setHeaderMenuOpen(false)}
                       className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-705 dark:text-zinc-295 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                     >
                       Bulk upload
                     </Link>
                     <Link
-                      href="/students/print-ids"
+                      href="/admin/students/print-ids"
                       onClick={() => setHeaderMenuOpen(false)}
                       className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                     >
                       Print IDs
                     </Link>
                     <Link
-                      href="/students/new"
+                      href="/admin/students/new"
                       onClick={() => setHeaderMenuOpen(false)}
                       className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                     >
@@ -1146,7 +1180,7 @@ export default function StudentsListClient({
               }`}
             >
               <div className="flex items-start justify-between gap-2">
-                <Link href={`/students/${s.id}`} prefetch={false} className={`flex items-start gap-3 min-w-0 ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
+                <Link href={`/admin/students/${s.id}`} prefetch={false} className={`flex items-start gap-3 min-w-0 ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
                   <StudentAvatar student={s} size={48} />
                   <div className="min-w-0">
                     <p className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">
@@ -1301,7 +1335,7 @@ export default function StudentsListClient({
                     if (target.closest('a, button, select, input, [data-prevent-row-click="true"]')) {
                       return;
                     }
-                    router.push(`/students/${s.id}`);
+                    router.push(`/admin/students/${s.id}`);
                   }}
                   className={`hover:bg-zinc-50/80 dark:hover:bg-zinc-800/30 cursor-pointer transition-colors ${
                     s.status === "EXPIRED"
@@ -1310,7 +1344,7 @@ export default function StudentsListClient({
                   }`}
                 >
                   <td className={`px-4 py-3 w-24 min-w-[90px] whitespace-nowrap ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
-                    <Link href={`/students/${s.id}`} prefetch={false} className="flex items-center gap-3 hover:opacity-90 whitespace-nowrap">
+                    <Link href={`/admin/students/${s.id}`} prefetch={false} className="flex items-center gap-3 hover:opacity-90 whitespace-nowrap">
                       <StudentAvatar student={s} size={40} />
                       <span className="font-medium text-zinc-500 dark:text-zinc-400 tabular-nums whitespace-nowrap">
                         {s.studentNumber}
@@ -1319,7 +1353,7 @@ export default function StudentsListClient({
                   </td>
                   <td className={`px-4 py-3 min-w-[180px] whitespace-nowrap ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
                     <Link
-                      href={`/students/${s.id}`}
+                      href={`/admin/students/${s.id}`}
                       prefetch={false}
                       className={`font-medium hover:underline whitespace-nowrap ${
                         s.status === "EXPIRED"

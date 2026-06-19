@@ -67,7 +67,7 @@ export default function StudentCreatedSuccess({
 
           <div className="mt-8 space-y-3">
             <Link
-              href={`/plans?student=${studentId}`}
+              href={`/admin/plans?student=${studentId}`}
               className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand-orange-600 transition-colors"
             >
               Create & assign plan
@@ -76,13 +76,13 @@ export default function StudentCreatedSuccess({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Link
-                href={`/students/${studentId}`}
+                href={`/admin/students/${studentId}`}
                 className="flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
               >
                 View profile
               </Link>
               <Link
-                href="/students/new"
+                href="/admin/students/new"
                 className="flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors"
               >
                 Add another student

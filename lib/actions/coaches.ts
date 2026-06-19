@@ -53,7 +53,7 @@ export async function createCoachAction(
       avatarFile: avatarFile instanceof File && avatarFile.size > 0 ? avatarFile : null,
     });
 
-    revalidatePath("/coaches");
+    revalidatePath("/admin/coaches");
     updateTag("coaches");
 
     return { success: true, message: "Coach added successfully" };
@@ -102,7 +102,7 @@ export async function updateCoachAction(
       avatarFile: avatarFile instanceof File && avatarFile.size > 0 ? avatarFile : null,
     });
 
-    revalidatePath("/coaches");
+    revalidatePath("/admin/coaches");
     updateTag("coaches");
 
     return { success: true, message: "Coach updated successfully" };
@@ -128,7 +128,7 @@ export async function markCoachAttendanceAction(
 
     await markCoachAttendance(coachId, dateStr, status);
 
-    revalidatePath("/coaches");
+    revalidatePath("/admin/coaches");
     updateTag("coaches");
 
     return { success: true };
@@ -150,7 +150,7 @@ export async function deleteCoachAttendanceAction(
 
     await deleteCoachAttendance(coachId, dateStr);
 
-    revalidatePath("/coaches");
+    revalidatePath("/admin/coaches");
     updateTag("coaches");
 
     return { success: true };
@@ -213,8 +213,8 @@ export async function assignCoachToPlanAction(
       data: { coachId: coachId ?? null },
     });
 
-    revalidatePath("/coaches");
-    revalidatePath(`/students/${plan.studentId}`);
+    revalidatePath("/admin/coaches");
+    revalidatePath(`/admin/students/${plan.studentId}`);
     updateTag("coaches");
     updateTag("students");
 
@@ -277,7 +277,7 @@ export async function toggleCoachSalaryPaymentAction(
     const { toggleCoachSalaryPayment } = await import("@/lib/services/coaches");
     await toggleCoachSalaryPayment(coachId, year, month, paid, amount);
 
-    revalidatePath(`/coaches/${coachId}`);
+    revalidatePath(`/admin/coaches/${coachId}`);
     return { success: true, message: `Salary payment marked as ${paid ? "paid" : "unpaid"}` };
   } catch (e) {
     return {

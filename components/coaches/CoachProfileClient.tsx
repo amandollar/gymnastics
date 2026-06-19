@@ -600,7 +600,7 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
                 {coach.studentPlans.map((plan) => (
                   <div key={plan.id} className="text-xs border-b border-zinc-50 dark:border-zinc-800/40 pb-2.5 last:border-b-0 last:pb-0">
                     <div className="flex items-center justify-between gap-2">
-                      <Link href={`/students/${plan.student.id}`} className="font-bold text-zinc-800 dark:text-zinc-200 hover:text-brand-orange-500 truncate transition-colors">
+                      <Link href={`/admin/students/${plan.student.id}`} className="font-bold text-zinc-800 dark:text-zinc-200 hover:text-brand-orange-500 truncate transition-colors">
                         {plan.student.name}
                       </Link>
                       <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase ${plan.isActive ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400" : "bg-zinc-50 text-zinc-400 dark:bg-zinc-800"}`}>
@@ -884,7 +884,7 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
                                   <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-orange-100 dark:bg-brand-orange-950/40 text-brand-orange-600 text-[8px] font-bold">
                                     {row.studentName.charAt(0)}
                                   </span>
-                                  <Link href={`/students/${row.studentId}`} className="text-zinc-700 dark:text-zinc-350 hover:text-brand-orange-500 transition-colors">
+                                  <Link href={`/admin/students/${row.studentId}`} className="text-zinc-700 dark:text-zinc-350 hover:text-brand-orange-500 transition-colors">
                                     {row.studentName}
                                   </Link>
                                   <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-normal">TAG {row.studentNumber}</span>

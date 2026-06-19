@@ -261,7 +261,7 @@ export default function BasicDetailsTab({ student }: { student: StudentData }) {
       {/* Actions */}
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Link
-          href={`/students/${student.id}`}
+          href={`/admin/students/${student.id}`}
           className="inline-flex items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4.5 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-850 transition-colors"
         >
           Cancel

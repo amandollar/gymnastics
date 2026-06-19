@@ -43,8 +43,8 @@ export async function updateSessionPricingAction(
     }
 
     await savePricingMaps(updates);
-    revalidatePath("/plans");
-    revalidatePath("/students", "layout");
+    revalidatePath("/admin/plans");
+    revalidatePath("/admin/students", "layout");
     updateTag("pricing");
     updateTag("students");
 
@@ -96,7 +96,7 @@ export async function updateGracePeriodAction(
     }
 
     await saveGracePeriodMap(updates);
-    revalidatePath("/plans");
+    revalidatePath("/admin/plans");
     updateTag("grace-periods");
     updateTag("students");
 

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { MoreVertical } from "lucide-react";
+import { MoreVertical, Key } from "lucide-react";
 import { MedicalNotesCard } from "./MedicalNotesCard";
 import StudentStatusBadge from "../StudentStatusBadge";
 import StudentAvatar from "../StudentAvatar";
@@ -22,6 +22,7 @@ import { LevelProgress } from "./LevelProgress";
 import { PaymentHistory } from "./PaymentHistory";
 import { getPaymentByIdAction } from "@/lib/actions/payments";
 import { FeeReceipt } from "./FeeReceipt";
+import StudentCredentialsModal from "./StudentCredentialsModal";
 // ─── Student type ─────────────────────────────────────────────────────────────
 
 type StudentData = {
@@ -43,6 +44,8 @@ type StudentData = {
   plans: PlanRow[];
   attendances: AttendanceRow[];
   payments: PaymentRow[];
+  password?: string | null;
+  isTempPassword?: boolean;
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -60,6 +63,7 @@ export default function StudentDetailClient({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [printData, setPrintData] = useState<any | null>(null);
+  const [showCredentials, setShowCredentials] = useState(false);
 
   const handlePrint = async (paymentId: string) => {
     try {
@@ -133,10 +137,10 @@ export default function StudentDetailClient({
           <div className="hidden min-[1025px]:flex items-center gap-2">
             {/* Print ID card */}
             <a
-              href={`/students/${student.id}/id-card`}
+              href={`/admin/students/${student.id}/id-card`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-350 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-350 visited:text-zinc-700 dark:visited:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
             >
               <svg
                 className="w-4 h-4 text-zinc-500"
@@ -160,6 +164,18 @@ export default function StudentDetailClient({
               </svg>
               Print ID
             </a>
+
+            {/* Login Credentials */}
+            {canManage && (
+              <button
+                type="button"
+                onClick={() => setShowCredentials(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
+              >
+                <Key className="w-4 h-4 text-zinc-500" />
+                Credentials
+              </button>
+            )}
 
             {/* Freeze plan */}
             {canManage &&
@@ -192,7 +208,7 @@ export default function StudentDetailClient({
             {/* Edit details */}
             {canManage && (
               <a
-                href={`/students/${student.id}/edit`}
+                href={`/admin/students/${student.id}/edit`}
                 className="inline-flex items-center gap-1.5 rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors shadow-sm"
               >
                 <svg
@@ -230,9 +246,9 @@ export default function StudentDetailClient({
                 {/* Edit details */}
                 {canManage && (
                   <Link
-                    href={`/students/${student.id}/edit`}
+                    href={`/admin/students/${student.id}/edit`}
                     onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors text-left font-medium cursor-pointer"
+                    className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 visited:text-zinc-700 dark:visited:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left font-medium cursor-pointer"
                   >
                     <svg
                       className="w-4 h-4 text-zinc-500 shrink-0"
@@ -263,7 +279,7 @@ export default function StudentDetailClient({
                         setShowFreeze(true);
                         setMenuOpen(false);
                       }}
-                      className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors text-left font-semibold cursor-pointer"
+                      className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left font-semibold cursor-pointer"
                     >
                       <svg
                         className="w-4 h-4 text-zinc-500 shrink-0"
@@ -284,11 +300,11 @@ export default function StudentDetailClient({
 
                 {/* Print ID */}
                 <a
-                  href={`/students/${student.id}/id-card`}
+                  href={`/admin/students/${student.id}/id-card`}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors text-left font-medium cursor-pointer"
+                  className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 visited:text-zinc-700 dark:visited:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left font-medium cursor-pointer"
                 >
                   <svg
                     className="w-4 h-4 text-zinc-500 shrink-0"
@@ -312,6 +328,21 @@ export default function StudentDetailClient({
                   </svg>
                   Print ID
                 </a>
+
+                {/* Login Credentials */}
+                {canManage && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCredentials(true);
+                      setMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors text-left font-medium cursor-pointer"
+                  >
+                    <Key className="w-4 h-4 text-zinc-500 shrink-0" />
+                    Credentials
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -454,7 +485,7 @@ export default function StudentDetailClient({
               </div>
               {canManage && (
                 <Link
-                  href={`/plans?student=${student.id}`}
+                  href={`/admin/plans?student=${student.id}`}
                   className="inline-flex items-center gap-2 rounded-2xl bg-brand-orange-500 hover:bg-brand-orange-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors shadow-sm"
                 >
                   <svg
@@ -511,7 +542,7 @@ export default function StudentDetailClient({
                       </div>
                     </div>
                     <Link
-                      href={`/plans?student=${student.id}`}
+                      href={`/admin/plans?student=${student.id}`}
                       className="inline-flex items-center gap-2 rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 px-4.5 py-2.5 text-sm font-semibold text-white transition-colors shadow-sm shrink-0"
                     >
                       <svg
@@ -553,6 +584,19 @@ export default function StudentDetailClient({
           activePlan={student.activePlan}
           studentId={student.id}
           onClose={() => setShowFreeze(false)}
+        />
+      )}
+
+      {/* Credentials Modal */}
+      {showCredentials && (
+        <StudentCredentialsModal
+          isOpen={showCredentials}
+          onClose={() => setShowCredentials(false)}
+          studentId={student.id}
+          studentNumber={student.studentNumber}
+          studentName={student.name}
+          hasPasswordSet={!!student.password}
+          isTempPassword={!!student.isTempPassword}
         />
       )}
 

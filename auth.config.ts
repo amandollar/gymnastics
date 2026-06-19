@@ -2,7 +2,7 @@ import type { NextAuthConfig } from "next-auth";
 
 export const authConfig = {
   pages: {
-    signIn: "/login",
+    signIn: "/admin/login",
   },
   session: {
     strategy: "jwt",
@@ -11,21 +11,74 @@ export const authConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const { pathname } = nextUrl;
-      const isProtected =
-        pathname.startsWith("/dashboard") ||
-        pathname.startsWith("/settings") ||
-        pathname.startsWith("/students") ||
-        pathname.startsWith("/plans");
+      const role = (auth?.user as { role?: string })?.role;
 
-      if (isProtected) {
-        return isLoggedIn;
+      const isAdminRoute = pathname.startsWith("/admin");
+      const isAdminLoginRoute = pathname === "/admin/login";
+      const isParentRoute = pathname.startsWith("/parents");
+      const isParentLoginRoute = pathname === "/parents/login";
+
+      // If accessing a parent route
+      if (isParentRoute) {
+        if (isParentLoginRoute) {
+          if (isLoggedIn) {
+            if (role === "PARENT") {
+              return Response.redirect(new URL("/parents", nextUrl));
+            } else {
+              return Response.redirect(new URL("/admin/dashboard", nextUrl));
+            }
+          }
+          return true; // allow unauthenticated access to parent login page
+        }
+
+        // For other parent routes, require logged-in parent
+        if (!isLoggedIn) {
+          return Response.redirect(new URL("/parents/login", nextUrl));
+        }
+
+        if (role !== "PARENT") {
+          return Response.redirect(new URL("/admin/dashboard", nextUrl));
+        }
+
+        return true;
       }
 
-      if (
-        isLoggedIn &&
-        (pathname === "/login" || pathname === "/")
-      ) {
-        return Response.redirect(new URL("/dashboard", nextUrl));
+      // If accessing an admin route
+      if (isAdminRoute) {
+        if (isAdminLoginRoute) {
+          if (isLoggedIn) {
+            if (role === "PARENT") {
+              return Response.redirect(new URL("/parents", nextUrl));
+            } else {
+              return Response.redirect(new URL("/admin/dashboard", nextUrl));
+            }
+          }
+          return true; // allow unauthenticated access to admin login page
+        }
+
+        // For other admin routes, require logged-in staff member
+        if (!isLoggedIn) {
+          return false; // this will redirect to pages.signIn which is /admin/login
+        }
+
+        if (role === "PARENT") {
+          return Response.redirect(new URL("/parents", nextUrl));
+        }
+
+        if (pathname === "/admin") {
+          return Response.redirect(new URL("/admin/dashboard", nextUrl));
+        }
+
+        return true;
+      }
+
+      // Redirect root route based on role if logged in
+      if (isLoggedIn && pathname === "/") {
+        if (role === "PARENT") {
+          return Response.redirect(new URL("/parents", nextUrl));
+        } else {
+          return Response.redirect(new URL("/admin/dashboard", nextUrl));
+        }
       }
 
       return true;
@@ -47,3 +100,4 @@ export const authConfig = {
   },
   providers: [],
 } satisfies NextAuthConfig;
+

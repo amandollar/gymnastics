@@ -100,9 +100,9 @@ export async function collectFeeAction(
       notes: notes?.trim() || null,
     });
 
-    revalidatePath(`/students/${studentId}`);
-    revalidatePath("/students");
-    revalidatePath("/dashboard");
+    revalidatePath(`/admin/students/${studentId}`);
+    revalidatePath("/admin/students");
+    revalidatePath("/admin/dashboard");
     updateTag("students");
 
     return {

@@ -746,7 +746,7 @@ export default function PrintIDsClient({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-zinc-200 dark:border-zinc-800 pb-5">
         <div className="flex items-center gap-3">
           <Link
-            href="/students"
+            href="/admin/students"
             className="inline-flex items-center justify-center h-10 w-10 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
           >
             <ArrowLeft className="w-5 h-5" />

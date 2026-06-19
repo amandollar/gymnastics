@@ -182,9 +182,9 @@ export async function markAttendanceAction(studentId: string, dateStr: string) {
       });
     });
 
-    revalidatePath("/dashboard");
-    revalidatePath("/attendance");
-    revalidatePath("/students");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/attendance");
+    revalidatePath("/admin/students");
     updateTag("attendance");
     updateTag("students");
 
@@ -361,9 +361,9 @@ export async function undoMarkAttendanceAction(studentId: string, dateStr: strin
       });
     });
 
-    revalidatePath("/dashboard");
-    revalidatePath("/attendance");
-    revalidatePath("/students");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/attendance");
+    revalidatePath("/admin/students");
     updateTag("attendance");
     updateTag("students");
 

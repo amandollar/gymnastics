@@ -191,7 +191,7 @@ export default function CreateAssignPlanPanel({
         </div>
         <div className="flex flex-col sm:flex-row gap-2.5 justify-center pt-1">
           <Link
-            href={`/students/${studentId}`}
+            href={`/admin/students/${studentId}`}
             className="inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-orange-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-orange-600 transition-colors"
           >
             View student profile

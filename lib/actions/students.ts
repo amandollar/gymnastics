@@ -3,6 +3,8 @@
 import { auth } from "@/auth";
 import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import * as bcrypt from "bcryptjs";
 import {
   assignPlanToStudent,
   createStudent,
@@ -86,14 +88,14 @@ export async function createStudentAction(
         avatarFile instanceof File && avatarFile.size > 0 ? avatarFile : null,
     });
 
-    revalidatePath("/students");
-    revalidatePath("/dashboard");
+    revalidatePath("/admin/students");
+    revalidatePath("/admin/dashboard");
     updateTag("students");
     updateTag("attendance");
 
     const next = formData.get("next") as string | null;
     if (next === "assign-plan") {
-      redirect(`/plans?student=${student.id}`);
+      redirect(`/admin/plans?student=${student.id}`);
     }
 
     return {
@@ -169,13 +171,13 @@ export async function updateStudentAction(
         avatarFile instanceof File && avatarFile.size > 0 ? avatarFile : null,
     });
 
-    revalidatePath(`/students/${studentId}`);
-    revalidatePath("/students");
-    revalidatePath("/dashboard");
+    revalidatePath(`/admin/students/${studentId}`);
+    revalidatePath("/admin/students");
+    revalidatePath("/admin/dashboard");
     updateTag("students");
     updateTag("attendance");
 
-    redirect(`/students/${studentId}`);
+    redirect(`/admin/students/${studentId}`);
   } catch (e) {
     if (e && typeof e === "object" && "digest" in e) throw e;
     return {
@@ -194,9 +196,9 @@ export async function updateStudentLevelAction(
 
     await updateStudentLevel(studentId, level);
 
-    revalidatePath(`/students/${studentId}`);
-    revalidatePath("/students");
-    revalidatePath("/dashboard");
+    revalidatePath(`/admin/students/${studentId}`);
+    revalidatePath("/admin/students");
+    revalidatePath("/admin/dashboard");
     updateTag("students");
 
     return { success: true, message: `Student level upgraded to ${level}` };
@@ -261,10 +263,10 @@ export async function assignPlanAction(
       coachId: parsed.data.planType === "ONE_TO_ONE" ? (coachId || null) : null,
     });
 
-    revalidatePath(`/students/${studentId}`);
-    revalidatePath("/students");
-    revalidatePath("/dashboard");
-    revalidatePath("/plans");
+    revalidatePath(`/admin/students/${studentId}`);
+    revalidatePath("/admin/students");
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/plans");
     updateTag("students");
     updateTag("attendance");
     updateTag("batches");
@@ -291,8 +293,8 @@ export async function bulkImportStudentsAction(
     const { bulkImportStudents } = await import("@/lib/services/students");
     const results = await bulkImportStudents(data);
 
-    revalidatePath("/students");
-    revalidatePath("/dashboard");
+    revalidatePath("/admin/students");
+    revalidatePath("/admin/dashboard");
     updateTag("students");
     updateTag("attendance");
     updateTag("batches");
@@ -316,9 +318,9 @@ export async function updateStudentActivePlanBatchAction(
 
     await updateStudentActivePlanBatch(studentId, batchId);
 
-    revalidatePath("/students");
-    revalidatePath(`/students/${studentId}`);
-    revalidatePath("/dashboard");
+    revalidatePath("/admin/students");
+    revalidatePath(`/admin/students/${studentId}`);
+    revalidatePath("/admin/dashboard");
     updateTag("students");
     updateTag("batches");
 
@@ -391,9 +393,9 @@ export async function updateStudentActivePlanAction(
       gracePeriodMap,
     });
 
-    revalidatePath(`/students/${studentId}`);
-    revalidatePath("/students");
-    revalidatePath("/dashboard");
+    revalidatePath(`/admin/students/${studentId}`);
+    revalidatePath("/admin/students");
+    revalidatePath("/admin/dashboard");
     updateTag("students");
     updateTag("attendance");
     updateTag("batches");
@@ -416,8 +418,8 @@ export async function updateStudentNotesAndMedicalAction(
 
     await updateStudentNotesAndMedical(studentId, data);
 
-    revalidatePath(`/students/${studentId}`);
-    revalidatePath("/students");
+    revalidatePath(`/admin/students/${studentId}`);
+    revalidatePath("/admin/students");
     updateTag("students");
 
     return { success: true, message: "Notes and medical history updated successfully" };
@@ -428,3 +430,113 @@ export async function updateStudentNotesAndMedicalAction(
     };
   }
 }
+
+export async function generateStudentCredentialsAction(
+  studentId: string
+): Promise<{ success: boolean; message?: string; tempPassword?: string }> {
+  try {
+    await assertCanManageStudents();
+
+    // Generate random 4-char uppercase alphanumeric string to append to "TAG-"
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let tempPassword = "TAG-";
+    for (let i = 0; i < 4; i++) {
+      tempPassword += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+    await prisma.student.update({
+      where: { id: studentId },
+      data: {
+        password: hashedPassword,
+        isTempPassword: true,
+      },
+    });
+
+    revalidatePath(`/admin/students/${studentId}`);
+    revalidatePath("/admin/students");
+    updateTag("students");
+
+    return {
+      success: true,
+      message: "Credentials generated successfully",
+      tempPassword,
+    };
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Failed to generate credentials",
+    };
+  }
+}
+
+export async function changeParentPasswordAction(
+  studentId: string,
+  currentPassword?: string,
+  newPassword?: string
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const session = await auth();
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+
+    const userRole = (session.user as any)?.role;
+    const userId = (session.user as any)?.id;
+
+    const isParent = userRole === "PARENT" && userId === studentId;
+    const isStaff = userRole === "ADMIN" || userRole === "MANAGER";
+
+    if (!isParent && !isStaff) {
+      throw new Error("Unauthorized");
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      return { success: false, message: "New password must be at least 6 characters long" };
+    }
+
+    const student = await prisma.student.findUnique({
+      where: { id: studentId },
+      select: { password: true },
+    });
+
+    if (!student) {
+      throw new Error("Student not found");
+    }
+
+    // Only verify currentPassword if they are a parent and already have a password set
+    if (isParent && student.password) {
+      if (!currentPassword) {
+        return { success: false, message: "Current password is required" };
+      }
+      const match = await bcrypt.compare(currentPassword, student.password);
+      if (!match) {
+        return { success: false, message: "Current password does not match" };
+      }
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    await prisma.student.update({
+      where: { id: studentId },
+      data: {
+        password: hashed,
+        isTempPassword: false,
+      },
+    });
+
+    revalidatePath(`/admin/students/${studentId}`);
+    revalidatePath("/admin/students");
+    revalidatePath("/parents");
+    updateTag("students");
+
+    return { success: true, message: "Password updated successfully" };
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Failed to update password",
+    };
+  }
+}
+

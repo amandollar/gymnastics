@@ -180,7 +180,7 @@ function ExpiredPlanBanner({
           </p>
         </div>
         <Link
-          href={`/plans?student=${studentId}`}
+          href={`/admin/plans?student=${studentId}`}
           className="inline-flex items-center gap-2 rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors shadow-sm shrink-0"
         >
           <PlusCircle className="h-4 w-4" />
@@ -620,7 +620,7 @@ function EditPlanForm({
       {/* Actions */}
       <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
         <Link
-          href={`/students/${studentId}`}
+          href={`/admin/students/${studentId}`}
           className="inline-flex items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4.5 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-850 transition-colors"
         >
           Cancel

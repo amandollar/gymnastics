@@ -85,7 +85,7 @@ export default function EditStudentForm({
       <div className="flex items-center justify-between pt-1 pb-3">
         <div className="flex items-center gap-2">
           <Link
-            href={`/students/${student.id}`}
+            href={`/admin/students/${student.id}`}
             className="inline-flex items-center gap-1.5 text-zinc-900 dark:text-zinc-50 hover:text-brand-orange-500 transition-colors"
           >
             <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -97,7 +97,7 @@ export default function EditStudentForm({
 
         {/* Right: name + avatar */}
         <Link
-          href={`/students/${student.id}`}
+          href={`/admin/students/${student.id}`}
           className="flex items-center gap-2 hover:opacity-85 transition-opacity"
         >
           <span className="text-xs sm:text-sm font-semibold text-zinc-800 dark:text-zinc-200">
@@ -144,7 +144,7 @@ export default function EditStudentForm({
                 No active plan found for this student.
               </p>
               <Link
-                href={`/plans?student=${student.id}`}
+                href={`/admin/plans?student=${student.id}`}
                 className="inline-flex items-center justify-center rounded-xl bg-brand-orange-500 px-4.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-orange-600 transition-colors"
               >
                 Assign a plan

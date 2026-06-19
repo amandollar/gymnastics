@@ -724,7 +724,7 @@ export default function DashboardOverview({
 
         {/* Action 3: New Admission (Emerald Green) */}
         <Link
-          href="/students/new"
+          href="/admin/students/new"
           className="group flex flex-col xl:flex-row items-center gap-2.5 xl:gap-4.5 py-3 px-3 xl:py-4 xl:px-4.5 rounded-3xl border-0 bg-emerald-200/90 dark:bg-emerald-950/60 hover:bg-emerald-300/80 dark:hover:bg-emerald-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center xl:text-left w-full"
         >
           <img
@@ -1238,7 +1238,7 @@ export default function DashboardOverview({
                 return (
                   <div
                   key={student.id}
-                  onClick={() => router.push(`/students/${student.id}`)}
+                  onClick={() => router.push(`/admin/students/${student.id}`)}
                   className="flex items-center justify-between p-3 rounded-2xl bg-zinc-50/50 hover:bg-zinc-50 dark:bg-zinc-800/10 dark:hover:bg-zinc-800/30 border border-zinc-100/30 dark:border-zinc-800/30 transition-all duration-200 cursor-pointer group"
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -1317,7 +1317,7 @@ export default function DashboardOverview({
                 return (
                   <div
                   key={student.id}
-                  onClick={() => router.push(`/students/${student.id}`)}
+                  onClick={() => router.push(`/admin/students/${student.id}`)}
                   className="flex items-center justify-between p-3 rounded-2xl bg-zinc-50/50 hover:bg-zinc-50 dark:bg-zinc-800/10 dark:hover:bg-zinc-800/30 border border-zinc-100/30 dark:border-zinc-800/30 transition-all duration-200 cursor-pointer group"
                 >
                   <div className="flex items-center gap-3 min-w-0">

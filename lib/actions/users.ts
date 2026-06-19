@@ -97,7 +97,7 @@ export async function createUser(prevState: any, formData: FormData) {
       },
     });
 
-    revalidatePath("/settings");
+    revalidatePath("/admin/settings");
     updateTag("users");
     return { success: true, message: "User account created successfully." };
   } catch (error: any) {
@@ -172,7 +172,7 @@ export async function updateUser(
       data: updateData,
     });
 
-    revalidatePath("/settings");
+    revalidatePath("/admin/settings");
     updateTag("users");
     return { success: true, message: "User account updated successfully." };
   } catch (error: any) {
@@ -209,7 +209,7 @@ export async function deleteUser(userId: string) {
 
     await prisma.user.delete({ where: { id: userId } });
 
-    revalidatePath("/settings");
+    revalidatePath("/admin/settings");
     updateTag("users");
     return { success: true, message: "User account deleted successfully." };
   } catch (error: any) {

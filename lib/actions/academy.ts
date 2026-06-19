@@ -31,7 +31,7 @@ export async function updateAcademyProfileAction(
     }
 
     await updateAcademyProfile({ email, phone, phone2, address, website });
-    revalidatePath("/settings");
+    revalidatePath("/admin/settings");
     return { success: true, message: "Academy profile updated successfully" };
   } catch (e) {
     return {

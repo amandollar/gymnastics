@@ -27,16 +27,17 @@ export interface ActivePlanSnapshot {
 }
 
 export function computeStudentAge(
-  dateOfBirth: Date,
+  dateOfBirth: Date | string,
   today = new Date()
 ): number {
-  let years = today.getFullYear() - dateOfBirth.getFullYear();
-  let months = today.getMonth() - dateOfBirth.getMonth();
+  const dob = typeof dateOfBirth === "string" ? new Date(dateOfBirth) : dateOfBirth;
+  let years = today.getFullYear() - dob.getFullYear();
+  let months = today.getMonth() - dob.getMonth();
   if (months < 0) {
     years--;
     months += 12;
   }
-  if (today.getDate() < dateOfBirth.getDate()) {
+  if (today.getDate() < dob.getDate()) {
     months--;
     if (months < 0) {
       years--;
@@ -46,32 +47,34 @@ export function computeStudentAge(
   return years + (months % 12) / 10;
 }
 
-export function formatAge(dateOfBirth: Date): string {
+export function formatAge(dateOfBirth: Date | string): string {
   const age = computeStudentAge(dateOfBirth);
   const years = Math.floor(age);
   return `${years}`;
 }
 
 export function computeTenureMonths(
-  admissionDate: Date,
+  admissionDate: Date | string,
   today = new Date()
 ): number {
+  const adm = typeof admissionDate === "string" ? new Date(admissionDate) : admissionDate;
   let months =
-    (today.getFullYear() - admissionDate.getFullYear()) * 12 +
-    (today.getMonth() - admissionDate.getMonth());
-  if (today.getDate() < admissionDate.getDate()) months--;
+    (today.getFullYear() - adm.getFullYear()) * 12 +
+    (today.getMonth() - adm.getMonth());
+  if (today.getDate() < adm.getDate()) months--;
   return Math.max(0, months);
 }
 
-export function formatJoinedDate(date: Date): string {
-  return date.toLocaleDateString("en-IN", {
+export function formatJoinedDate(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-IN", {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 }
 
-export function formatTenure(admissionDate: Date): string {
+export function formatTenure(admissionDate: Date | string): string {
   const months = computeTenureMonths(admissionDate);
   if (months < 1) return "Just joined";
   const years = Math.floor(months / 12);
@@ -187,10 +190,11 @@ export function formatINR(amount: number): string {
   return `₹${amount.toLocaleString("en-IN")}`;
 }
 
-export function toDateInputValue(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
+export function toDateInputValue(d: Date | string): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
 

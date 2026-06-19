@@ -330,7 +330,7 @@ export default function BulkUploadClient() {
       const res = await bulkImportStudentsAction(payload as any);
       if (res.success) {
          alert(`Successfully imported ${res.importedCount} students!`);
-         router.push('/students');
+         router.push('/admin/students');
       } else {
          setGlobalError(res.message || "Failed to save");
       }

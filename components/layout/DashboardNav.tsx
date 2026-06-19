@@ -29,54 +29,54 @@ export default function DashboardNav({
   return (
     <nav className={`transition-all ${isCollapsed ? "space-y-2 p-1.5" : "space-y-0.5 p-3"}`}>
       <Link
-        href="/dashboard"
+        href="/admin/dashboard"
         onClick={close}
-        className={navLinkClass(pathname === "/dashboard", isCollapsed)}
+        className={navLinkClass(pathname === "/admin/dashboard", isCollapsed)}
         title={isCollapsed ? "Dashboard" : undefined}
       >
         <HomeIcon className={iconClass} />
         {!isCollapsed && "Dashboard"}
       </Link>
       <Link
-        href="/enquiries"
+        href="/admin/enquiries"
         onClick={close}
-        className={navLinkClass(pathname.startsWith("/enquiries"), isCollapsed)}
+        className={navLinkClass(pathname.startsWith("/admin/enquiries"), isCollapsed)}
         title={isCollapsed ? "Enquiries" : undefined}
       >
         <EnquiryIcon className={iconClass} />
         {!isCollapsed && "Enquiries"}
       </Link>
       <Link
-        href="/students"
+        href="/admin/students"
         onClick={close}
-        className={navLinkClass(pathname.startsWith("/students"), isCollapsed)}
+        className={navLinkClass(pathname.startsWith("/admin/students"), isCollapsed)}
         title={isCollapsed ? "Students" : undefined}
       >
         <UsersIcon className={iconClass} />
         {!isCollapsed && "Students"}
       </Link>
       <Link
-        href="/coaches"
+        href="/admin/coaches"
         onClick={close}
-        className={navLinkClass(pathname.startsWith("/coaches"), isCollapsed)}
+        className={navLinkClass(pathname.startsWith("/admin/coaches"), isCollapsed)}
         title={isCollapsed ? "Coaches" : undefined}
       >
         <GymIcon className={iconClass} />
         {!isCollapsed && "Coaches"}
       </Link>
       <Link
-        href="/attendance"
+        href="/admin/attendance"
         onClick={close}
-        className={navLinkClass(pathname.startsWith("/attendance"), isCollapsed)}
+        className={navLinkClass(pathname.startsWith("/admin/attendance"), isCollapsed)}
         title={isCollapsed ? "Attendance" : undefined}
       >
         <CheckIcon className={iconClass} />
         {!isCollapsed && "Attendance"}
       </Link>
       <Link
-        href="/plans"
+        href="/admin/plans"
         onClick={close}
-        className={navLinkClass(pathname === "/plans", isCollapsed)}
+        className={navLinkClass(pathname === "/admin/plans", isCollapsed)}
         title={isCollapsed ? "Plans" : undefined}
       >
         <DocIcon className={iconClass} />
@@ -84,9 +84,9 @@ export default function DashboardNav({
       </Link>
       {isAdmin && (
         <Link
-          href="/settings"
+          href="/admin/settings"
           onClick={close}
-          className={navLinkClass(pathname === "/settings", isCollapsed)}
+          className={navLinkClass(pathname === "/admin/settings", isCollapsed)}
           title={isCollapsed ? "Settings" : undefined}
         >
           <SettingsIcon className={iconClass} />

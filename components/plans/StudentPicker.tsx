@@ -184,7 +184,7 @@ export default function StudentPicker({
                 </>
               )}
               <Link
-                href="/students/new"
+                href="/admin/students/new"
                 className="text-xs font-medium text-brand-orange-600 dark:text-brand-orange-400 hover:underline"
               >
                 Add a student →

@@ -83,7 +83,7 @@ export default function AddStudentForm() {
       {/* Header Section (aligned left, max-width matches dashboard max-w-7xl, no subtitle) */}
       <div className="flex flex-col gap-1.5 pt-1 pb-3">
         <Link
-          href="/students"
+          href="/admin/students"
           className="text-xs sm:text-sm text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 transition-colors inline-flex items-center gap-1 font-medium"
         >
           ← Back to students
@@ -288,7 +288,7 @@ export default function AddStudentForm() {
 
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Link
-            href="/students"
+            href="/admin/students"
             className="inline-flex items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4.5 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-850 transition-colors"
           >
             Cancel

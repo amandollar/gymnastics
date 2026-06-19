@@ -46,9 +46,9 @@ export async function freezePlanAction(
 
     const studentId = formData.get("studentId") as string | null;
     if (studentId) {
-      revalidatePath(`/students/${studentId}`);
-      revalidatePath("/students");
-      revalidatePath("/dashboard");
+      revalidatePath(`/admin/students/${studentId}`);
+      revalidatePath("/admin/students");
+      revalidatePath("/admin/dashboard");
       updateTag("students");
       updateTag("attendance");
     }
@@ -82,9 +82,9 @@ export async function unfreezePlanAction(
 
     const studentId = formData.get("studentId") as string | null;
     if (studentId) {
-      revalidatePath(`/students/${studentId}`);
-      revalidatePath("/students");
-      revalidatePath("/dashboard");
+      revalidatePath(`/admin/students/${studentId}`);
+      revalidatePath("/admin/students");
+      revalidatePath("/admin/dashboard");
       updateTag("students");
       updateTag("attendance");
     }
@@ -127,9 +127,9 @@ export async function addFreezePeriodAction(
 
     const studentId = formData.get("studentId") as string | null;
     if (studentId) {
-      revalidatePath(`/students/${studentId}`);
-      revalidatePath("/students");
-      revalidatePath("/dashboard");
+      revalidatePath(`/admin/students/${studentId}`);
+      revalidatePath("/admin/students");
+      revalidatePath("/admin/dashboard");
       updateTag("students");
       updateTag("attendance");
     }
@@ -162,9 +162,9 @@ export async function deleteFreezePeriodAction(
 
     const studentId = formData.get("studentId") as string | null;
     if (studentId) {
-      revalidatePath(`/students/${studentId}`);
-      revalidatePath("/students");
-      revalidatePath("/dashboard");
+      revalidatePath(`/admin/students/${studentId}`);
+      revalidatePath("/admin/students");
+      revalidatePath("/admin/dashboard");
       updateTag("students");
       updateTag("attendance");
     }

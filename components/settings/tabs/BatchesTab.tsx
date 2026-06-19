@@ -405,7 +405,7 @@ export default function BatchesTab({ initialBatches, students }: BatchesTabProps
                       <div key={student.id} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                         <div className="flex-1 min-w-0 pr-4">
                           <Link
-                            href={`/students/${student.id}`}
+                            href={`/admin/students/${student.id}`}
                             className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 hover:text-brand-orange-500 dark:hover:text-brand-orange-400 transition-colors truncate block"
                           >
                             {student.name}

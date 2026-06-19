@@ -24,7 +24,10 @@ export function LevelProgress({
   const currentCfg = getLevelConfig(currentLevel);
 
   return (
-    <div className="rounded-3xl bg-white dark:bg-zinc-900 p-5 shadow-sm border border-zinc-150/40 dark:border-zinc-800/50 space-y-4 transition-all">
+    <div
+      className="bg-white dark:bg-zinc-900 p-5 shadow-sm border border-zinc-200/60 dark:border-zinc-800/80 space-y-4 transition-all"
+      style={{ borderRadius: "1.5rem" }}
+    >
       {/* Header Info */}
       <div className="flex items-center justify-between">
         <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest">

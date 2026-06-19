@@ -104,8 +104,8 @@ export default function StudentIDCardClient({
   useEffect(() => {
     const attendanceUrl =
       typeof window !== "undefined"
-        ? `${window.location.origin}/students/${student.id}`
-        : `/students/${student.id}`;
+        ? `${window.location.origin}/admin/students/${student.id}`
+        : `/admin/students/${student.id}`;
 
     // Front QR: slightly smaller but same data, compact margin for the smaller box
     QRCode.toDataURL(attendanceUrl, {
@@ -143,7 +143,7 @@ export default function StudentIDCardClient({
       {/* Header controls (No print) */}
       <header className="no-print w-full max-w-5xl mx-auto px-4 py-6 flex items-center justify-between z-10">
         <Link
-          href={`/students/${student.id}`}
+          href={`/admin/students/${student.id}`}
           className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-400 hover:text-zinc-100 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />

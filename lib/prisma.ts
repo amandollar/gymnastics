@@ -3,7 +3,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { createPgPool } from "@/lib/db/pg-pool";
 
 /** Bump when schema models change — invalidates stale dev singletons */
-const PRISMA_CLIENT_VERSION = "2026-settings-v4";
+const PRISMA_CLIENT_VERSION = "2026-parent-portal-v1";
 
 const globalForPrisma = global as unknown as {
   prisma?: PrismaClient;
