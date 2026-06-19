@@ -13,6 +13,7 @@ import {
 } from "@/lib/plan/calculations";
 import { PLAN_DAY_OPTIONS } from "@/components/plans/plan-form-shared";
 import BatchPicker from "@/components/plans/BatchPicker";
+import CoachPicker, { type CoachOption } from "@/components/plans/CoachPicker";
 import type { BatchWithCount } from "@/lib/services/batches";
 import type { StudentStatus } from "@/lib/utils/student";
 
@@ -73,6 +74,7 @@ type ActivePlan = {
   totalSessions: number;
   discountPercent: number;
   batchId?: string | null;
+  coachId?: string | null;
 };
 
 // ─── Expired Plan Summary Banner ──────────────────────────────────────────────
@@ -197,6 +199,7 @@ export default function UpdatePlanTab({
   pricingMaps,
   gracePeriodMap,
   batches,
+  coaches = [],
   planStatus,
 }: {
   studentId: string;
@@ -204,6 +207,7 @@ export default function UpdatePlanTab({
   pricingMaps: any;
   gracePeriodMap: any;
   batches: BatchWithCount[];
+  coaches?: CoachOption[];
   planStatus?: StudentStatus;
 }) {
   // If the plan is INACTIVE or EXPIRED, show the expired banner + create new plan CTA
@@ -222,6 +226,7 @@ export default function UpdatePlanTab({
       pricingMaps={pricingMaps}
       gracePeriodMap={gracePeriodMap}
       batches={batches}
+      coaches={coaches}
     />
   );
 }
@@ -234,12 +239,14 @@ function EditPlanForm({
   pricingMaps,
   gracePeriodMap,
   batches,
+  coaches = [],
 }: {
   studentId: string;
   activePlan: ActivePlan;
   pricingMaps: any;
   gracePeriodMap: any;
   batches: BatchWithCount[];
+  coaches?: CoachOption[];
 }) {
   const [planType, setPlanType] = useState<PlanTypeKey>(activePlan.planType);
   const [startDate, setStartDate] = useState(
@@ -256,6 +263,9 @@ function EditPlanForm({
   );
   const [selectedBatchId, setSelectedBatchId] = useState(
     activePlan.batchId ?? ""
+  );
+  const [selectedCoachId, setSelectedCoachId] = useState(
+    activePlan.coachId ?? ""
   );
 
   const [state, action, pending] = useActionState(
@@ -324,6 +334,7 @@ function EditPlanForm({
       <input type="hidden" name="planType" value={planType} />
       <input type="hidden" name="discountPercent" value={discountPercent} />
       <input type="hidden" name="batchId" value={selectedBatchId} />
+      <input type="hidden" name="coachId" value={selectedCoachId} />
       {selectedDays.map((d) => (
         <input key={d} type="hidden" name="selectedDays" value={d} />
       ))}
@@ -335,16 +346,16 @@ function EditPlanForm({
           <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
             Plan type
           </label>
-          <div className="inline-flex rounded-2xl p-1 bg-zinc-100 dark:bg-zinc-800">
+          <div className="inline-flex rounded-full p-1 bg-zinc-100 dark:bg-zinc-800">
             {(["REGULAR", "ONE_TO_ONE"] as const).map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => setPlanType(t)}
-                className={`px-5 py-2 text-sm font-semibold rounded-xl transition-all cursor-pointer ${
+                className={`px-5 py-2 text-sm font-semibold rounded-full transition-all cursor-pointer ${
                   planType === t
-                    ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-xs"
-                    : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                    ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-xs"
+                    : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-205"
                 }`}
               >
                 {t === "REGULAR" ? "Group class" : "Personal training"}
@@ -352,6 +363,20 @@ function EditPlanForm({
             ))}
           </div>
         </div>
+
+        {/* Coach Selection */}
+        {planType === "ONE_TO_ONE" && (
+          <div className="space-y-2 animate-fade-in">
+            <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+              Coach
+            </label>
+            <CoachPicker
+              coaches={coaches}
+              value={selectedCoachId}
+              onChange={setSelectedCoachId}
+            />
+          </div>
+        )}
 
         {/* Dates */}
         <div className="grid gap-4 sm:grid-cols-2">
@@ -431,26 +456,28 @@ function EditPlanForm({
         </div>
 
         {/* Batch */}
-        <div className="space-y-2">
-          <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-            Batch
-          </label>
-          {batches.length === 0 ? (
-            <p className="text-xs text-zinc-400 dark:text-zinc-500">
-              No batches created yet.{" "}
-              <Link href="/plans" className="text-brand-orange-500 hover:underline">
-                Go to Plans
-              </Link>{" "}
-              to create one.
-            </p>
-          ) : (
-            <BatchPicker
-              batches={batches}
-              value={selectedBatchId}
-              onChange={handleBatchChange}
-            />
-          )}
-        </div>
+        {planType === "REGULAR" && (
+          <div className="space-y-2">
+            <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+              Batch
+            </label>
+            {batches.length === 0 ? (
+              <p className="text-xs text-zinc-400 dark:text-zinc-500">
+                No batches created yet.{" "}
+                <Link href="/plans" className="text-brand-orange-500 hover:underline">
+                  Go to Plans
+                </Link>{" "}
+                to create one.
+              </p>
+            ) : (
+              <BatchPicker
+                batches={batches}
+                value={selectedBatchId}
+                onChange={handleBatchChange}
+              />
+            )}
+          </div>
+        )}
       </div>
 
       {/* Fee + sessions comparison card */}

@@ -6,6 +6,7 @@ import {
   getPricingMaps,
   getGracePeriodMap,
   listBatches,
+  listCoaches,
 } from "@/lib/services/cached";
 
 export default async function PlansPage() {
@@ -16,11 +17,12 @@ export default async function PlansPage() {
   const role = user?.role;
   const canManage = role === "ADMIN" || role === "MANAGER";
 
-  const [students, pricingMaps, gracePeriodMap, batches] = await Promise.all([
+  const [students, pricingMaps, gracePeriodMap, batches, coaches] = await Promise.all([
     listStudents(),
     getPricingMaps(),
     getGracePeriodMap(),
     listBatches(),
+    listCoaches({ status: "ALL" }),
   ]);
 
   const studentOptions = students.map((s) => ({
@@ -36,6 +38,14 @@ export default async function PlansPage() {
       : null,
   }));
 
+  const coachOptions = coaches.map((c: any) => ({
+    id: c.id,
+    name: c.name,
+    specialization: c.specialization,
+    timing: c.timing,
+    status: c.status,
+  }));
+
   return (
     <div className="mx-auto max-w-5xl min-w-0 w-full">
       <PlansPageClient
@@ -45,6 +55,7 @@ export default async function PlansPage() {
         gracePeriodMap={gracePeriodMap}
         students={JSON.parse(JSON.stringify(studentOptions))}
         batches={JSON.parse(JSON.stringify(batches))}
+        coaches={JSON.parse(JSON.stringify(coachOptions))}
       />
     </div>
   );

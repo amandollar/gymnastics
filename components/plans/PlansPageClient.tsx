@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { PricingMaps } from "@/lib/plan/pricing-defaults";
 import type { GracePeriodMap } from "@/lib/plan/grace-period-utils";
 import type { BatchWithCount } from "@/lib/services/batches";
+import type { CoachOption } from "./CoachPicker";
 import { Settings, X, Layers } from "lucide-react";
 import CreateAssignPlanPanel from "./CreateAssignPlanPanel";
 import PricingRatesPanel from "./PricingRatesPanel";
@@ -16,6 +17,7 @@ export default function PlansPageClient({
   pricingMaps,
   gracePeriodMap,
   batches: initialBatches,
+  coaches,
   isAdmin,
   canManage,
 }: {
@@ -23,6 +25,7 @@ export default function PlansPageClient({
   pricingMaps: PricingMaps;
   gracePeriodMap: GracePeriodMap;
   batches: BatchWithCount[];
+  coaches: CoachOption[];
   isAdmin: boolean;
   canManage: boolean;
 }) {
@@ -150,6 +153,7 @@ export default function PlansPageClient({
             pricingMaps={pricingMaps}
             gracePeriodMap={gracePeriodMap}
             batches={initialBatches}
+            coaches={coaches}
             canManage={canManage}
             onOpenBatchesModal={() => setBatchesOpen(true)}
           />

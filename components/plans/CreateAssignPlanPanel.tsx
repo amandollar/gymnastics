@@ -17,6 +17,7 @@ import { parseDateInput, toDateInputValue } from "@/lib/utils/student";
 import PlanBuilderFields from "./PlanBuilderFields";
 import StudentPicker, { type PlanStudentOption } from "./StudentPicker";
 import BatchPicker from "./BatchPicker";
+import CoachPicker, { type CoachOption } from "./CoachPicker";
 
 function parseDaysFromBatchName(name: string): WeekdayName[] | null {
   const words = name.trim().split(/\s+/);
@@ -65,6 +66,7 @@ export default function CreateAssignPlanPanel({
   pricingMaps,
   gracePeriodMap,
   batches,
+  coaches,
   canManage,
   onOpenBatchesModal,
 }: {
@@ -72,6 +74,7 @@ export default function CreateAssignPlanPanel({
   pricingMaps: PricingMaps;
   gracePeriodMap: GracePeriodMap;
   batches: BatchWithCount[];
+  coaches: CoachOption[];
   canManage: boolean;
   onOpenBatchesModal?: () => void;
 }) {
@@ -86,9 +89,13 @@ export default function CreateAssignPlanPanel({
   const [selectedDays, setSelectedDays] = useState<WeekdayName[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [selectedBatchId, setSelectedBatchId] = useState("");
+  const [selectedCoachId, setSelectedCoachId] = useState("");
   const [studentError, setStudentError] = useState<string | undefined>();
   const [batchError, setBatchError] = useState<string | undefined>();
+  const [coachError, setCoachError] = useState<string | undefined>();
   const [showSuccess, setShowSuccess] = useState(false);
+
+  const isPersonalTraining = planType === "ONE_TO_ONE";
 
   const [state, action, pending] = useActionState(
     assignPlanFromPlansPageAction,
@@ -103,6 +110,17 @@ export default function CreateAssignPlanPanel({
     if (state?.success) setShowSuccess(true);
   }, [state?.success]);
 
+  // When switching plan type, reset the type-specific fields
+  useEffect(() => {
+    if (isPersonalTraining) {
+      setSelectedBatchId("");
+      setBatchError(undefined);
+    } else {
+      setSelectedCoachId("");
+      setCoachError(undefined);
+    }
+  }, [isPersonalTraining]);
+
   function resetForm() {
     setShowSuccess(false);
     setStudentId(preselectId);
@@ -112,8 +130,10 @@ export default function CreateAssignPlanPanel({
     setSelectedDays([]);
     setDiscountPercent(0);
     setSelectedBatchId("");
+    setSelectedCoachId("");
     setStudentError(undefined);
     setBatchError(undefined);
+    setCoachError(undefined);
   }
 
   const preview = useMemo(() => {
@@ -208,12 +228,20 @@ export default function CreateAssignPlanPanel({
       setStudentError(undefined);
     }
 
-    if (!selectedBatchId) {
+    if (!isPersonalTraining && !selectedBatchId) {
       e.preventDefault();
       setBatchError("Please select a batch");
       hasError = true;
     } else {
       setBatchError(undefined);
+    }
+
+    if (isPersonalTraining && !selectedCoachId) {
+      e.preventDefault();
+      setCoachError("Please select a coach for personal training");
+      hasError = true;
+    } else {
+      setCoachError(undefined);
     }
 
     if (hasError) return;
@@ -223,6 +251,7 @@ export default function CreateAssignPlanPanel({
     <form action={action} onSubmit={handleSubmit}>
       <input type="hidden" name="studentId" value={studentId} readOnly />
       <input type="hidden" name="batchId" value={selectedBatchId} readOnly />
+      <input type="hidden" name="coachId" value={selectedCoachId} readOnly />
 
       <div className="rounded-3xl bg-white dark:bg-zinc-900 overflow-hidden">
         <div className="p-5 sm:p-6 space-y-6">
@@ -242,32 +271,7 @@ export default function CreateAssignPlanPanel({
             />
           </div>
 
-          {/* Batch selection */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                {batches.length === 0 ? "No batches added" : "Batch"}
-              </p>
-              {batches.length === 0 && onOpenBatchesModal && (
-                <button
-                  type="button"
-                  onClick={onOpenBatchesModal}
-                  className="inline-flex items-center justify-center rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 text-white px-3.5 py-1.5 text-xs font-semibold transition-colors cursor-pointer shadow-sm"
-                >
-                  Create Batch
-                </button>
-              )}
-            </div>
-            <BatchPicker
-              batches={batches}
-              value={selectedBatchId}
-              onChange={handleBatchChange}
-              error={batchError}
-              onManageBatches={onOpenBatchesModal}
-            />
-          </div>
-
-          {/* Plan builder */}
+          {/* Plan builder (includes plan type toggle) */}
           <div>
             <PlanBuilderFields
               formMode
@@ -283,7 +287,57 @@ export default function CreateAssignPlanPanel({
               onDiscountChange={setDiscountPercent}
               preview={preview}
               selectedDaysError={state?.errors?.selectedDays?.[0]}
-            />
+            >
+              {/* Conditional: Batch (REGULAR) or Coach (ONE_TO_ONE) */}
+              {isPersonalTraining ? (
+                <div className="space-y-3 animate-fade-in">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                    Coach
+                  </p>
+                  <CoachPicker
+                    coaches={coaches}
+                    value={selectedCoachId}
+                    onChange={(id) => {
+                      setSelectedCoachId(id);
+                      setCoachError(undefined);
+                    }}
+                    error={coachError}
+                  />
+                  {coaches.filter((c) => c.status === "WORKING").length === 0 && (
+                    <p className="text-xs text-zinc-400 dark:text-zinc-500">
+                      No working coaches available.{" "}
+                      <Link href="/coaches" className="text-brand-orange-500 hover:underline">
+                        Add a coach first.
+                      </Link>
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                      {batches.length === 0 ? "No batches added" : "Batch"}
+                    </p>
+                    {batches.length === 0 && onOpenBatchesModal && (
+                      <button
+                        type="button"
+                        onClick={onOpenBatchesModal}
+                        className="inline-flex items-center justify-center rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 text-white px-3.5 py-1.5 text-xs font-semibold transition-colors cursor-pointer shadow-sm"
+                      >
+                        Create Batch
+                      </button>
+                    )}
+                  </div>
+                  <BatchPicker
+                    batches={batches}
+                    value={selectedBatchId}
+                    onChange={handleBatchChange}
+                    error={batchError}
+                    onManageBatches={onOpenBatchesModal}
+                  />
+                </div>
+              )}
+            </PlanBuilderFields>
           </div>
         </div>
 
@@ -299,7 +353,8 @@ export default function CreateAssignPlanPanel({
             disabled={
               pending ||
               !studentId ||
-              !selectedBatchId ||
+              (!isPersonalTraining && !selectedBatchId) ||
+              (isPersonalTraining && !selectedCoachId) ||
               !preview ||
               preview.totalSessions === 0
             }

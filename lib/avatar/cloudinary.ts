@@ -67,3 +67,44 @@ export async function uploadStudentAvatarToCloudinary(
 
   return result.secure_url;
 }
+
+/**
+ * Upload a coach profile photo to Cloudinary.
+ * Returns the HTTPS URL to store on Coach.avatarUrl.
+ */
+export async function uploadCoachAvatarToCloudinary(
+  coachId: string,
+  file: File
+): Promise<string> {
+  if (!file.size) {
+    throw new Error("Empty image file");
+  }
+  if (file.size > MAX_BYTES) {
+    throw new Error("Image must be smaller than 2 MB");
+  }
+  if (!ALLOWED_TYPES.has(file.type)) {
+    throw new Error("Use JPEG, PNG, WebP, or GIF");
+  }
+
+  ensureCloudinaryConfig();
+
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const dataUri = `data:${file.type};base64,${bytes.toString("base64")}`;
+
+  const result = await cloudinary.uploader.upload(dataUri, {
+    folder: process.env.CLOUDINARY_FOLDER || "tag-crm/coaches",
+    public_id: coachId,
+    overwrite: true,
+    resource_type: "image",
+    transformation: [
+      {
+        width: 400,
+        height: 400,
+        crop: "fill",
+        gravity: "auto",
+      },
+    ],
+  });
+
+  return result.secure_url;
+}

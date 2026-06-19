@@ -249,6 +249,8 @@ export async function assignPlanAction(
       parsed.data.endDate
     );
 
+    const coachId = (formData.get("coachId") as string) || null;
+
     await assignPlanToStudent(studentId, {
       planType: parsed.data.planType,
       startDate,
@@ -256,6 +258,7 @@ export async function assignPlanAction(
       selectedDays: selectedDays as WeekdayName[],
       discountPercent: parsed.data.discountPercent,
       batchId: parsed.data.batchId || null,
+      coachId: parsed.data.planType === "ONE_TO_ONE" ? (coachId || null) : null,
     });
 
     revalidatePath(`/students/${studentId}`);
@@ -351,6 +354,7 @@ export async function updateStudentActivePlanAction(
     const selectedDays = formData.getAll("selectedDays") as WeekdayName[];
     const discountPercent = parseFloat(formData.get("discountPercent") as string || "0") || 0;
     const batchId = (formData.get("batchId") as string) || null;
+    const coachId = (formData.get("coachId") as string) || null;
 
     if (!startDateRaw || !endDateRaw) {
       return { success: false, message: "Start date and End date are required." };
@@ -382,6 +386,7 @@ export async function updateStudentActivePlanAction(
       selectedDays,
       discountPercent,
       batchId: batchId || null,
+      coachId: coachId || null,
       pricingMaps,
       gracePeriodMap,
     });

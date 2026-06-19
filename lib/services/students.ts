@@ -109,6 +109,7 @@ export async function getStudentById(id: string) {
         orderBy: { createdAt: "desc" },
         include: {
           batch: true,
+          coach: true,
           freezePeriods: {
             orderBy: { startDate: "asc" },
           },
@@ -347,6 +348,7 @@ export async function assignPlanToStudent(
     selectedDays: WeekdayName[];
     discountPercent: number;
     batchId?: string | null;
+    coachId?: string | null;
   }
 ) {
   if (input.endDate < input.startDate) {
@@ -403,6 +405,7 @@ export async function assignPlanToStudent(
       data: {
         studentId,
         batchId: input.batchId ?? null,
+        coachId: input.coachId ?? null,
         planType: input.planType,
         startDate: input.startDate,
         endDate: input.endDate,
@@ -655,6 +658,7 @@ export async function updateStudentActivePlan(
     selectedDays: WeekdayName[];
     discountPercent: number;
     batchId?: string | null;
+    coachId?: string | null;
     pricingMaps: any;
     gracePeriodMap: any;
   }
@@ -685,7 +689,8 @@ export async function updateStudentActivePlan(
       fee: computed.fee,
       pricePerSession: computed.pricePerSession,
       planMonths: computed.planMonths,
-      ...(data.batchId !== undefined ? { batchId: data.batchId } : {}),
+      batchId: data.planType === "REGULAR" ? data.batchId : null,
+      coachId: data.planType === "ONE_TO_ONE" ? data.coachId : null,
     },
   });
 }

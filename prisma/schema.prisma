@@ -98,6 +98,9 @@ model StudentPlan {
   /// Optional batch assignment. SetNull on batch deletion.
   batchId           String?
   batch             Batch?       @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  /// Optional coach assignment — only used for ONE_TO_ONE plans.
+  coachId           String?
+  coach             Coach?       @relation(fields: [coachId], references: [id], onDelete: SetNull)
   planType          PlanType
   startDate         DateTime
   endDate           DateTime
@@ -129,6 +132,7 @@ model StudentPlan {
   @@index([studentId])
   @@index([studentId, isActive])
   @@index([batchId])
+  @@index([coachId])
 }
 
 model FreezePeriod {
@@ -230,3 +234,66 @@ model AcademyProfile {
   updatedAt DateTime @updatedAt
 }
 
+// ─────────────────────────────────────────────
+// Coach models
+// ─────────────────────────────────────────────
+
+enum CoachStatus {
+  WORKING
+  LEFT
+}
+
+enum CoachAttendanceStatus {
+  PRESENT
+  ABSENT
+}
+
+model Coach {
+  id             String               @id @default(cuid())
+  name           String
+  contactNumber  String
+  email          String?
+  joinDate       DateTime
+  /// Human-readable timing string, e.g. "7:00 AM – 9:00 AM"
+  timing         String?
+  specialization String?
+  /// Monthly fixed salary in ₹
+  fixedSalary    Int                  @default(0)
+  status         CoachStatus          @default(WORKING)
+  notes          String?
+  avatarUrl      String?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  attendances    CoachAttendance[]
+  /// ONE_TO_ONE student plans assigned to this coach
+  studentPlans   StudentPlan[]
+  salaryPayments CoachSalaryPayment[]
+}
+
+model CoachAttendance {
+  id        String                @id @default(cuid())
+  coachId   String
+  coach     Coach                 @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  date      DateTime              @db.Date
+  status    CoachAttendanceStatus
+  createdAt DateTime              @default(now())
+
+  @@unique([coachId, date])
+  @@index([coachId])
+}
+
+model CoachSalaryPayment {
+  id        String    @id @default(cuid())
+  coachId   String
+  coach     Coach     @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  year      Int
+  month     Int
+  amount    Int
+  paid      Boolean   @default(false)
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([coachId, year, month])
+  @@index([coachId])
+}

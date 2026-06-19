@@ -22,6 +22,7 @@ type Props = {
   preview: PlanComputeResult | null;
   formMode?: boolean;
   selectedDaysError?: string;
+  children?: React.ReactNode;
 };
 
 export default function PlanBuilderFields({
@@ -38,6 +39,7 @@ export default function PlanBuilderFields({
   preview,
   formMode = false,
   selectedDaysError,
+  children,
 }: Props) {
   function applyDuration(months: 1 | 3) {
     if (!startDate) return;
@@ -47,11 +49,9 @@ export default function PlanBuilderFields({
   const activePlanMonths = useMemo(() => {
     if (!startDate || !endDate) return null;
     try {
-      const start = parseDateInput(startDate);
-      const end = parseDateInput(endDate);
-      const ms = end.getTime() - start.getTime();
-      const diffDays = Math.round(ms / 86400000);
-      return diffDays <= 31 ? 1 : diffDays <= 93 ? 3 : null;
+      if (endDate === endDateForPlanMonths(startDate, 1)) return 1;
+      if (endDate === endDateForPlanMonths(startDate, 3)) return 3;
+      return null;
     } catch {
       return null;
     }
@@ -68,15 +68,15 @@ export default function PlanBuilderFields({
         <label className="block text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
           Plan type
         </label>
-        <div className="inline-flex rounded-2xl p-1 bg-zinc-100 dark:bg-zinc-800">
+        <div className="inline-flex rounded-full p-1 bg-zinc-100 dark:bg-zinc-800">
           {(["REGULAR", "ONE_TO_ONE"] as const).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => onPlanTypeChange(t)}
-              className={`px-5 py-2 text-sm font-semibold rounded-xl transition-all cursor-pointer ${
+              className={`px-5 py-2 text-sm font-semibold rounded-full transition-all cursor-pointer ${
                 planType === t
-                  ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-xs"
+                  ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-xs"
                   : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
               }`}
             >
@@ -85,6 +85,8 @@ export default function PlanBuilderFields({
           ))}
         </div>
       </div>
+
+      {children}
 
       {/* Date range grid */}
       <div className="grid gap-5 sm:grid-cols-2">

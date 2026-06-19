@@ -23,6 +23,7 @@ type StudentPlanData = {
   totalSessions: number;
   discountPercent: number;
   batchId?: string | null;
+  coachId?: string | null;
 } | null;
 
 type StudentData = {
@@ -47,12 +48,14 @@ export default function EditStudentForm({
   pricingMaps,
   gracePeriodMap = {},
   batches = [],
+  coaches = [],
   planStatus,
 }: {
   student: StudentData;
   pricingMaps: any;
   gracePeriodMap?: any;
   batches?: BatchWithCount[];
+  coaches?: any[];
   planStatus?: StudentStatus;
 }) {
   const router = useRouter();
@@ -154,6 +157,7 @@ export default function EditStudentForm({
               pricingMaps={pricingMaps}
               gracePeriodMap={gracePeriodMap}
               batches={batches}
+              coaches={coaches}
               planStatus={planStatus}
             />
           )}
