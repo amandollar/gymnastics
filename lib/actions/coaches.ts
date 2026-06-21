@@ -8,7 +8,7 @@ import {
   markCoachAttendance,
   deleteCoachAttendance,
 } from "@/lib/services/coaches";
-import type { CoachAttendanceStatus } from "@prisma/client";
+import type { CoachAttendanceStatus, CoachRole } from "@prisma/client";
 
 async function assertCanManage() {
   const session = await auth();
@@ -34,12 +34,18 @@ export async function createCoachAction(
     const timing = (formData.get("timing") as string) || undefined;
     const specialization = (formData.get("specialization") as string) || undefined;
     const fixedSalary = parseInt(formData.get("fixedSalary") as string) || 0;
+    const role = (formData.get("role") as CoachRole) || "COACH";
     const notes = (formData.get("notes") as string) || undefined;
+    const address = (formData.get("address") as string) || undefined;
     const avatarFile = formData.get("avatar");
 
     if (!name?.trim()) return { success: false, message: "Name is required" };
     if (!contactNumber?.trim()) return { success: false, message: "Contact number is required" };
+    if (!address?.trim()) return { success: false, message: "Address is required" };
     if (!joinDate) return { success: false, message: "Join date is required" };
+    if (role === "STAFF" && !email?.trim()) {
+      return { success: false, message: "Email is required for staff employees" };
+    }
 
     await createCoach({
       name: name.trim(),
@@ -49,18 +55,20 @@ export async function createCoachAction(
       timing: timing?.trim() || undefined,
       specialization: specialization?.trim() || undefined,
       fixedSalary,
+      role,
       notes: notes?.trim() || undefined,
+      address: address.trim(),
       avatarFile: avatarFile instanceof File && avatarFile.size > 0 ? avatarFile : null,
     });
 
     revalidatePath("/admin/coaches");
     updateTag("coaches");
 
-    return { success: true, message: "Coach added successfully" };
+    return { success: true, message: "Employee added successfully" };
   } catch (e) {
     return {
       success: false,
-      message: e instanceof Error ? e.message : "Failed to create coach",
+      message: e instanceof Error ? e.message : "Failed to create employee",
     };
   }
 }
@@ -83,11 +91,17 @@ export async function updateCoachAction(
     const specialization = (formData.get("specialization") as string) || null;
     const fixedSalary = parseInt(formData.get("fixedSalary") as string) || 0;
     const status = formData.get("status") as "WORKING" | "LEFT";
+    const role = (formData.get("role") as CoachRole) || "COACH";
     const notes = (formData.get("notes") as string) || null;
+    const address = (formData.get("address") as string) || null;
     const avatarFile = formData.get("avatar");
 
     if (!name?.trim()) return { success: false, message: "Name is required" };
     if (!contactNumber?.trim()) return { success: false, message: "Contact number is required" };
+    if (!address?.trim()) return { success: false, message: "Address is required" };
+    if (role === "STAFF" && !email?.trim()) {
+      return { success: false, message: "Email is required for staff employees" };
+    }
 
     await updateCoach(coachId, {
       name: name.trim(),
@@ -98,7 +112,9 @@ export async function updateCoachAction(
       specialization: specialization?.trim() || null,
       fixedSalary,
       status: status || "WORKING",
+      role,
       notes: notes?.trim() || null,
+      address: address.trim(),
       avatarFile: avatarFile instanceof File && avatarFile.size > 0 ? avatarFile : null,
     });
 

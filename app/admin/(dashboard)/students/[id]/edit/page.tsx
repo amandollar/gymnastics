@@ -23,7 +23,7 @@ export default async function EditStudentPage({
     getPricingMaps(),
     getGracePeriodMap(),
     listBatches(),
-    listCoaches({ status: "WORKING" }),
+    listCoaches({ status: "WORKING", role: "COACH" }),
   ]);
   
   if (!student) notFound();

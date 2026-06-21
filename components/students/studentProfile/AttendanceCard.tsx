@@ -218,10 +218,10 @@ export function AttendanceCard({
         </div>
       </div>
 
-      <div className={showLogs ? "grid gap-6 md:grid-cols-[1fr_260px]" : "w-full"}>
+      <div className={showLogs ? "grid gap-6 lg:grid-cols-[1fr_260px]" : "w-full"}>
         {/* Scrollable multi-month grid */}
         <div className="flex flex-col min-w-0 justify-between">
-          <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-thin snap-x">
+          <div className="flex gap-6 overflow-x-auto px-2 pb-4 scrollbar-thin snap-x">
             {months.map(({ year, month }) => {
               const monthName = new Date(year, month, 1).toLocaleDateString("en-IN", {
                 month: "long",
@@ -333,7 +333,7 @@ export function AttendanceCard({
 
         {/* Sessions list */}
         {showLogs && (
-          <div className="flex flex-col min-w-0 md:border-l md:border-zinc-100 md:dark:border-zinc-800 md:pl-6">
+          <div className="flex flex-col min-w-0 lg:border-l lg:border-zinc-100 lg:dark:border-zinc-800 lg:pl-6">
             <div className="space-y-1 overflow-y-auto max-h-[300px] pr-1">
               {attendances.length === 0 ? (
                 <p className="text-sm text-zinc-400 dark:text-zinc-500 py-10 text-center">

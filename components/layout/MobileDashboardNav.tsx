@@ -135,7 +135,7 @@ export function MobileBottomNav({
           }`}
         >
           <GymIcon className="h-4.5 w-4.5 shrink-0" />
-          Coaches
+          Employees
         </Link>
         <Link
           href="/admin/attendance"

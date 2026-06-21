@@ -34,6 +34,7 @@ interface SettingsShellProps {
   userRole: string;
   signOutAction: () => Promise<void>;
   students: any[];
+  employees: { id: string; name: string; email: string | null; role: "COACH" | "STAFF" }[];
 }
 
 export default function SettingsShell({
@@ -46,6 +47,7 @@ export default function SettingsShell({
   userRole,
   signOutAction,
   students,
+  employees,
 }: SettingsShellProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -111,7 +113,7 @@ export default function SettingsShell({
       case "academy":
         return <AcademyTab initialProfile={initialProfile} />;
       case "users":
-        return <AccessTab initialUsers={initialUsers} currentUserId={currentUserId} />;
+        return <AccessTab initialUsers={initialUsers} currentUserId={currentUserId} coaches={employees} />;
       case "batches":
         return <BatchesTab initialBatches={initialBatches} students={students} />;
       case "grace-periods":

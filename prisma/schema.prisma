@@ -245,6 +245,11 @@ enum CoachStatus {
   LEFT
 }
 
+enum CoachRole {
+  COACH
+  STAFF
+}
+
 enum CoachAttendanceStatus {
   PRESENT
   ABSENT
@@ -262,7 +267,9 @@ model Coach {
   /// Monthly fixed salary in ₹
   fixedSalary    Int                  @default(0)
   status         CoachStatus          @default(WORKING)
+  role           CoachRole            @default(COACH)
   notes          String?
+  address        String?
   avatarUrl      String?
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt

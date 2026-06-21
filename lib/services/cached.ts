@@ -18,7 +18,7 @@ import { getAllUsers as dbGetAllUsers } from "./users";
 import { listPlanTemplates as dbListPlanTemplates } from "./plan-templates";
 import { listCoaches as dbListCoaches } from "./coaches";
 import type { StudentStatus } from "@/lib/utils/student";
-import type { EnquiryStatus } from "@prisma/client";
+import type { EnquiryStatus, CoachStatus, CoachRole } from "@prisma/client";
 
 export const listStudents = unstable_cache(
   async (filters?: { search?: string; status?: StudentStatus | "ALL" }) =>
@@ -89,12 +89,15 @@ export const listPlanTemplates = unstable_cache(
   { tags: ["plan-templates"] }
 );
 
-export const listCoaches = unstable_cache(
-  async (options?: { status?: "WORKING" | "LEFT" | "ALL" }) =>
-    dbListCoaches(options),
-  ["coaches-list"],
-  { tags: ["coaches"] }
-);
+export const listCoaches = (options?: { status?: CoachStatus | "ALL"; role?: CoachRole }) => {
+  const statusStr = options?.status ?? "ALL";
+  const roleStr = options?.role ?? "ALL";
+  return unstable_cache(
+    async () => dbListCoaches(options),
+    ["coaches-list", statusStr, roleStr],
+    { tags: ["coaches"] }
+  )();
+};
 
 import { getCoachMonthlyAttendanceSerializable as dbGetCoachMonthlyAttendanceSerializable } from "./coaches";
 

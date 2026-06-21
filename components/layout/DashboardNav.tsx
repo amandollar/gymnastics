@@ -59,10 +59,10 @@ export default function DashboardNav({
         href="/admin/coaches"
         onClick={close}
         className={navLinkClass(pathname.startsWith("/admin/coaches"), isCollapsed)}
-        title={isCollapsed ? "Coaches" : undefined}
+        title={isCollapsed ? "Employees" : undefined}
       >
         <GymIcon className={iconClass} />
-        {!isCollapsed && "Coaches"}
+        {!isCollapsed && "Employees"}
       </Link>
       <Link
         href="/admin/attendance"

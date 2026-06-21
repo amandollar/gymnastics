@@ -2,7 +2,7 @@ import React from "react";
 import { redirect } from "next/navigation";
 import { signOut } from "@/auth";
 import { getSession } from "@/lib/auth-session";
-import { getAllUsers, listStudents } from "@/lib/services/cached";
+import { getAllUsers, listStudents, listCoaches } from "@/lib/services/cached";
 import { listBatches } from "@/lib/services/batches";
 import { getGracePeriodMap } from "@/lib/services/grace-periods";
 import { getPricingMaps } from "@/lib/services/pricing";
@@ -20,13 +20,14 @@ export default async function SettingsPage() {
   }
 
   // Fetch settings data in parallel
-  const [users, batches, gracePeriodMap, pricingMaps, academyProfile, students] = await Promise.all([
+  const [users, batches, gracePeriodMap, pricingMaps, academyProfile, students, employees] = await Promise.all([
     getAllUsers(),
     listBatches(),
     getGracePeriodMap(),
     getPricingMaps(),
     getAcademyProfile(),
     listStudents(),
+    listCoaches({ status: "ALL" }),
   ]);
 
   async function signOutAction() {
@@ -45,6 +46,7 @@ export default async function SettingsPage() {
       userRole={userRole}
       signOutAction={signOutAction}
       students={JSON.parse(JSON.stringify(students))}
+      employees={JSON.parse(JSON.stringify(employees))}
     />
   );
 }

@@ -186,12 +186,12 @@ export default function CoachesAttendanceClient({
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:text-brand-orange-500 dark:hover:text-brand-orange-400 transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Back to Coaches
+          Back to Employees
         </Link>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl sm:text-5xl font-light tracking-tight text-zinc-900 dark:text-zinc-50">
-              Coach{" "}
+              Employee{" "}
               <span className="font-semibold text-brand-orange-500">
                 Attendance
               </span>
@@ -238,9 +238,9 @@ export default function CoachesAttendanceClient({
           <table className="w-full border-collapse text-left">
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/40 text-zinc-400 dark:text-zinc-500">
-                {/* Sticky Left Header for Coach Column */}
+                {/* Sticky Left Header for Employee Column */}
                 <th className="sticky left-0 z-20 bg-zinc-50 dark:bg-zinc-900 px-6 py-4 text-xs font-bold uppercase tracking-wider min-w-[200px] border-r border-zinc-100 dark:border-zinc-800">
-                  Coach Name
+                  Employee Name
                 </th>
                 {/* Day Columns */}
                 {Array.from({ length: daysInMonth }).map((_, i) => {

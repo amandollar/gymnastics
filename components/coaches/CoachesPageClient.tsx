@@ -27,7 +27,7 @@ import {
   getCoachEarningsAction,
 } from "@/lib/actions/coaches";
 import type { CoachWithStats } from "@/lib/services/coaches";
-import type { CoachAttendanceStatus } from "@prisma/client";
+import type { CoachAttendanceStatus, CoachRole } from "@prisma/client";
 import StudentAvatarPicker from "@/components/students/StudentAvatarPicker";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
@@ -61,6 +61,16 @@ const fmtDate = (d: string | Date) =>
 
 const toInputDate = (d: Date) => d.toISOString().split("T")[0];
 
+const TIME_SLOTS = [
+  "5:00 AM", "5:30 AM", "6:00 AM", "6:30 AM", "7:00 AM", "7:30 AM",
+  "8:00 AM", "8:30 AM", "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM",
+  "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM",
+  "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM", "4:00 PM", "4:30 PM",
+  "5:00 PM", "5:30 PM", "6:00 PM", "6:30 PM", "7:00 PM", "7:30 PM",
+  "8:00 PM", "8:30 PM", "9:00 PM", "9:30 PM", "10:00 PM", "10:30 PM",
+  "11:00 PM"
+];
+
 // ─── Coach Form Modal ──────────────────────────────────────────────────────────
 
 function CoachFormModal({
@@ -75,6 +85,23 @@ function CoachFormModal({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const isEdit = !!existing;
+  const [role, setRole] = useState<CoachRole>(existing?.role ?? "COACH");
+  const [step, setStep] = useState<"CHOOSE_ROLE" | "FORM">(isEdit ? "FORM" : "CHOOSE_ROLE");
+
+  const [startTime, setStartTime] = useState(() => {
+    if (existing?.timing) {
+      const parts = existing.timing.split(/ – | - /);
+      return parts[0] || "7:00 AM";
+    }
+    return "7:00 AM";
+  });
+  const [endTime, setEndTime] = useState(() => {
+    if (existing?.timing) {
+      const parts = existing.timing.split(/ – | - /);
+      return parts[1] || "9:00 AM";
+    }
+    return "9:00 AM";
+  });
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -103,93 +130,254 @@ function CoachFormModal({
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-scale-in">
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0 border-b border-zinc-100 dark:border-zinc-800">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-orange-100 dark:bg-brand-orange-950/40 text-brand-orange-600 dark:text-brand-orange-400">
-              <Dumbbell className="h-4 w-4" />
-            </div>
-            <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-              {isEdit ? "Edit Coach" : "Add Coach"}
-            </h2>
-          </div>
-          <button type="button" onClick={onClose} className="h-8 w-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-          <div className="px-6 py-5 space-y-4">
-            <div className="flex justify-center pb-2">
-              <StudentAvatarPicker
-                currentAvatarUrl={existing?.avatarUrl || "/coach-profile-placeholder.webp"}
-              />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className={labelCls}>Full Name *</label>
-                <input name="name" required defaultValue={existing?.name} placeholder="Coach name" className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Contact Number *</label>
-                <input name="contactNumber" required defaultValue={existing?.contactNumber} placeholder="+91 98765 43210" className={inputCls} />
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className={labelCls}>Email</label>
-                <input name="email" type="email" defaultValue={existing?.email ?? ""} placeholder="coach@example.com" className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Join Date *</label>
-                <input name="joinDate" type="date" required defaultValue={existing ? toInputDate(new Date(existing.joinDate)) : toInputDate(new Date())} className={inputCls} />
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className={labelCls}>Specialization</label>
-                <input name="specialization" defaultValue={existing?.specialization ?? ""} placeholder="e.g. Gymnastics" className={inputCls} />
-              </div>
-              <div>
-                <label className={labelCls}>Timing</label>
-                <input name="timing" defaultValue={existing?.timing ?? ""} placeholder="e.g. 7:00 AM – 9:00 AM" className={inputCls} />
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className={labelCls}>Fixed Monthly Salary (₹)</label>
-                <input name="fixedSalary" type="number" min={0} defaultValue={existing?.fixedSalary ?? 0} className={inputCls} />
-              </div>
-              {isEdit && (
-                <div>
-                  <label className={labelCls}>Status</label>
-                  <select name="status" defaultValue={existing?.status ?? "WORKING"} className={inputCls}>
-                    <option value="WORKING">Working</option>
-                    <option value="LEFT">Left</option>
-                  </select>
+        {step === "CHOOSE_ROLE" ? (
+          <>
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0 border-b border-zinc-100 dark:border-zinc-800">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-orange-100 dark:bg-brand-orange-950/40 text-brand-orange-600 dark:text-brand-orange-400">
+                  <Dumbbell className="h-4 w-4" />
                 </div>
-              )}
+                <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  Add Employee
+                </h2>
+              </div>
+              <button type="button" onClick={onClose} className="h-8 w-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
+                <X className="h-4 w-4" />
+              </button>
             </div>
-            <div>
-              <label className={labelCls}>Notes</label>
-              <textarea name="notes" rows={3} defaultValue={existing?.notes ?? ""} placeholder="Any additional notes…" className={`${inputCls} resize-none`} />
+
+            <div className="px-6 py-8 space-y-6 flex-1 overflow-y-auto">
+              <div className="text-center space-y-1.5">
+                <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-200">Select Employee Type</h3>
+                <p className="text-xs text-zinc-400 dark:text-zinc-500">Choose the role of the employee you want to add to customize the form.</p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRole("COACH");
+                    setStep("FORM");
+                  }}
+                  className="flex flex-col items-center text-center p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:border-brand-orange-500 dark:hover:border-brand-orange-500/50 bg-zinc-50/50 dark:bg-zinc-800/30 hover:bg-white dark:hover:bg-zinc-900 transition-all cursor-pointer group shadow-sm text-left"
+                >
+                  <div className="h-12 w-12 rounded-xl bg-brand-orange-100 dark:bg-brand-orange-950/40 text-brand-orange-600 dark:text-brand-orange-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Dumbbell className="h-6 w-6" />
+                  </div>
+                  <h4 className="font-bold text-zinc-800 dark:text-zinc-100 text-sm">Coach / Trainer</h4>
+                  <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2 leading-relaxed text-center">
+                    Athletic or personal trainers. Calculates session share and manages client plans.
+                  </p>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRole("STAFF");
+                    setStep("FORM");
+                  }}
+                  className="flex flex-col items-center text-center p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:border-brand-orange-500 dark:hover:border-brand-orange-500/50 bg-zinc-50/50 dark:bg-zinc-800/30 hover:bg-white dark:hover:bg-zinc-900 transition-all cursor-pointer group shadow-sm text-left"
+                >
+                  <div className="h-12 w-12 rounded-xl bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Briefcase className="h-6 w-6" />
+                  </div>
+                  <h4 className="font-bold text-zinc-800 dark:text-zinc-100 text-sm">Staff Employee</h4>
+                  <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2 leading-relaxed text-center">
+                    Front desk, admin or facility staff. Fixed monthly salary with simple absent deductions.
+                  </p>
+                </button>
+              </div>
             </div>
-            {error && (
-              <p className="text-sm text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/30 rounded-xl px-3.5 py-2.5">
-                {error}
-              </p>
-            )}
-          </div>
-          <div className="px-6 pb-6 pt-0 shrink-0">
-            <button type="submit" disabled={pending} className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-orange-500 hover:bg-brand-orange-600 disabled:opacity-50 px-5 py-3 text-sm font-semibold text-white transition-colors cursor-pointer">
-              {pending ? "Saving…" : isEdit ? "Save changes" : "Add coach"}
-            </button>
-          </div>
-        </form>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0 border-b border-zinc-100 dark:border-zinc-800">
+              <div className="flex items-center gap-3">
+                {!isEdit && (
+                  <button
+                    type="button"
+                    onClick={() => setStep("CHOOSE_ROLE")}
+                    className="h-8 w-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer mr-1"
+                    title="Go back to role selection"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                )}
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-orange-100 dark:bg-brand-orange-950/40 text-brand-orange-600 dark:text-brand-orange-400">
+                  <Dumbbell className="h-4 w-4" />
+                </div>
+                <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  {isEdit ? "Edit Employee Details" : `Add ${role === "COACH" ? "Coach" : "Staff Employee"}`}
+                </h2>
+              </div>
+              <button type="button" onClick={onClose} className="h-8 w-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
+              <input type="hidden" name="role" value={role} />
+              <div className="px-6 py-5 space-y-4">
+                {role === "COACH" && (
+                  <div className="flex justify-center pb-2">
+                    <StudentAvatarPicker
+                      currentAvatarUrl={existing?.avatarUrl || "/coach-profile-placeholder.webp"}
+                    />
+                  </div>
+                )}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className={labelCls}>Full Name *</label>
+                    <input name="name" required defaultValue={existing?.name} placeholder="Full name" className={inputCls} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Contact Number *</label>
+                    <input name="contactNumber" required defaultValue={existing?.contactNumber} placeholder="+91 98765 43210" className={inputCls} />
+                  </div>
+                </div>
+                <div>
+                  <label className={labelCls}>Email</label>
+                  <input name="email" type="email" defaultValue={existing?.email ?? ""} placeholder="employee@example.com" className={inputCls} />
+                </div>
+                <div>
+                  <label className={labelCls}>Address *</label>
+                  <input name="address" required defaultValue={existing?.address ?? ""} placeholder="Residential Address" className={inputCls} />
+                </div>
+                {role === "COACH" ? (
+                  <>
+                    <div>
+                      <label className={labelCls}>Join Date *</label>
+                      <input name="joinDate" type="date" required defaultValue={existing ? toInputDate(new Date(existing.joinDate)) : toInputDate(new Date())} className={inputCls} />
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className={labelCls}>Specialization</label>
+                        <input name="specialization" defaultValue={existing?.specialization ?? ""} placeholder="e.g. Gymnastics" className={inputCls} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>Timing</label>
+                        <input type="hidden" name="timing" value={`${startTime} – ${endTime}`} />
+                        <div className="flex items-center gap-1.5 w-full">
+                          <select
+                            value={startTime}
+                            onChange={(e) => setStartTime(e.target.value)}
+                            className={`${inputCls} w-full cursor-pointer text-center font-medium`}
+                          >
+                            {TIME_SLOTS.map((opt) => (
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
+                          <span className="text-zinc-400 dark:text-zinc-500 text-xs font-semibold shrink-0">to</span>
+                          <select
+                            value={endTime}
+                            onChange={(e) => setEndTime(e.target.value)}
+                            className={`${inputCls} w-full cursor-pointer text-center font-medium`}
+                          >
+                            {TIME_SLOTS.map((opt) => (
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className={labelCls}>Join Date *</label>
+                        <input name="joinDate" type="date" required defaultValue={existing ? toInputDate(new Date(existing.joinDate)) : toInputDate(new Date())} className={inputCls} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>Fixed Monthly Salary (₹)</label>
+                        <input name="fixedSalary" type="number" min={0} defaultValue={existing?.fixedSalary ?? 0} className={inputCls} />
+                      </div>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className={labelCls}>Timing</label>
+                        <input type="hidden" name="timing" value={`${startTime} – ${endTime}`} />
+                        <div className="flex items-center gap-1.5 w-full">
+                          <select
+                            value={startTime}
+                            onChange={(e) => setStartTime(e.target.value)}
+                            className={`${inputCls} w-full cursor-pointer text-center font-medium`}
+                          >
+                            {TIME_SLOTS.map((opt) => (
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
+                          <span className="text-zinc-400 dark:text-zinc-500 text-xs font-semibold shrink-0">to</span>
+                          <select
+                            value={endTime}
+                            onChange={(e) => setEndTime(e.target.value)}
+                            className={`${inputCls} w-full cursor-pointer text-center font-medium`}
+                          >
+                            {TIME_SLOTS.map((opt) => (
+                              <option key={opt} value={opt}>
+                                {opt}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      {isEdit && (
+                        <div>
+                          <label className={labelCls}>Status</label>
+                          <select name="status" defaultValue={existing?.status ?? "WORKING"} className={inputCls}>
+                            <option value="WORKING">Working</option>
+                            <option value="LEFT">Left</option>
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+                {role === "COACH" && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className={labelCls}>Fixed Monthly Salary (₹)</label>
+                      <input name="fixedSalary" type="number" min={0} defaultValue={existing?.fixedSalary ?? 0} className={inputCls} />
+                    </div>
+                    {isEdit && (
+                      <div>
+                        <label className={labelCls}>Status</label>
+                        <select name="status" defaultValue={existing?.status ?? "WORKING"} className={inputCls}>
+                          <option value="WORKING">Working</option>
+                          <option value="LEFT">Left</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div>
+                  <label className={labelCls}>Notes</label>
+                  <textarea name="notes" rows={3} defaultValue={existing?.notes ?? ""} placeholder="Any additional notes…" className={`${inputCls} resize-none`} />
+                </div>
+                {error && (
+                  <p className="text-sm text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/30 rounded-xl px-3.5 py-2.5">
+                    {error}
+                  </p>
+                )}
+              </div>
+              <div className="px-6 pb-6 pt-0 shrink-0">
+                <button type="submit" disabled={pending} className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-brand-orange-500 hover:bg-brand-orange-600 disabled:opacity-50 px-5 py-3 text-sm font-semibold text-white transition-colors cursor-pointer">
+                  {pending ? "Saving…" : isEdit ? "Save changes" : "Save employee"}
+                </button>
+              </div>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
 }
-
 // ─── Coach Card ────────────────────────────────────────────────────────────────
 
 function CoachCard({
@@ -209,11 +397,10 @@ function CoachCard({
   return (
     <div
       onClick={onClick}
-      className={`relative rounded-2xl border bg-white dark:bg-zinc-900 p-5 cursor-pointer hover:shadow-md transition-all ${
-        isWorking
+      className={`relative rounded-2xl border bg-white dark:bg-zinc-900 p-5 cursor-pointer hover:shadow-md transition-all ${isWorking
           ? "border-zinc-200 dark:border-zinc-800 hover:border-brand-orange-200 dark:hover:border-brand-orange-800/50"
           : "border-zinc-200/60 dark:border-zinc-800/60 opacity-70 hover:opacity-90"
-      }`}
+        }`}
     >
       <div className="absolute top-4 right-4">
         <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${isWorking ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"}`}>
@@ -229,7 +416,20 @@ function CoachCard({
           className="h-12 w-12 shrink-0 rounded-2xl object-cover bg-zinc-100 dark:bg-zinc-800"
         />
         <div className="min-w-0 flex-1 pr-16">
-          <h3 className="font-bold text-zinc-900 dark:text-zinc-100 truncate">{coach.name}</h3>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="font-bold text-zinc-900 dark:text-zinc-100 truncate">{coach.name}</h3>
+            {coach.role === "COACH" ? (
+              <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-sky-100 dark:bg-sky-900/30 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wide">
+                <Dumbbell className="h-2.5 w-2.5" />
+                Coach
+              </span>
+            ) : (
+              <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-violet-100 dark:bg-violet-900/30 px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:text-violet-400 uppercase tracking-wide">
+                <Briefcase className="h-2.5 w-2.5" />
+                Staff
+              </span>
+            )}
+          </div>
           {coach.specialization && (
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">{coach.specialization}</p>
           )}
@@ -257,11 +457,13 @@ function CoachCard({
         </div>
       </div>
 
-      {/* Footer: student count + today's attendance + edit */}
+      {/* Footer: coach-only stats + attendance + edit */}
       <div className="mt-4 pt-3.5 border-t border-zinc-100 dark:border-zinc-800 space-y-2.5">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <span className="text-xs text-zinc-400 dark:text-zinc-500">
-            {coach.activeStudentCount} active student{coach.activeStudentCount !== 1 ? "s" : ""}
+            {coach.role === "COACH"
+              ? `${coach.activeStudentCount} active student${coach.activeStudentCount !== 1 ? "s" : ""}`
+              : "Non-training staff"}
           </span>
           <button
             onClick={onEdit}
@@ -273,18 +475,17 @@ function CoachCard({
         </div>
 
         {/* Today's attendance — only for working coaches */}
-        {isWorking && (
+        {coach.role === "COACH" && isWorking && (
           <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 shrink-0">Today</span>
             <div className="flex items-center gap-1 ml-auto">
               <button
                 type="button"
                 onClick={(e) => onMark(e, "PRESENT")}
-                className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer ${
-                  todayStatus === "PRESENT"
+                className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer ${todayStatus === "PRESENT"
                     ? "bg-emerald-500 text-white shadow-sm"
                     : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400"
-                }`}
+                  }`}
               >
                 <CheckCircle2 className="h-3 w-3" />
                 Present
@@ -292,11 +493,10 @@ function CoachCard({
               <button
                 type="button"
                 onClick={(e) => onMark(e, "ABSENT")}
-                className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer ${
-                  todayStatus === "ABSENT"
+                className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer ${todayStatus === "ABSENT"
                     ? "bg-rose-500 text-white shadow-sm"
                     : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-600 dark:hover:text-rose-400"
-                }`}
+                  }`}
               >
                 <XCircle className="h-3 w-3" />
                 Absent
@@ -392,7 +592,20 @@ function AttendancePanel({ coaches, todayStr }: { coaches: CoachWithStats[]; tod
                     {coach.name.charAt(0)}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">{coach.name}</p>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">{coach.name}</p>
+                      {coach.role === "COACH" ? (
+                        <span className="shrink-0 inline-flex items-center gap-0.5 rounded-full bg-sky-100 dark:bg-sky-900/30 px-1.5 py-0.5 text-[9px] font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wide">
+                          <Dumbbell className="h-2 w-2" />
+                          Coach
+                        </span>
+                      ) : (
+                        <span className="shrink-0 inline-flex items-center gap-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 px-1.5 py-0.5 text-[9px] font-bold text-violet-700 dark:text-violet-400 uppercase tracking-wide">
+                          <Briefcase className="h-2 w-2" />
+                          Staff
+                        </span>
+                      )}
+                    </div>
                     {coach.timing && (
                       <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate">{coach.timing}</p>
                     )}
@@ -404,11 +617,10 @@ function AttendancePanel({ coaches, todayStr }: { coaches: CoachWithStats[]; tod
                     type="button"
                     disabled={isSaving}
                     onClick={() => mark(coach.id, "PRESENT")}
-                    className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all cursor-pointer ${
-                      status === "PRESENT"
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all cursor-pointer ${status === "PRESENT"
                         ? "bg-emerald-500 text-white shadow-sm"
                         : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-700 dark:hover:text-emerald-400"
-                    }`}
+                      }`}
                   >
                     <CheckCircle2 className="h-3.5 w-3.5" />
                     Present
@@ -417,11 +629,10 @@ function AttendancePanel({ coaches, todayStr }: { coaches: CoachWithStats[]; tod
                     type="button"
                     disabled={isSaving}
                     onClick={() => mark(coach.id, "ABSENT")}
-                    className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all cursor-pointer ${
-                      status === "ABSENT"
+                    className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all cursor-pointer ${status === "ABSENT"
                         ? "bg-rose-500 text-white shadow-sm"
                         : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-700 dark:hover:text-rose-400"
-                    }`}
+                      }`}
                   >
                     <XCircle className="h-3.5 w-3.5" />
                     Absent
@@ -621,7 +832,7 @@ export default function CoachesPageClient({ coaches: initialCoaches, todayStr }:
             className="inline-flex items-center gap-2 rounded-2xl bg-brand-orange-500 hover:bg-brand-orange-600 text-white px-4 py-2.5 text-sm font-semibold transition-colors cursor-pointer shadow-sm"
           >
             <Plus className="h-4 w-4" />
-            Add Coach
+            Add Employee
           </button>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { CoachStatus, CoachAttendanceStatus } from "@prisma/client";
+import type { CoachStatus, CoachAttendanceStatus, CoachRole } from "@prisma/client";
 import { uploadCoachAvatarToCloudinary } from "@/lib/avatar/cloudinary";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -14,7 +14,9 @@ export interface CoachWithStats {
   specialization: string | null;
   fixedSalary: number;
   status: CoachStatus;
+  role: CoachRole;
   notes: string | null;
+  address: string | null;
   avatarUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -44,12 +46,18 @@ export interface CoachMonthlyEarningRow {
 export async function listCoaches(options?: {
   status?: CoachStatus | "ALL";
   dateStr?: string; // "YYYY-MM-DD" — load today's attendance for each coach
+  role?: CoachRole;
 }): Promise<CoachWithStats[]> {
+  const whereClause: any = {};
+  if (options?.status && options.status !== "ALL") {
+    whereClause.status = options.status;
+  }
+  if (options?.role) {
+    whereClause.role = options.role;
+  }
+
   const coaches = await (prisma as any).coach.findMany({
-    where:
-      options?.status && options.status !== "ALL"
-        ? { status: options.status }
-        : undefined,
+    where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
     include: {
       attendances: options?.dateStr
         ? {
@@ -113,7 +121,9 @@ export async function createCoach(data: {
   timing?: string;
   specialization?: string;
   fixedSalary?: number;
+  role?: CoachRole;
   notes?: string;
+  address?: string;
   avatarFile?: File | null;
 }) {
   const coach = await (prisma as any).coach.create({
@@ -126,8 +136,10 @@ export async function createCoach(data: {
       specialization: data.specialization || null,
       fixedSalary: data.fixedSalary ?? 0,
       notes: data.notes || null,
+      address: data.address || null,
       avatarUrl: null,
       status: "WORKING",
+      role: data.role ?? "COACH",
     },
   });
 
@@ -155,7 +167,9 @@ export async function updateCoach(
     specialization?: string | null;
     fixedSalary?: number;
     status?: CoachStatus;
+    role?: CoachRole;
     notes?: string | null;
+    address?: string | null;
     avatarFile?: File | null;
   }
 ) {

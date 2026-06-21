@@ -46,9 +46,19 @@
 }
 
 .dark input::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(1.5);
-  opacity: 1;
+  opacity: 0.65;
   cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.dark input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Hide native password reveal button in Edge/IE */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
 }
 
 html {

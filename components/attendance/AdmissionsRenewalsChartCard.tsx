@@ -299,7 +299,13 @@ export default function AdmissionsRenewalsChartCard({
         </div>
       </div>
       <div className={`w-full flex-1 transition-opacity duration-200 ${isLoading ? "opacity-50 pointer-events-none" : ""}`}>
-        <ResponsiveContainer width="100%" height={240}>
+        <ResponsiveContainer
+          width="100%"
+          height={240}
+          minWidth={0}
+          minHeight={0}
+          initialDimension={{ width: 1, height: 1 }}
+        >
           <BarChart
             key={`${chartViewType}-${chartYear}-${chartMonth}`}
             data={(chartViewType === "monthly" ? breakdownChartData : dailyChartData) as any}

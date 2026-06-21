@@ -22,7 +22,7 @@ export default async function PlansPage() {
     getPricingMaps(),
     getGracePeriodMap(),
     listBatches(),
-    listCoaches({ status: "ALL" }),
+    listCoaches({ status: "WORKING", role: "COACH" }),
   ]);
 
   const studentOptions = students.map((s) => ({

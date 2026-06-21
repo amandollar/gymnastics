@@ -498,15 +498,15 @@ export async function changeParentPasswordAction(
 
     const student = await prisma.student.findUnique({
       where: { id: studentId },
-      select: { password: true },
+      select: { password: true, isTempPassword: true },
     });
 
     if (!student) {
       throw new Error("Student not found");
     }
 
-    // Only verify currentPassword if they are a parent and already have a password set
-    if (isParent && student.password) {
+    // Only verify currentPassword if they are a parent, already have a password set, and are NOT on a temporary password
+    if (isParent && student.password && !student.isTempPassword) {
       if (!currentPassword) {
         return { success: false, message: "Current password is required" };
       }

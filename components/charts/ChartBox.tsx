@@ -45,7 +45,13 @@ export default function ChartBox({
       style={{ height, minHeight: height }}
     >
       {hasSize && (
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer
+          width="100%"
+          height="100%"
+          minWidth={0}
+          minHeight={0}
+          initialDimension={{ width: 1, height: 1 }}
+        >
           {children}
         </ResponsiveContainer>
       )}
