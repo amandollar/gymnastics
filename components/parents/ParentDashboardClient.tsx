@@ -101,7 +101,7 @@ export default function ParentDashboardClient({
     if (printData) {
       const timer = setTimeout(() => {
         window.print();
-        const standardTitle = "TAG CRM Â· Academy of Gymnastics";
+        const standardTitle = "TAG CRM · Academy of Gymnastics";
         document.title = standardTitle;
         const titleEl = document.querySelector("title");
         if (titleEl) {
@@ -111,7 +111,7 @@ export default function ParentDashboardClient({
       }, 600);
       return () => {
         clearTimeout(timer);
-        const standardTitle = "TAG CRM Â· Academy of Gymnastics";
+        const standardTitle = "TAG CRM · Academy of Gymnastics";
         document.title = standardTitle;
         const titleEl = document.querySelector("title");
         if (titleEl) {
@@ -162,7 +162,7 @@ export default function ParentDashboardClient({
   };
 
   const INR = (amount: number) => {
-    return `â‚¹${amount.toLocaleString("en-IN")}`;
+    return `₹${amount.toLocaleString("en-IN")}`;
   };
 
   // Convert Date to YYYY-MM-DD
@@ -1288,4 +1288,5 @@ export default function ParentDashboardClient({
     </div>
   );
 }
+
 
