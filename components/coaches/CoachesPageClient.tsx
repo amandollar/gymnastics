@@ -609,7 +609,7 @@ export default function CoachesPageClient({ coaches: initialCoaches, todayStr }:
         </div>
         <div className="flex items-center gap-3">
           <Link
-            href="/coaches/attendance"
+            href="/admin/coaches/attendance"
             className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer shadow-sm"
           >
             <Calendar className="h-4 w-4 text-brand-orange-500" />
@@ -676,7 +676,7 @@ export default function CoachesPageClient({ coaches: initialCoaches, todayStr }:
                 coach={coach}
                 todayStatus={todayAttendance[coach.id] ?? null}
                 onMark={(e, status) => { e.stopPropagation(); markToday(coach.id, status); }}
-                onClick={() => router.push(`/coaches/${coach.id}`)}
+                onClick={() => router.push(`/admin/coaches/${coach.id}`)}
                 onEdit={(e) => { e.stopPropagation(); setEditCoach(coach); }}
               />
             ))}

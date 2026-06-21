@@ -484,7 +484,7 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
       {/* Breadcrumb back link and Header action bar */}
       <div className="flex flex-col gap-2">
         <Link
-          href="/coaches"
+          href="/admin/coaches"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:text-brand-orange-500 dark:hover:text-brand-orange-400 transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
@@ -842,8 +842,8 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
                       disabled={currentPayment.loading}
                       className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-xs font-semibold border transition-all cursor-pointer select-none ${
                         currentPayment.paid
-                          ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/30 hover:bg-zinc-100 dark:hover:bg-zinc-850"
-                          : "bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-450 border-rose-200 dark:border-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-950/30"
+                          ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/30 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                          : "bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-950/30"
                       }`}
                       title={currentPayment.paid ? "Click to mark as Unpaid" : "Click to mark as Paid"}
                     >
@@ -884,7 +884,7 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
                                   <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-brand-orange-100 dark:bg-brand-orange-950/40 text-brand-orange-600 text-[8px] font-bold">
                                     {row.studentName.charAt(0)}
                                   </span>
-                                  <Link href={`/admin/students/${row.studentId}`} className="text-zinc-700 dark:text-zinc-350 hover:text-brand-orange-500 transition-colors">
+                                  <Link href={`/admin/students/${row.studentId}`} className="text-zinc-700 dark:text-zinc-300 hover:text-brand-orange-500 transition-colors">
                                     {row.studentName}
                                   </Link>
                                   <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-normal">TAG {row.studentNumber}</span>
@@ -895,7 +895,7 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
                               </div>
 
                               {/* Breakdown Calculation details */}
-                              <div className="pl-5.5 space-y-1 text-[11px] text-zinc-455 dark:text-zinc-500">
+                              <div className="pl-5 space-y-1 text-[11px] text-zinc-400 dark:text-zinc-500">
                                 <div className="flex justify-between">
                                   <span>Total plan fee ({row.planMonths} months)</span>
                                   <span>{INR(row.totalFee)}</span>

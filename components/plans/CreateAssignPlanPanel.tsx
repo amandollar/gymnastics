@@ -306,7 +306,7 @@ export default function CreateAssignPlanPanel({
                   {coaches.filter((c) => c.status === "WORKING").length === 0 && (
                     <p className="text-xs text-zinc-400 dark:text-zinc-500">
                       No working coaches available.{" "}
-                      <Link href="/coaches" className="text-brand-orange-500 hover:underline">
+                      <Link href="/admin/coaches" className="text-brand-orange-500 hover:underline">
                         Add a coach first.
                       </Link>
                     </p>

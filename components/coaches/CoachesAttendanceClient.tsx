@@ -182,7 +182,7 @@ export default function CoachesAttendanceClient({
       {/* Back button and title */}
       <div className="flex flex-col gap-2">
         <Link
-          href="/coaches"
+          href="/admin/coaches"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:text-brand-orange-500 dark:hover:text-brand-orange-400 transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
