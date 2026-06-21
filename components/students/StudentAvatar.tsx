@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import { getStudentAvatarUrl, isDiceBearUrl } from "@/lib/utils/avatar";
@@ -21,17 +21,19 @@ const sizeMap = {
   128: 128,
 } as const;
 
+type StudentAvatarSize = keyof typeof sizeMap | number;
+
 export default function StudentAvatar({
   student,
   size = 40,
   className = "",
 }: {
   student: StudentLike;
-  size?: keyof typeof sizeMap;
+  size?: StudentAvatarSize;
   className?: string;
 }) {
   const src = getStudentAvatarUrl(student);
-  const px = sizeMap[size];
+  const px = typeof size === "number" ? size : sizeMap[size];
 
   return (
     <Image
@@ -45,3 +47,5 @@ export default function StudentAvatar({
     />
   );
 }
+
+

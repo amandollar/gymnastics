@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { signOut } from "next-auth/react";
@@ -15,7 +15,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Clock,
-  Calendar
+  Calendar,
+  Info
 } from "lucide-react";
 import { getPaymentByIdAction } from "@/lib/actions/payments";
 import { FeeReceipt } from "@/components/students/studentProfile/FeeReceipt";
@@ -40,6 +41,7 @@ export default function ParentDashboardClient({
   const [showLogs, setShowLogs] = useState(false);
   const [activeTab, setActiveTab] = useState<"overview" | "attendance" | "billing">("overview");
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
   useEffect(() => {
     const collapsed = localStorage.getItem("parent-sidebar-collapsed") === "true";
@@ -99,7 +101,7 @@ export default function ParentDashboardClient({
     if (printData) {
       const timer = setTimeout(() => {
         window.print();
-        const standardTitle = "TAG CRM · Academy of Gymnastics";
+        const standardTitle = "TAG CRM Â· Academy of Gymnastics";
         document.title = standardTitle;
         const titleEl = document.querySelector("title");
         if (titleEl) {
@@ -109,7 +111,7 @@ export default function ParentDashboardClient({
       }, 600);
       return () => {
         clearTimeout(timer);
-        const standardTitle = "TAG CRM · Academy of Gymnastics";
+        const standardTitle = "TAG CRM Â· Academy of Gymnastics";
         document.title = standardTitle;
         const titleEl = document.querySelector("title");
         if (titleEl) {
@@ -160,7 +162,7 @@ export default function ParentDashboardClient({
   };
 
   const INR = (amount: number) => {
-    return `₹${amount.toLocaleString("en-IN")}`;
+    return `â‚¹${amount.toLocaleString("en-IN")}`;
   };
 
   // Convert Date to YYYY-MM-DD
@@ -260,6 +262,26 @@ export default function ParentDashboardClient({
   }, [activePlan]);
 
   const todayYMD = toYMD(new Date());
+
+  const remainingSessions = activePlan
+    ? Math.max(0, activePlan.totalSessions - activePlan.sessionsCompleted)
+    : 0;
+  const progressPercentage = activePlan
+    ? Math.min(
+        100,
+        Math.round((activePlan.sessionsCompleted / Math.max(activePlan.totalSessions, 1)) * 100)
+      )
+    : 0;
+  const scheduleDays = Array.isArray(activePlan?.selectedDays) ? activePlan.selectedDays : [];
+  const schedulePreview = scheduleDays.length ? scheduleDays.slice(0, 2).join(" • ") : "No schedule";
+  const fullSchedule = scheduleDays.length ? scheduleDays.join(", ") : "No schedule set";
+  const planEndLabel = activePlan
+    ? new Date(activePlan.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
+    : "—";
+
+  const toggleTooltip = (key: string) => {
+    setActiveTooltip((prev) => (prev === key ? null : key));
+  };
 
   return (
     <div className="min-h-[100dvh] bg-[var(--background)] dark:bg-zinc-950 flex flex-col md:flex-row gap-0 transition-colors duration-200 font-sans antialiased text-zinc-900 dark:text-zinc-100">
@@ -576,193 +598,271 @@ export default function ParentDashboardClient({
       <div className="flex-1 flex flex-col min-w-0">
         <main className="flex-1 p-4 sm:p-6 lg:p-8 pt-6 sm:pt-6 lg:pt-8 pb-24 md:pb-8 min-w-0 text-zinc-900 dark:text-zinc-100">
           
-          {/* Welcome Section */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-zinc-200/40 dark:border-zinc-800/30 mb-6">
-            <div className="flex flex-col gap-1">
-              <h1 className="text-2xl sm:text-3xl md:text-5xl font-light tracking-tight text-zinc-900 dark:text-zinc-200">
-                Welcome back,{" "}
-                <span className="font-semibold text-brand-orange-500">
-                  {student.parentName}
-                </span>
-              </h1>
-              <p className="text-xs sm:text-sm text-zinc-400 dark:text-zinc-500">
-                Tracking progress for gymnast <span className="font-semibold text-zinc-700 dark:text-zinc-400">{student.name}</span> · Roll No: <span className="font-semibold text-zinc-700 dark:text-zinc-400">TAG{String(student.studentNumber).padStart(3, "0")}</span>
-              </p>
-            </div>
-          </div>
-
           {/* Tab Contents */}
           <div className="transition-all duration-300">
             
             {/* TAB 1: OVERVIEW */}
             {activeTab === "overview" && (
-              <div className="space-y-8 animate-fade-in">
-              {/* KPI Cards Grid */}
-              <section className="grid gap-5 sm:grid-cols-3">
-                {/* Remaining Classes */}
-                <div 
-                  className="bg-white dark:bg-zinc-900 p-5 sm:p-6 shadow-sm border border-zinc-200/60 dark:border-zinc-800/80 flex flex-col justify-between min-h-[140px]"
-                  style={{ borderRadius: "1.5rem" }}
-                >
-                  <div className="flex items-center justify-between text-zinc-400 dark:text-zinc-500">
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Remaining Classes</span>
-                    <CheckCircle2 className="w-4.5 h-4.5 text-brand-orange-500" />
-                  </div>
-                  <div>
-                    <p className="text-3xl sm:text-4xl font-extralight tracking-tight text-zinc-900 dark:text-zinc-100">
-                      <span className="font-semibold text-brand-orange-500">
-                        {activePlan ? Math.max(0, activePlan.totalSessions - activePlan.sessionsCompleted) : 0}
-                      </span>
-                      <span className="text-sm font-semibold text-zinc-400 dark:text-zinc-500 mx-1">/</span>
-                      <span className="text-sm font-bold text-zinc-500 dark:text-zinc-400">
-                        {activePlan ? activePlan.totalSessions : 0} total
-                      </span>
-                    </p>
-                  </div>
-                  {activePlan && (
-                    <div className="w-full bg-zinc-200 dark:bg-zinc-800 h-1.5 rounded-full overflow-hidden mt-2">
-                      <div 
-                        className="bg-brand-orange-500 h-full rounded-full transition-all duration-500"
-                        style={{ width: `${(activePlan.sessionsCompleted / activePlan.totalSessions) * 100}%` }}
-                      />
+              <div className="space-y-4 animate-fade-in">
+                {/* Student profile summary */}
+                <section className="overflow-hidden rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 shadow-sm">
+                  <div className="relative p-4 sm:p-5">
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-r from-brand-orange-500/12 via-transparent to-brand-orange-500/8" />
+                    <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center">
+                      <div className="relative w-fit">
+                        <div className="absolute inset-0 rounded-full bg-brand-orange-500/15 blur-xl" />
+                        <div className="relative rounded-full ring-4 ring-white dark:ring-zinc-900 shadow-lg shadow-brand-orange-500/10">
+                          <StudentAvatar student={student} size={100} />
+                        </div>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
+                              Student profile
+                            </p>
+                            <h3 className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+                              {student.name}
+                            </h3>
+                            <div className="mt-2 flex flex-wrap items-center gap-2">
+                              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                                TAG{String(student.studentNumber).padStart(3, "0")}
+                              </p>
+                              <span className="inline-flex items-center rounded-full border border-brand-orange-200/70 bg-brand-orange-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-brand-orange-600 dark:border-brand-orange-900/40 dark:bg-brand-orange-950/25 dark:text-brand-orange-400">
+                                {student.status}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="rounded-2xl border border-zinc-200/70 dark:border-zinc-800/80 bg-zinc-50/90 dark:bg-zinc-950/50 px-3 py-2 sm:min-w-36">
+                            <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                              Sessions used
+                            </p>
+                            <div className="mt-1 flex items-end gap-2">
+                              <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                                {activePlan?.sessionsCompleted ?? 0}
+                              </span>
+                              <span className="pb-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                                / {activePlan?.totalSessions ?? 0}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-4">
+                          <div className="mb-3 flex items-center justify-between text-[11px]">
+                            <span className="font-medium text-zinc-500 dark:text-zinc-400">Current plan progress</span>
+                            <span className="font-semibold text-brand-orange-600 dark:text-brand-orange-400">
+                              {progressPercentage}%
+                            </span>
+                          </div>
+                          <div className="h-2.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                            <div
+                              className="h-full rounded-full bg-gradient-to-r from-brand-orange-500 to-brand-orange-600 transition-all duration-500"
+                              style={{ width: `${progressPercentage}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                          <div className="rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 bg-zinc-50/85 dark:bg-zinc-950/50 p-3">
+                            <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Age</p>
+                            <p className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-100">{formatAge(student.dateOfBirth)}</p>
+                          </div>
+                          <div className="rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 bg-zinc-50/85 dark:bg-zinc-950/50 p-3">
+                            <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Batch</p>
+                            <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                              {activePlan?.batch?.name || "Not assigned"}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 bg-zinc-50/85 dark:bg-zinc-950/50 p-3">
+                            <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Class time</p>
+                            <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                              {activePlan?.batch?.timing || "Contact office"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                </section>
 
-                {/* Class Timings */}
-                <div 
-                  className="bg-white dark:bg-zinc-900 p-5 sm:p-6 shadow-sm border border-zinc-200/60 dark:border-zinc-800/80 flex flex-col justify-between min-h-[140px]"
-                  style={{ borderRadius: "1.5rem" }}
-                >
-                  <div className="flex items-center justify-between text-zinc-400 dark:text-zinc-500">
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Class Timings</span>
-                    <Clock className="w-4.5 h-4.5 text-brand-orange-500" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate">
-                      {activePlan?.batch?.name || "Assigned Batch"}
+                {/* Quick stats */}
+                <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="relative overflow-hidden rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 p-4">
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-orange-500 to-brand-orange-600" />
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-orange-50 text-brand-orange-600 dark:bg-brand-orange-950/30 dark:text-brand-orange-400">
+                          <Clock className="h-4 w-4" />
+                        </div>
+                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Remaining</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleTooltip("remaining")}
+                        className="rounded-full p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                        aria-label="More about remaining sessions"
+                      >
+                        <Info className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <p className="mt-3 text-3xl font-semibold text-zinc-900 dark:text-zinc-100">
+                      {remainingSessions}
                     </p>
-                    <p className="text-lg sm:text-xl font-extralight text-zinc-900 dark:text-zinc-200 tracking-tight mt-0.5">
-                      {activePlan?.batch?.timing || "Contact office"}
+                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                      Sessions left in the current plan
                     </p>
-                  </div>
-                  <div className="text-[10px] text-zinc-400 dark:text-zinc-500 border-t border-zinc-100 dark:border-zinc-800/80 pt-2">
-                    Schedule: <span className="font-semibold text-zinc-700 dark:text-zinc-400">{activePlan?.selectedDays?.join(", ") || "None"}</span>
-                  </div>
-                </div>
-
-                {/* Expiry / Renewal Date */}
-                <div 
-                  className="bg-white dark:bg-zinc-900 p-5 sm:p-6 shadow-sm border border-zinc-200/60 dark:border-zinc-800/80 flex flex-col justify-between min-h-[140px]"
-                  style={{ borderRadius: "1.5rem" }}
-                >
-                  <div className="flex items-center justify-between text-zinc-400 dark:text-zinc-500">
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Plan Expiry Date</span>
-                    <Calendar className="w-4.5 h-4.5 text-brand-orange-500" />
-                  </div>
-                  <div>
-                    {activePlan ? (
-                      <>
-                        <p className="text-2xl sm:text-3xl font-extralight text-zinc-900 dark:text-zinc-100 tracking-tight">
-                          {new Date(activePlan.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                        </p>
-                      </>
-                    ) : (
-                      <p className="text-sm font-semibold text-zinc-400 dark:text-zinc-500">No active expiry date</p>
+                    {activeTooltip === "remaining" && (
+                      <div className="absolute right-0 top-12 z-20 w-56 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 shadow-xl">
+                        <p className="text-xs text-zinc-600 dark:text-zinc-300">This shows how many sessions are still left in the current plan.</p>
+                      </div>
                     )}
                   </div>
-                  <div className="text-[10px] text-zinc-400 dark:text-zinc-500 border-t border-zinc-100 dark:border-zinc-800/80 pt-2">
-                    Status: <span className="font-bold uppercase text-brand-orange-500">{student.status}</span>
-                  </div>
-                </div>
-              </section>
-
-              {/* Profiles Row */}
-              <div className="grid gap-5 md:grid-cols-[300px_1fr] items-start">
-                
-                {/* Gymnast Identity */}
-                <div className="flex flex-col gap-5">
-                  <div 
-                    className="bg-white dark:bg-zinc-900 p-6 shadow-sm flex flex-col items-center text-center gap-4 border border-zinc-200/60 dark:border-zinc-800/80"
-                    style={{ borderRadius: "1.5rem" }}
-                  >
-                    <StudentAvatar student={student} size={128} />
-                    <div>
-                      <h2 className="text-xl font-bold text-zinc-900 dark:text-zinc-200">
-                        {student.name}
-                      </h2>
-                      <p className="text-sm font-semibold text-zinc-400 dark:text-zinc-500 mt-0.5">
-                        TAG{student.studentNumber}
-                      </p>
+                  <div className="relative overflow-hidden rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 p-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 dark:bg-sky-950/30 dark:text-sky-400">
+                          <Calendar className="h-4 w-4" />
+                        </div>
+                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Next class</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleTooltip("nextclass")}
+                        className="rounded-full p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                        aria-label="More about schedule"
+                      >
+                        <Info className="h-3.5 w-3.5" />
+                      </button>
                     </div>
+                    <p className="mt-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                      {schedulePreview}
+                    </p>
+                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                      {activePlan?.batch?.timing || "Timing not available"}
+                    </p>
+                    {activeTooltip === "nextclass" && (
+                      <div className="absolute right-0 top-12 z-20 w-56 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 shadow-xl">
+                        <p className="text-xs text-zinc-600 dark:text-zinc-300">These are the class days currently scheduled for the student.</p>
+                      </div>
+                    )}
                   </div>
+                  <div className="relative overflow-hidden rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 p-4 sm:col-span-2 xl:col-span-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Plan ends</p>
+                        <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                          {planEndLabel}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => toggleTooltip("planend")}
+                        className="rounded-full p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                        aria-label="More about plan end date"
+                      >
+                        <Info className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {scheduleDays.length > 0 ? (
+                        scheduleDays.map((day: string) => (
+                          <span
+                            key={day}
+                            className="rounded-full bg-zinc-100 px-2.5 py-1 text-[10px] font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+                          >
+                            {day}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-zinc-500 dark:text-zinc-400">No schedule set</span>
+                      )}
+                    </div>
+                    {activeTooltip === "planend" && (
+                      <div className="absolute right-0 top-12 z-20 w-56 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 shadow-xl">
+                        <p className="text-xs text-zinc-600 dark:text-zinc-300">This is the final date of the currently active plan.</p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
                   <LevelProgress
                     studentId={student.id}
                     studentName={student.name}
                     currentLevel={student.level}
                     canManage={false}
                   />
+
+                  <section className="relative rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Important details</h3>
+                      <button
+                        type="button"
+                        onClick={() => toggleTooltip("contact")}
+                        className="rounded-full p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                        aria-label="More about contact details"
+                      >
+                        <Info className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    {activeTooltip === "contact" && (
+                      <div className="absolute right-4 top-12 z-20 w-56 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 shadow-xl">
+                        <p className="text-xs text-zinc-600 dark:text-zinc-300">Use the phone number to quickly contact the office or parent support team.</p>
+                      </div>
+                    )}
+                    <dl className="mt-3 space-y-3 text-sm">
+                      <div className="flex items-center justify-between gap-3 border-b border-zinc-100 dark:border-zinc-800 pb-2.5">
+                        <dt className="text-zinc-400 dark:text-zinc-500">Gender</dt>
+                        <dd className="font-medium text-zinc-900 dark:text-zinc-100 capitalize">{student.gender}</dd>
+                      </div>
+                      <div className="flex items-center justify-between gap-3 border-b border-zinc-100 dark:border-zinc-800 pb-2.5">
+                        <dt className="text-zinc-400 dark:text-zinc-500">DOB</dt>
+                        <dd className="font-medium text-zinc-900 dark:text-zinc-100">
+                          {new Date(student.dateOfBirth).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                        </dd>
+                      </div>
+                      <div className="flex items-center justify-between gap-3">
+                        <dt className="text-zinc-400 dark:text-zinc-500">Parent contact</dt>
+                        <dd className="font-medium text-right">
+                          <a href={`tel:${student.contactNumber}`} className="text-brand-orange-500 hover:underline">{student.contactNumber}</a>
+                        </dd>
+                      </div>
+                    </dl>
+                  </section>
                 </div>
 
-                {/* Gymnast Metadata details card */}
-                <div 
-                  className="bg-white dark:bg-zinc-900 p-6 shadow-sm space-y-4 border border-zinc-200/60 dark:border-zinc-800/80"
-                  style={{ borderRadius: "1.5rem" }}
-                >
-                  <h3 className="text-sm font-bold text-zinc-800 dark:text-zinc-200">
-                    Gymnast Details
-                  </h3>
-                  <dl className="space-y-3.5 text-sm">
-                    <div className="flex justify-between gap-2 border-b border-zinc-100 dark:border-zinc-800/50 pb-2.5">
-                      <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">Age</dt>
-                      <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
-                        {formatAge(student.dateOfBirth)}
-                      </dd>
+                {activePlan && (
+                  <section className="rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Plan progress</h3>
+                      <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        {activePlan.planType === "ONE_TO_ONE" ? "Personal" : "Group"}
+                      </span>
                     </div>
-                    <div className="flex justify-between gap-2 border-b border-zinc-100 dark:border-zinc-800/50 pb-2.5">
-                      <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">Gender</dt>
-                      <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right capitalize">
-                        {student.gender}
-                      </dd>
-                    </div>
-                    <div className="flex justify-between gap-2 border-b border-zinc-100 dark:border-zinc-800/50 pb-2.5">
-                      <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">DOB</dt>
-                      <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
-                        {new Date(student.dateOfBirth).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </dd>
-                    </div>
-                    <div className="flex justify-between gap-2 border-b border-zinc-100 dark:border-zinc-800/50 pb-2.5">
-                      <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">Parent Name</dt>
-                      <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
-                        {student.parentName}
-                      </dd>
-                    </div>
-                    <div className="flex justify-between gap-2 border-b border-zinc-100 dark:border-zinc-800/50 pb-2.5">
-                      <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">Parent Contact</dt>
-                      <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
-                        {student.contactNumber}
-                      </dd>
-                    </div>
-                    <div className="flex justify-between gap-2">
-                      <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">Joined Academy</dt>
-                      <dd className="font-medium text-zinc-900 dark:text-zinc-100 text-right">
-                        {new Date(student.admissionDate).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
 
+                    <div className="mt-3 space-y-3">
+                      <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+                        <span>{activePlan.sessionsCompleted} sessions done</span>
+                        <span>{activePlan.totalSessions} total</span>
+                      </div>
+                      <div className="h-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-brand-orange-500 transition-all duration-500"
+                          style={{ width: `${Math.min(100, Math.round((activePlan.sessionsCompleted / Math.max(activePlan.totalSessions, 1)) * 100))}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between gap-3 text-sm">
+                        <span className="text-zinc-500 dark:text-zinc-400">Schedule</span>
+                        <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-right">
+                          {fullSchedule}
+                        </span>
+                      </div>
+                    </div>
+                  </section>
+                )}
               </div>
-            </div>
-          )}
+            )}
 
           {/* TAB 2: ATTENDANCE */}
           {activeTab === "attendance" && (
@@ -940,210 +1040,124 @@ export default function ParentDashboardClient({
 
           {/* TAB 3: BILLING */}
           {activeTab === "billing" && (
-            <div className="space-y-8 animate-fade-in">
+            <div className="space-y-4 animate-fade-in">
               {/* Current plan card */}
               {activePlan ? (
                 <div 
-                  className="bg-white dark:bg-zinc-900 p-6 shadow-sm space-y-6 transition-colors border border-zinc-200/60 dark:border-zinc-800/80"
+                  className="bg-white dark:bg-zinc-900 p-4 sm:p-5 shadow-sm transition-colors border border-zinc-200/60 dark:border-zinc-800/80"
                   style={{ borderRadius: "1.5rem" }}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-3">
                     <div>
-                      <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
+                        Billing overview
+                      </p>
+                      <h3 className="mt-1 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
                         Current plan
                       </h3>
                     </div>
                     {activePlan.discountPercent > 0 && (
-                      <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/20 px-2.5 py-1 rounded-lg">
+                      <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
                         {activePlan.discountPercent}% off
                       </span>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 min-[1200px]:grid-cols-2 gap-8">
-                    
-                    {/* Column 1: Batch Details */}
-                    <div className="space-y-2 min-w-0 flex flex-col h-full">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block">
-                        Batch Details
-                      </span>
-                      <div className="rounded-2xl bg-zinc-100 dark:bg-zinc-950/60 p-6 text-sm flex flex-col gap-8 flex-1 min-h-[240px]">
-                        <div className="grid grid-cols-2 gap-x-8 gap-y-8">
-                          <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block mb-1.5">
-                              Class Type
-                            </span>
-                            <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                              {activePlan.planType === "ONE_TO_ONE" ? "Personal" : "Grouped"}
-                            </p>
-                          </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-950/50 p-4">
+                      <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Total fee</p>
+                      <p className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">{INR(activePlan.fee)}</p>
+                      <p className="mt-1 text-xs font-medium text-rose-500 dark:text-rose-400">
+                        {(typeof activePlan.outstanding === "number" ? activePlan.outstanding : activePlan.fee) <= 0
+                          ? "Paid"
+                          : `${INR(typeof activePlan.outstanding === "number" ? activePlan.outstanding : activePlan.fee)} due`}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-950/50 p-4">
+                      <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Per session</p>
+                      <p className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+                        {activePlan.totalSessions > 0 ? INR(Math.round(activePlan.fee / activePlan.totalSessions)) : "â€”"}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-950/50 p-4">
+                      <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Discount</p>
+                      <p className="mt-1 text-2xl font-semibold text-emerald-600 dark:text-emerald-400">
+                        {activePlan.discountPercent > 0 ? `${activePlan.discountPercent}%` : "â€”"}
+                      </p>
+                    </div>
+                  </div>
 
-                          {activePlan.batch && (
-                            <>
-                              <div>
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block mb-1.5">
-                                  Batch
-                                </span>
-                                <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                                  {activePlan.batch.name}
-                                </p>
-                              </div>
-                              <div className="col-span-2">
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block mb-1.5">
-                                  Timing
-                                </span>
-                                <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                                  {activePlan.batch.timing}
-                                </p>
-                              </div>
-                            </>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <section className="rounded-2xl bg-zinc-50 dark:bg-zinc-950/50 p-4">
+                      <h4 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">Plan details</h4>
+                      <dl className="mt-3 space-y-2.5 text-sm">
+                        <div className="flex items-center justify-between gap-3">
+                          <dt className="text-zinc-400 dark:text-zinc-500">Batch</dt>
+                          <dd className="font-semibold text-zinc-900 dark:text-zinc-100 text-right">{activePlan.batch?.name || "â€”"}</dd>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <dt className="text-zinc-400 dark:text-zinc-500">Timing</dt>
+                          <dd className="font-semibold text-zinc-900 dark:text-zinc-100 text-right">{activePlan.batch?.timing || "â€”"}</dd>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <dt className="text-zinc-400 dark:text-zinc-500">Type</dt>
+                          <dd className="font-semibold text-zinc-900 dark:text-zinc-100 text-right">{activePlan.planType === "ONE_TO_ONE" ? "Personal" : "Grouped"}</dd>
+                        </div>
+                      </dl>
+                    </section>
+
+                    <section className="rounded-2xl bg-zinc-50 dark:bg-zinc-950/50 p-4">
+                      <h4 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">Schedule</h4>
+                      <div className="mt-3 space-y-3">
+                        <div className="flex flex-wrap gap-1.5">
+                          {Array.isArray(activePlan.selectedDays) && activePlan.selectedDays.length > 0 ? (
+                            activePlan.selectedDays.map((day: string) => (
+                              <span
+                                key={day}
+                                className="rounded-full bg-brand-orange-50 dark:bg-brand-orange-950/30 px-2.5 py-1 text-[10px] font-semibold text-brand-orange-600 dark:text-brand-orange-400"
+                              >
+                                {day.substring(0, 3)}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-zinc-500 dark:text-zinc-400">No schedule set</span>
                           )}
                         </div>
-
-                        {Array.isArray(activePlan.selectedDays) && activePlan.selectedDays.length > 0 && (
-                          <div className="space-y-1">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block">
-                              Schedule
-                            </span>
-                            <div className="flex flex-wrap gap-1 mt-0.5">
-                              {activePlan.selectedDays.map((day: string) => (
-                                <span
-                                  key={day}
-                                  className="text-xs font-bold rounded-lg px-2.5 py-1 bg-brand-orange-50/60 dark:bg-brand-orange-950/25 text-brand-orange-600 dark:text-brand-orange-400"
-                                >
-                                  {day.substring(0, 3)}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Column 2: Plan Duration & Progress */}
-                    <div className="space-y-2 min-w-0 flex flex-col h-full">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block">
-                        Plan Duration &amp; Progress
-                      </span>
-                      <div className="rounded-2xl bg-zinc-100 dark:bg-zinc-950/60 p-6 text-sm flex flex-col gap-8 flex-1 min-h-[240px]">
-                        <div className="grid grid-cols-2 gap-x-8 gap-y-8">
-                          <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block mb-1.5">
-                              Start Date
-                            </span>
-                            <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                              {new Date(activePlan.startDate).toLocaleDateString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })}
-                            </p>
-                          </div>
-
-                          <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block mb-1.5">
-                              End Date
-                            </span>
-                            <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                              {new Date(activePlan.endDate).toLocaleDateString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })}
-                            </p>
-                          </div>
-
-                          <div className="col-span-2">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block mb-1.5">
-                              Expiry Date
-                            </span>
-                            <p className="text-xs font-bold text-zinc-800 dark:text-zinc-200 mt-0.5">
-                              {new Date(activePlan.expiryDate).toLocaleDateString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Progress bar */}
-                        <div className="space-y-1">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block mb-1.5">
-                            Sessions Completion
+                        <div className="flex items-center justify-between gap-3 text-sm">
+                          <span className="text-zinc-400 dark:text-zinc-500">Start</span>
+                          <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                            {new Date(activePlan.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                           </span>
-                          <div className="flex items-center justify-between text-xs font-semibold text-zinc-900 dark:text-zinc-200 max-w-xs">
-                            <span>
-                              {activePlan.sessionsCompleted} / {activePlan.totalSessions} completed
-                            </span>
-                            <span className="font-bold text-brand-orange-500">
-                              {activePlan.totalSessions - activePlan.sessionsCompleted} left
-                            </span>
-                          </div>
-                          <div className="relative h-6 w-full max-w-xs rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden mt-1.5">
-                            <div
-                              className="h-full rounded-full bg-brand-orange-500 transition-all duration-550 flex items-center justify-center text-[10px] font-bold text-white px-2"
-                              style={{ width: `${Math.min(100, Math.round((activePlan.sessionsCompleted / activePlan.totalSessions) * 100))}%` }}
-                            >
-                              {Math.round((activePlan.sessionsCompleted / activePlan.totalSessions) * 100) > 15 && 
-                                `${Math.round((activePlan.sessionsCompleted / activePlan.totalSessions) * 100)}%`}
-                            </div>
-                          </div>
+                        </div>
+                        <div className="flex items-center justify-between gap-3 text-sm">
+                          <span className="text-zinc-400 dark:text-zinc-500">Ends</span>
+                          <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                            {new Date(activePlan.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                          </span>
                         </div>
                       </div>
-                    </div>
-
-                    {/* Pricing Details Row */}
-                    <div className="space-y-2 min-[1200px]:col-span-2">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block">
-                        Pricing Details
-                      </span>
-                      <div className="rounded-2xl bg-zinc-100 dark:bg-zinc-950/60 p-6">
-                        <div className="grid grid-cols-3 gap-8">
-                          <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block mb-1.5">
-                              Total Fee
-                            </span>
-                            <p className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">
-                              {INR(activePlan.fee)}
-                            </p>
-                            <div className="mt-1">
-                              {(typeof activePlan.outstanding === "number" ? activePlan.outstanding : activePlan.fee) <= 0 ? (
-                                <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-                                  Paid
-                                </span>
-                              ) : (
-                                <span className="text-xs font-bold text-rose-500 dark:text-rose-400">
-                                  {INR(typeof activePlan.outstanding === "number" ? activePlan.outstanding : activePlan.fee)} due
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block mb-1.5">
-                              Per Session
-                            </span>
-                            <p className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">
-                              {activePlan.totalSessions > 0
-                                ? INR(Math.round(activePlan.fee / activePlan.totalSessions))
-                                : "—"}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block mb-1.5">
-                              Discount Applied
-                            </span>
-                            <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                              {activePlan.discountPercent > 0
-                                ? `${activePlan.discountPercent}% off`
-                                : "—"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
+                    </section>
                   </div>
+
+                  <section className="mt-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950/50 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Progress</p>
+                        <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                          {activePlan.sessionsCompleted} / {activePlan.totalSessions} sessions
+                        </p>
+                      </div>
+                      <span className="text-sm font-semibold text-brand-orange-500">
+                        {activePlan.totalSessions - activePlan.sessionsCompleted} left
+                      </span>
+                    </div>
+                    <div className="mt-3 h-2.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-brand-orange-500 transition-all duration-500"
+                        style={{ width: `${Math.min(100, Math.round((activePlan.sessionsCompleted / Math.max(activePlan.totalSessions, 1)) * 100))}%` }}
+                      />
+                    </div>
+                  </section>
                 </div>
               ) : (
                 <div 
@@ -1274,3 +1288,4 @@ export default function ParentDashboardClient({
     </div>
   );
 }
+
