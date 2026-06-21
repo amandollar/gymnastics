@@ -1,4 +1,4 @@
-import type { NextAuthConfig } from "next-auth";
+﻿import type { NextAuthConfig } from "next-auth";
 
 export const authConfig = {
   pages: {
@@ -88,13 +88,10 @@ export const authConfig = {
         return true;
       }
 
-      // Redirect root route based on role if logged in
-      if (isLoggedIn && pathname === "/") {
-        if (role === "PARENT") {
-          return Response.redirect(new URL("/parents", nextUrl));
-        } else {
-          return Response.redirect(new URL("/admin/dashboard", nextUrl));
-        }
+      // Keep the academy website public even for logged-in users.
+      // Role-based redirects only apply inside protected app sections.
+      if (pathname === "/") {
+        return true;
       }
 
       return true;
@@ -116,4 +113,5 @@ export const authConfig = {
   },
   providers: [],
 } satisfies NextAuthConfig;
+
 
