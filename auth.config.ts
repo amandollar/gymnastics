@@ -17,6 +17,14 @@ export const authConfig = {
       const isAdminLoginRoute = pathname === "/admin/login";
       const isParentRoute = pathname.startsWith("/parents");
       const isParentLoginRoute = pathname === "/parents/login";
+      const isSettingsRoute = pathname === "/admin/settings";
+      const requiresManageAccess =
+        pathname === "/admin/students" ||
+        pathname.startsWith("/admin/students/") ||
+        pathname === "/admin/enquiries" ||
+        pathname.startsWith("/admin/enquiries/") ||
+        pathname === "/admin/plans" ||
+        pathname.startsWith("/admin/plans/");
 
       // If accessing a parent route
       if (isParentRoute) {
@@ -63,6 +71,14 @@ export const authConfig = {
 
         if (role === "PARENT") {
           return Response.redirect(new URL("/parents", nextUrl));
+        }
+
+        if (isSettingsRoute && role !== "ADMIN") {
+          return Response.redirect(new URL("/admin/dashboard", nextUrl));
+        }
+
+        if (requiresManageAccess && role !== "ADMIN" && role !== "MANAGER") {
+          return Response.redirect(new URL("/admin/dashboard", nextUrl));
         }
 
         if (pathname === "/admin") {

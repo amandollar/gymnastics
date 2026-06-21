@@ -10,8 +10,8 @@ const roleLabels: Record<string, string> = {
   ADMIN: "Admin",
   SUPER: "Admin",
   SUPER_ADMIN: "Admin",
-  MANAGER: "Staff",
-  TRAINER: "Coach",
+  MANAGER: "Manager",
+  TRAINER: "Trainer",
 };
 
 export default function RoleBadge({ role }: { role: string }) {

@@ -439,7 +439,7 @@ export default function AccessTab({
 
       <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800/60 bg-white dark:bg-zinc-950 p-4 lg:p-6 shadow-xs">
         {/* Header */}
-        <div className="flex items-center justify-between gap-4 mb-5">
+        <div className="flex items-center justify-between gap-4 mb-3">
           <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
             Team Members
           </h2>
@@ -452,14 +452,32 @@ export default function AccessTab({
           </button>
         </div>
 
+        <div className="mb-4 flex flex-wrap gap-2">
+          <span className="inline-flex items-center rounded-full bg-zinc-100 dark:bg-zinc-900 px-2.5 py-1 text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
+            <span className="mr-1.5 text-zinc-500 dark:text-zinc-400">Employee</span>
+            = person
+          </span>
+          <span className="inline-flex items-center rounded-full bg-zinc-100 dark:bg-zinc-900 px-2.5 py-1 text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
+            <span className="mr-1.5 text-zinc-500 dark:text-zinc-400">Access role</span>
+            = permissions
+          </span>
+        </div>
+
         <div className="space-y-4">
           {/* ─── Add/Edit Form ──────────────────────────────────────────── */}
           {(isAddingNew || editingUser) && (
             <div className="rounded-2xl bg-white dark:bg-zinc-950 p-5 shadow-xs border border-zinc-150 dark:border-zinc-800/60">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                  {editingUser ? "Edit user" : "Grant access to employee"}
-                </h3>
+                <div>
+                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                    {editingUser ? "Edit access" : "Grant access"}
+                  </h3>
+                  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                    {editingUser
+                      ? "Update the user's access role."
+                      : "Choose an employee, then assign their access role."}
+                  </p>
+                </div>
                 <button
                   type="button"
                   onClick={handleCancel}
@@ -479,7 +497,7 @@ export default function AccessTab({
                   {/* 1. Employee picker */}
                   <div>
                     <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1.5">
-                      Employee
+                      Employee <span className="text-zinc-400 font-normal">(person)</span>
                     </label>
                     {availableCoaches.length === 0 ? (
                       <p className="text-xs text-zinc-400 italic py-2">
@@ -513,11 +531,11 @@ export default function AccessTab({
                     </div>
                   )}
 
-                  {/* 3. Role + password */}
+                  {/* 3. Access role + password */}
                   <div className="grid gap-3.5 lg:grid-cols-2">
                     <div>
                       <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1.5">
-                        Role
+                        Access role <span className="text-zinc-400 font-normal">(permissions)</span>
                       </label>
                       <select
                         name="role"
@@ -525,14 +543,14 @@ export default function AccessTab({
                         onChange={(e) => setFormRole(e.target.value as any)}
                         className={inputClass}
                       >
-                        <option value="TRAINER">Coach</option>
-                        <option value="MANAGER">Staff</option>
+                        <option value="TRAINER">Trainer</option>
+                        <option value="MANAGER">Manager</option>
                         <option value="ADMIN">Admin</option>
                       </select>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1.5">
-                        Password
+                        Password <span className="text-zinc-400 font-normal">(required)</span>
                       </label>
                       <input
                         type="password"
@@ -620,7 +638,7 @@ export default function AccessTab({
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1.5">
-                        Role
+                        Access role <span className="text-zinc-400 font-normal">(permissions)</span>
                       </label>
                       <select
                         name="role"
@@ -628,8 +646,8 @@ export default function AccessTab({
                         onChange={(e) => setEditFormRole(e.target.value as any)}
                         className={inputClass}
                       >
-                        <option value="TRAINER">Coach</option>
-                        <option value="MANAGER">Staff</option>
+                        <option value="TRAINER">Trainer</option>
+                        <option value="MANAGER">Manager</option>
                         <option value="ADMIN">Admin</option>
                       </select>
                     </div>
@@ -696,10 +714,10 @@ export default function AccessTab({
                 onChange={(e) => setFilterRole(e.target.value)}
                 className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-650 dark:text-zinc-350 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20 focus:border-brand-orange-500 transition-colors"
               >
-                <option value="ALL">Role filter</option>
+                <option value="ALL">Access role</option>
                 <option value="ADMIN">Admin</option>
-                <option value="MANAGER">Staff</option>
-                <option value="TRAINER">Coach</option>
+                <option value="MANAGER">Manager</option>
+                <option value="TRAINER">Trainer</option>
               </select>
             </div>
 
@@ -709,7 +727,7 @@ export default function AccessTab({
                 <thead>
                   <tr className="border-b border-zinc-100 dark:border-zinc-800/80 text-xs font-semibold text-zinc-550 dark:text-zinc-450 uppercase tracking-wider">
                     <th className="px-4 py-3">User</th>
-                    <th className="px-4 py-3">Role</th>
+                    <th className="px-4 py-3">Access role</th>
                     <th className="px-4 py-3">Joined</th>
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
