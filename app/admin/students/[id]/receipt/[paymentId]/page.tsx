@@ -1,11 +1,11 @@
-import { notFound, redirect } from "next/navigation";
+﻿import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth-session";
 import { getPaymentById } from "@/lib/services/payments";
 import { getAcademyProfile } from "@/lib/services/academy";
 import { FeeReceipt } from "@/app/admin/_components/students/studentProfile/FeeReceipt";
 
 export const metadata = {
-  title: "Payment Receipt — The Academy Of Gymnastics",
+  title: "Payment Receipt - The Academy Of Gymnastics",
 };
 
 export default async function FeeReceiptPage({
@@ -16,17 +16,16 @@ export default async function FeeReceiptPage({
   const session = await getSession();
   if (!session) redirect("/login");
 
-  const { paymentId } = await params;
+  const { id, paymentId } = await params;
   const [payment, academyProfile] = await Promise.all([
     getPaymentById(paymentId),
     getAcademyProfile(),
   ]);
 
-  if (!payment) notFound();
+  if (!payment || payment.studentId !== id) notFound();
 
   return (
     <>
-      {/* Auto-print on load */}
       <script
         dangerouslySetInnerHTML={{
           __html: `

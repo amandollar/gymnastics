@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+﻿import { prisma } from "@/lib/prisma";
 import type { PlanType, Prisma, StudentLevel } from "@prisma/client";
 import {
   computePlanFields,
@@ -12,9 +12,19 @@ import {
 } from "@/lib/utils/student";
 import { uploadStudentAvatarToCloudinary } from "@/lib/avatar/cloudinary";
 import { getGracePeriodMap } from "@/lib/services/grace-periods";
+import { randomUUID } from "crypto";
 
 export async function getNextStudentNumber(): Promise<number> {
   const result = await prisma.student.aggregate({
+    _max: { studentNumber: true },
+  });
+  return (result._max.studentNumber ?? 0) + 1;
+}
+
+
+async function allocateStudentNumber(transaction: Pick<typeof prisma, "student" | "$executeRaw">) {
+  await transaction.$executeRaw`SELECT pg_advisory_xact_lock(617901231)`;
+  const result = await transaction.student.aggregate({
     _max: { studentNumber: true },
   });
   return (result._max.studentNumber ?? 0) + 1;
@@ -63,7 +73,7 @@ export async function listStudents(filters?: {
       ? {
           OR: [
             { name: { contains: searchQuery, mode: "insensitive" } },
-            // studentNumber is Int — only add this clause when the query is numeric
+            // studentNumber is Int â€” only add this clause when the query is numeric
             ...(isNaN(Number(searchQuery))
               ? []
               : [{ studentNumber: { equals: Number(searchQuery) } }]),
@@ -91,7 +101,7 @@ export async function listStudents(filters?: {
 
   let rows = (students as any[]).map(mapStudentRow);
 
-  // Status is computed from plan dates — keep this in-memory filter since it
+  // Status is computed from plan dates â€” keep this in-memory filter since it
   // depends on `computeStudentStatus()` logic that runs post-query.
   if (filters?.status && filters.status !== "ALL") {
     rows = rows.filter((s) => s.status === filters.status);
@@ -244,25 +254,26 @@ export async function createStudent(data: {
   avatarFile?: File | null;
   registrationFee?: number;
 }) {
-  const studentNumber = await getNextStudentNumber();
+  const student = await prisma.$transaction(async (transaction) => {
+    const studentNumber = await allocateStudentNumber(transaction);
 
-  const student = await prisma.student.create({
-    data: {
-      studentNumber,
-      name: data.name,
-      dateOfBirth: data.dateOfBirth,
-      gender: data.gender,
-      parentName: data.parentName,
-      contactNumber: data.contactNumber,
-      admissionDate: data.admissionDate,
-      level: data.level,
-      notes: data.notes,
-      medicalHistory: data.medicalHistory,
-      avatarUrl: null,
-      registrationFee: data.registrationFee,
-    },
+    return transaction.student.create({
+      data: {
+        studentNumber,
+        name: data.name,
+        dateOfBirth: data.dateOfBirth,
+        gender: data.gender,
+        parentName: data.parentName,
+        contactNumber: data.contactNumber,
+        admissionDate: data.admissionDate,
+        level: data.level,
+        notes: data.notes,
+        medicalHistory: data.medicalHistory,
+        avatarUrl: null,
+        registrationFee: data.registrationFee,
+      },
+    });
   });
-
   if (data.avatarFile && data.avatarFile.size > 0) {
     const uploadedUrl = await uploadStudentAvatarToCloudinary(
       student.id,
@@ -558,243 +569,93 @@ export interface BulkStudentPayload {
   attendances: Date[];
 }
 
-import { randomUUID } from "crypto";
 
 export async function bulkImportStudents(students: BulkStudentPayload[]) {
-  const currentStudentNumberRes = await prisma.student.aggregate({
-    _max: { studentNumber: true },
-  });
-  let currentStudentNumber = currentStudentNumberRes._max.studentNumber ?? 0;
+  return prisma.$transaction(async (transaction) => {
+    await transaction.$executeRaw`SELECT pg_advisory_xact_lock(617901231)`;
 
-  const studentsToCreate = [];
-  const plansToCreate = [];
-  const attendancesToCreate = [];
-  const results = [];
-
-  for (const data of students) {
-    currentStudentNumber++;
-    const studentId = randomUUID();
-
-    studentsToCreate.push({
-      id: studentId,
-      studentNumber: currentStudentNumber,
-      name: data.name,
-      dateOfBirth: data.dateOfBirth,
-      gender: data.gender || "Other",
-      parentName: data.parentName,
-      contactNumber: data.contactNumber,
-      admissionDate: data.admissionDate,
+    const currentStudentNumberRes = await transaction.student.aggregate({
+      _max: { studentNumber: true },
     });
+    let currentStudentNumber = currentStudentNumberRes._max.studentNumber ?? 0;
 
-    results.push({ id: studentId, name: data.name });
+    const studentsToCreate = [];
+    const plansToCreate = [];
+    const attendancesToCreate = [];
+    const results = [];
 
-    if (data.plan) {
-      const planId = randomUUID();
-      // For bulk imports, compute validityDays as 0 (no grace for historical data)
-      const pricePerSession =
-        data.plan.totalSessions > 0
-          ? Math.round(data.plan.fee / data.plan.totalSessions)
-          : 0;
+    for (const data of students) {
+      currentStudentNumber++;
+      const studentId = randomUUID();
 
-      plansToCreate.push({
-        id: planId,
-        studentId: studentId,
-        planType: data.plan.planType,
-        startDate: data.plan.startDate,
-        endDate: data.plan.endDate,
-        selectedDays: [],
-        sessionsPerWeek: 0,
-        discountPercent: 0,
-        totalSessions: data.plan.totalSessions,
-        validityDays: 0,
-        graceDays: 0,
-        expiryDate: data.plan.endDate,
-        fee: data.plan.fee,
-        pricePerSession,
-        sessionsCompleted: data.plan.sessionsCompleted,
-        isActive: true,
+      studentsToCreate.push({
+        id: studentId,
+        studentNumber: currentStudentNumber,
+        name: data.name,
+        dateOfBirth: data.dateOfBirth,
+        gender: data.gender || "Other",
+        parentName: data.parentName,
+        contactNumber: data.contactNumber,
+        admissionDate: data.admissionDate,
       });
 
-      if (data.attendances && data.attendances.length > 0) {
-        const uniqueDates = Array.from(
-          new Set(data.attendances.map((d) => d.toISOString().split("T")[0]))
-        );
-        for (const dateStr of uniqueDates) {
-          attendancesToCreate.push({
-            studentId: studentId,
-            studentPlanId: planId,
-            date: new Date(dateStr),
-          });
+      results.push({ id: studentId, name: data.name });
+
+      if (data.plan) {
+        const planId = randomUUID();
+        const pricePerSession =
+          data.plan.totalSessions > 0
+            ? Math.round(data.plan.fee / data.plan.totalSessions)
+            : 0;
+
+        plansToCreate.push({
+          id: planId,
+          studentId: studentId,
+          planType: data.plan.planType,
+          startDate: data.plan.startDate,
+          endDate: data.plan.endDate,
+          selectedDays: [],
+          sessionsPerWeek: 0,
+          discountPercent: 0,
+          totalSessions: data.plan.totalSessions,
+          validityDays: 0,
+          graceDays: 0,
+          expiryDate: data.plan.endDate,
+          fee: data.plan.fee,
+          pricePerSession,
+          sessionsCompleted: data.plan.sessionsCompleted,
+          isActive: true,
+        });
+
+        if (data.attendances && data.attendances.length > 0) {
+          const uniqueDates = Array.from(
+            new Set(data.attendances.map((d) => d.toISOString().split("T")[0]))
+          );
+          for (const dateStr of uniqueDates) {
+            attendancesToCreate.push({
+              studentId: studentId,
+              studentPlanId: planId,
+              date: new Date(dateStr),
+            });
+          }
         }
       }
     }
-  }
 
-  await prisma.$transaction([
-    prisma.student.createMany({ data: studentsToCreate, skipDuplicates: true }),
-    ...(plansToCreate.length > 0
-      ? [
-          prisma.studentPlan.createMany({
-            data: plansToCreate,
-            skipDuplicates: true,
-          }),
-        ]
-      : []),
-    ...(attendancesToCreate.length > 0
-      ? [
-          prisma.attendance.createMany({
-            data: attendancesToCreate,
-            skipDuplicates: true,
-          }),
-        ]
-      : []),
-  ]);
-
-  return results;
-}
-
-export async function updateStudentActivePlan(
-  studentPlanId: string,
-  data: {
-    planType: PlanType;
-    startDate: Date;
-    endDate: Date;
-    selectedDays: WeekdayName[];
-    discountPercent: number;
-    batchId?: string | null;
-    coachId?: string | null;
-    pricingMaps: any;
-    gracePeriodMap: any;
-  }
-) {
-  const computed = computePlanFields({
-    planType: data.planType,
-    startDate: data.startDate,
-    endDate: data.endDate,
-    selectedDays: data.selectedDays,
-    discountPercent: data.discountPercent,
-    pricingMaps: data.pricingMaps,
-    gracePeriodMap: data.gracePeriodMap,
-  });
-
-  return prisma.studentPlan.update({
-    where: { id: studentPlanId },
-    data: {
-      planType: data.planType,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      selectedDays: data.selectedDays,
-      sessionsPerWeek: computed.sessionsPerWeek,
-      discountPercent: computed.discountPercent,
-      totalSessions: computed.totalSessions,
-      validityDays: computed.graceDays,
-      graceDays: computed.graceDays,
-      expiryDate: computed.expiryDate,
-      fee: computed.fee,
-      pricePerSession: computed.pricePerSession,
-      planMonths: computed.planMonths,
-      batchId: data.planType === "REGULAR" ? data.batchId : null,
-      coachId: data.planType === "ONE_TO_ONE" ? data.coachId : null,
-    },
-  });
-}
-
-export async function addFreezePeriod(
-  studentPlanId: string,
-  startDate: Date,
-  endDate: Date
-): Promise<void> {
-  if (endDate < startDate) {
-    throw new Error("Freeze end date must be after freeze start date");
-  }
-
-  const plan = await (prisma as any).studentPlan.findUnique({
-    where: { id: studentPlanId },
-    include: { freezePeriods: true },
-  }) as any;
-  if (!plan) throw new Error("Plan not found");
-  if (!plan.isActive) throw new Error("Plan is not active");
-
-  // Validate that the new freeze window is within the plan's startDate and endDate
-  const pStart = startOfDay(new Date(plan.startDate));
-  const pEnd = startOfDay(new Date(plan.endDate));
-  const fStart = startOfDay(new Date(startDate));
-  const fEnd = startOfDay(new Date(endDate));
-
-  if (fStart < pStart || fEnd > pEnd) {
-    throw new Error("Freeze dates must be within the active plan window");
-  }
-
-  // Validate that the new freeze window does not overlap with existing freeze periods
-  for (const fp of (plan.freezePeriods || []) as any[]) {
-    const existingStart = startOfDay(new Date(fp.startDate));
-    const existingEnd = startOfDay(new Date(fp.endDate));
-    if (fStart <= existingEnd && fEnd >= existingStart) {
-      throw new Error("Freeze period overlaps with an existing freeze period");
+    await transaction.student.createMany({ data: studentsToCreate, skipDuplicates: true });
+    if (plansToCreate.length > 0) {
+      await transaction.studentPlan.createMany({
+        data: plansToCreate,
+        skipDuplicates: true,
+      });
     }
-  }
+    if (attendancesToCreate.length > 0) {
+      await transaction.attendance.createMany({
+        data: attendancesToCreate,
+        skipDuplicates: true,
+      });
+    }
 
-  // Compute duration in days (inclusive)
-  const durationMs = endDate.getTime() - startDate.getTime();
-  const durationDays = Math.ceil(durationMs / 86400000) + 1;
-
-  // Extend endDate and expiryDate
-  const newEndDate = new Date(plan.endDate);
-  newEndDate.setDate(newEndDate.getDate() + durationDays);
-
-  const newExpiryDate = new Date(plan.expiryDate);
-  newExpiryDate.setDate(newExpiryDate.getDate() + durationDays);
-
-  await prisma.$transaction([
-    (prisma as any).freezePeriod.create({
-      data: {
-        studentPlanId,
-        startDate,
-        endDate,
-      },
-    }),
-    prisma.studentPlan.update({
-      where: { id: studentPlanId },
-      data: {
-        endDate: newEndDate,
-        expiryDate: newExpiryDate,
-      },
-    }),
-  ]);
-}
-
-export async function deleteFreezePeriod(
-  freezePeriodId: string
-): Promise<void> {
-  const freezePeriod = await (prisma as any).freezePeriod.findUnique({
-    where: { id: freezePeriodId },
-    include: { studentPlan: true },
+    return results;
   });
-  if (!freezePeriod) throw new Error("Freeze period not found");
-
-  const plan = freezePeriod.studentPlan;
-
-  // Compute duration in days (inclusive)
-  const durationMs = freezePeriod.endDate.getTime() - freezePeriod.startDate.getTime();
-  const durationDays = Math.ceil(durationMs / 86400000) + 1;
-
-  // Reduce endDate and expiryDate
-  const newEndDate = new Date(plan.endDate);
-  newEndDate.setDate(newEndDate.getDate() - durationDays);
-
-  const newExpiryDate = new Date(plan.expiryDate);
-  newExpiryDate.setDate(newExpiryDate.getDate() - durationDays);
-
-  await prisma.$transaction([
-    (prisma as any).freezePeriod.delete({
-      where: { id: freezePeriodId },
-    }),
-    prisma.studentPlan.update({
-      where: { id: plan.id },
-      data: {
-        endDate: newEndDate,
-        expiryDate: newExpiryDate,
-      },
-    }),
-  ]);
 }
