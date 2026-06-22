@@ -41,6 +41,7 @@ export async function createStudentAction(
   avatarUrl?: string | null;
   gender?: string;
   errors?: Record<string, string[]>;
+  registrationFee?: number;
 }> {
   try {
     await assertCanManageStudents();
@@ -55,6 +56,7 @@ export async function createStudentAction(
       level: formData.get("level"),
       notes: formData.get("notes") || undefined,
       medicalHistory: formData.get("medicalHistory") || undefined,
+      registrationFee: formData.get("registrationFee") || undefined,
     };
 
     const parsed = createStudentSchema.safeParse(raw);
@@ -86,6 +88,7 @@ export async function createStudentAction(
       medicalHistory: parsed.data.medicalHistory,
       avatarFile:
         avatarFile instanceof File && avatarFile.size > 0 ? avatarFile : null,
+      registrationFee: parsed.data.registrationFee,
     });
 
     revalidatePath("/admin/students");
@@ -106,6 +109,7 @@ export async function createStudentAction(
       studentNumber: student.studentNumber,
       avatarUrl: student.avatarUrl,
       gender: student.gender,
+      registrationFee: student.registrationFee ?? undefined,
     };
   } catch (e) {
     if (e && typeof e === "object" && "digest" in e) throw e;
@@ -138,6 +142,7 @@ export async function updateStudentAction(
       level: formData.get("level"),
       notes: formData.get("notes") || undefined,
       medicalHistory: formData.get("medicalHistory") || undefined,
+      registrationFee: formData.get("registrationFee") || undefined,
     };
 
     const parsed = updateStudentSchema.safeParse(raw);
@@ -169,6 +174,7 @@ export async function updateStudentAction(
       medicalHistory: parsed.data.medicalHistory,
       avatarFile:
         avatarFile instanceof File && avatarFile.size > 0 ? avatarFile : null,
+      registrationFee: parsed.data.registrationFee,
     });
 
     revalidatePath(`/admin/students/${studentId}`);

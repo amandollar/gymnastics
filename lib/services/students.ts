@@ -242,6 +242,7 @@ export async function createStudent(data: {
   notes?: string;
   medicalHistory?: string;
   avatarFile?: File | null;
+  registrationFee?: number;
 }) {
   const studentNumber = await getNextStudentNumber();
 
@@ -258,6 +259,7 @@ export async function createStudent(data: {
       notes: data.notes,
       medicalHistory: data.medicalHistory,
       avatarUrl: null,
+      registrationFee: data.registrationFee,
     },
   });
 
@@ -288,6 +290,7 @@ export async function updateStudent(
     notes?: string;
     medicalHistory?: string;
     avatarFile?: File | null;
+    registrationFee?: number;
   }
 ) {
   const student = await prisma.student.update({
@@ -302,6 +305,7 @@ export async function updateStudent(
       level: data.level,
       notes: data.notes ?? null,
       medicalHistory: data.medicalHistory ?? null,
+      registrationFee: data.registrationFee ?? null,
     },
   });
 

@@ -43,6 +43,7 @@ interface CoachEarningRow {
   coachShare: number;
   planMonths: number;
   monthlyAmount: number;
+  commissionPercent: number;
   months: { year: number; month: number; label: string; amount: number }[];
 }
 
@@ -340,10 +341,16 @@ function CoachFormModal({
                   </>
                 )}
                 {role === "COACH" && (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className={labelCls}>Fixed Monthly Salary (₹)</label>
-                      <input name="fixedSalary" type="number" min={0} defaultValue={existing?.fixedSalary ?? 0} className={inputCls} />
+                  <div className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className={labelCls}>Fixed Monthly Salary (₹)</label>
+                        <input name="fixedSalary" type="number" min={0} defaultValue={existing?.fixedSalary ?? 0} className={inputCls} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>PT Commission Share (%)</label>
+                        <input name="commissionPercent" type="number" min={0} max={100} defaultValue={(existing as any)?.commissionPercent ?? 50} className={inputCls} />
+                      </div>
                     </div>
                     {isEdit && (
                       <div>
@@ -710,7 +717,7 @@ function EarningsPortal({ coachId }: { coachId: string }) {
         <p className="text-xs font-semibold uppercase tracking-widest text-brand-orange-100">Earnings — {monthLabel}</p>
         <p className="mt-2 text-3xl font-black">{INR(totalThisMonth)}</p>
         <p className="text-xs text-brand-orange-100 mt-1">
-          from {monthRows.length} student{monthRows.length !== 1 ? "s" : ""} · 50% of plan fee
+          from {monthRows.length} student{monthRows.length !== 1 ? "s" : ""} · personal training plans
         </p>
       </div>
 
@@ -745,7 +752,7 @@ function EarningsPortal({ coachId }: { coachId: string }) {
                     </p>
                     <div className="ml-9 mt-2 flex flex-wrap gap-3 text-xs text-zinc-500 dark:text-zinc-400">
                       <span>Total: <strong className="text-zinc-700 dark:text-zinc-300">{INR(row.totalFee)}</strong></span>
-                      <span>Coach 50%: <strong className="text-brand-orange-500">{INR(row.coachShare)}</strong></span>
+                      <span>Coach {row.commissionPercent || 50}%: <strong className="text-brand-orange-500">{INR(row.coachShare)}</strong></span>
                       <span>Per month: <strong className="text-zinc-700 dark:text-zinc-300">{INR(row.monthlyAmount)}</strong></span>
                     </div>
                   </div>

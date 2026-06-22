@@ -74,6 +74,7 @@ export default function AddStudentForm() {
         studentNumber={state.studentNumber}
         avatarUrl={state.avatarUrl}
         gender={state.gender}
+        registrationFee={state.registrationFee}
       />
     );
   }
@@ -211,7 +212,7 @@ export default function AddStudentForm() {
 
           {/* Section 3: Parent / guardian */}
           <div>
-            <FormSection>
+            <FormSection title="Parent / guardian & Admission Fees">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
@@ -243,7 +244,22 @@ export default function AddStudentForm() {
                   {state?.errors?.contactNumber && (
                     <p className="mt-1 text-xs text-rose-600">{state.errors.contactNumber[0]}</p>
                   )}
+                </div>
 
+                <div className="sm:col-span-2">
+                  <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
+                    Registration Fee (₹)
+                  </label>
+                  <input
+                    name="registrationFee"
+                    type="number"
+                    min={0}
+                    className={inputClass}
+                    placeholder="e.g. 1000 (leave blank or 0 if none)"
+                  />
+                  {state?.errors?.registrationFee && (
+                    <p className="mt-1 text-xs text-rose-600">{state.errors.registrationFee[0]}</p>
+                  )}
                 </div>
               </div>
             </FormSection>

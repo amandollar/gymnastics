@@ -46,6 +46,7 @@ type StudentData = {
   payments: PaymentRow[];
   password?: string | null;
   isTempPassword?: boolean;
+  registrationFee?: number | null;
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -135,6 +136,31 @@ export default function StudentDetailClient({
         <div className="flex items-center gap-2 shrink-0">
           {/* Desktop view: inline buttons */}
           <div className="hidden min-[1025px]:flex items-center gap-2">
+            {/* Admission Receipt */}
+            {student.registrationFee && student.registrationFee > 0 ? (
+              <a
+                href={`/admin/students/${student.id}/admission-receipt`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-350 visited:text-zinc-700 dark:visited:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
+              >
+                <svg
+                  className="w-4 h-4 text-zinc-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={1.8}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                Admission Receipt
+              </a>
+            ) : null}
+
             {/* Print ID card */}
             <a
               href={`/admin/students/${student.id}/id-card`}
@@ -297,6 +323,32 @@ export default function StudentDetailClient({
                       Freeze plan
                     </button>
                   )}
+
+                {/* Admission Receipt */}
+                {student.registrationFee && student.registrationFee > 0 && (
+                  <a
+                    href={`/admin/students/${student.id}/admission-receipt`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 visited:text-zinc-700 dark:visited:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left font-medium cursor-pointer"
+                  >
+                    <svg
+                      className="w-4 h-4 text-zinc-500 shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.8}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    Admission Receipt
+                  </a>
+                )}
 
                 {/* Print ID */}
                 <a
@@ -569,6 +621,7 @@ export default function StudentDetailClient({
                 student={student}
                 canManage={canManage}
                 setShowFreeze={setShowFreeze}
+                academyProfile={academyProfile}
               />
             </>
           )}
@@ -595,6 +648,7 @@ export default function StudentDetailClient({
           studentId={student.id}
           studentNumber={student.studentNumber}
           studentName={student.name}
+          parentPhoneNumber={student.contactNumber}
           hasPasswordSet={!!student.password}
           isTempPassword={!!student.isTempPassword}
         />
@@ -659,3 +713,5 @@ export default function StudentDetailClient({
     </div>
   );
 }
+
+

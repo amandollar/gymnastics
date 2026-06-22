@@ -2,7 +2,8 @@
 
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
-import { updateAcademyProfile } from "@/lib/services/academy";
+import { updateAcademyProfile, getAcademyProfile } from "@/lib/services/academy";
+import { prisma } from "@/lib/prisma";
 
 type ActionResult = { success: boolean; message?: string };
 
@@ -37,6 +38,32 @@ export async function updateAcademyProfileAction(
     return {
       success: false,
       message: e instanceof Error ? e.message : "Failed to update academy profile",
+    };
+  }
+}
+
+export async function saveMessageTemplatesAction(data: {
+  templateGrace: string;
+  templateFeeReminder: string;
+  templateInactive: string;
+}): Promise<ActionResult> {
+  try {
+    await assertAdmin();
+    const profile = await getAcademyProfile();
+    await prisma.academyProfile.update({
+      where: { id: profile.id },
+      data: {
+        templateGrace: data.templateGrace.trim() || null,
+        templateFeeReminder: data.templateFeeReminder.trim() || null,
+        templateInactive: data.templateInactive.trim() || null,
+      },
+    });
+    revalidatePath("/admin/settings");
+    return { success: true, message: "Templates saved successfully" };
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Failed to save templates",
     };
   }
 }

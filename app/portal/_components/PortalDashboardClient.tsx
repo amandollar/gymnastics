@@ -1041,6 +1041,38 @@ export default function PortalDashboardClient({
           {/* TAB 3: BILLING */}
           {activeTab === "billing" && (
             <div className="space-y-4 animate-fade-in">
+              {/* Admission Receipt */}
+              {student.registrationFee && student.registrationFee > 0 && (
+                <div 
+                  className="bg-white dark:bg-zinc-900 p-4 sm:p-5 shadow-sm transition-colors border border-zinc-200/60 dark:border-zinc-800/80"
+                  style={{ borderRadius: "1.5rem" }}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
+                        One-Time Admission Fee
+                      </p>
+                      <h3 className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                        Registration Receipt
+                      </h3>
+                    </div>
+                    <a
+                      href="/portal/admission-receipt"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-sm cursor-pointer"
+                    >
+                      <FileText className="w-4 h-4 text-zinc-500" />
+                      View Receipt
+                    </a>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-sm">
+                    <span className="text-zinc-500 dark:text-zinc-400">Amount Paid</span>
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">{INR(student.registrationFee)}</span>
+                  </div>
+                </div>
+              )}
+
               {/* Current plan card */}
               {activePlan ? (
                 <div 

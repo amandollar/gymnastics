@@ -50,6 +50,7 @@ model Student {
   notes          String?
   medicalHistory String?
   avatarUrl      String?
+  registrationFee Int?
   level          StudentLevel  @default(BEGINNER)
   password       String?
   isTempPassword Boolean       @default(true)
@@ -227,13 +228,19 @@ model PaymentRecord {
 }
 
 model AcademyProfile {
-  id        String   @id @default(cuid())
-  email     String?
-  phone     String?
-  phone2    String?
-  address   String?
-  website   String?
-  updatedAt DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  email              String?
+  phone              String?
+  phone2             String?
+  address            String?
+  website            String?
+  /// WhatsApp template for grace-period reminders. Supports {{variables}}.
+  templateGrace      String?
+  /// WhatsApp template for fee-due reminders. Supports {{variables}}.
+  templateFeeReminder String?
+  /// WhatsApp template for inactive/expired re-engagement. Supports {{variables}}.
+  templateInactive   String?
+  updatedAt          DateTime @updatedAt
 }
 
 // ─────────────────────────────────────────────
@@ -266,6 +273,8 @@ model Coach {
   specialization String?
   /// Monthly fixed salary in ₹
   fixedSalary    Int                  @default(0)
+  /// Commission share percentage for personal training (0-100)
+  commissionPercent Int               @default(50)
   status         CoachStatus          @default(WORKING)
   role           CoachRole            @default(COACH)
   notes          String?

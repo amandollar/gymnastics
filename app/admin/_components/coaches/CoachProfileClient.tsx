@@ -39,6 +39,7 @@ interface CoachData {
   timing: string | null;
   specialization: string | null;
   fixedSalary: number;
+  commissionPercent: number;
   status: "WORKING" | "LEFT";
   role: CoachRole;
   notes: string | null;
@@ -85,6 +86,7 @@ interface CoachEarningRow {
   coachShare: number;
   planMonths: number;
   monthlyAmount: number;
+  commissionPercent: number;
   months: { year: number; month: number; label: string; amount: number }[];
 }
 
@@ -267,7 +269,7 @@ function CoachFormModal({
                     </div>
                   </div>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-3">
                   <div>
                     <label className={labelCls}>Role *</label>
                     <select
@@ -281,8 +283,12 @@ function CoachFormModal({
                     </select>
                   </div>
                   <div>
-                    <label className={labelCls}>Fixed Monthly Salary (₹)</label>
+                    <label className={labelCls}>Fixed Salary (₹)</label>
                     <input name="fixedSalary" type="number" min={0} defaultValue={existing.fixedSalary} className={inputCls} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>PT Commission (%)</label>
+                    <input name="commissionPercent" type="number" min={0} max={100} defaultValue={existing.commissionPercent ?? 50} className={inputCls} />
                   </div>
                 </div>
               </>
@@ -1077,8 +1083,8 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
                                   <span>{INR(studentMonthlyFee)}</span>
                                 </div>
                                 <div className="flex justify-between font-medium text-zinc-500 dark:text-zinc-400">
-                                  <span>Personal coach fee (50% split)</span>
-                                  <span>{INR(studentMonthlyFee)} / 2 = {INR(personalCoachFee)}</span>
+                                  <span>Personal coach fee ({row.commissionPercent || 50}% split)</span>
+                                  <span>{row.commissionPercent || 50}% of {INR(studentMonthlyFee)} = {INR(personalCoachFee)}</span>
                                 </div>
                               </div>
                             </div>

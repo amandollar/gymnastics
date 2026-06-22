@@ -20,6 +20,7 @@ export interface CoachWithStats {
   avatarUrl?: string | null;
   createdAt: Date;
   updatedAt: Date;
+  commissionPercent: number;
   /** Attendance records for the queried date range */
   todayAttendance?: { status: CoachAttendanceStatus } | null;
   /** Count of active ONE_TO_ONE plans assigned to this coach */
@@ -34,9 +35,10 @@ export interface CoachMonthlyEarningRow {
   planStartDate: Date;
   planEndDate: Date;
   totalFee: number;
-  coachShare: number;       // 50% of totalFee
+  coachShare: number;       // commissionPercent of totalFee
   planMonths: number;       // duration of plan in months
   monthlyAmount: number;    // coachShare / planMonths
+  commissionPercent: number; // custom share percentage
   /** Which months this plan spans (within planStart–planEnd) */
   months: { year: number; month: number; label: string; amount: number }[];
 }
@@ -121,6 +123,7 @@ export async function createCoach(data: {
   timing?: string;
   specialization?: string;
   fixedSalary?: number;
+  commissionPercent?: number;
   role?: CoachRole;
   notes?: string;
   address?: string;
@@ -135,6 +138,7 @@ export async function createCoach(data: {
       timing: data.timing || null,
       specialization: data.specialization || null,
       fixedSalary: data.fixedSalary ?? 0,
+      commissionPercent: data.commissionPercent ?? 50,
       notes: data.notes || null,
       address: data.address || null,
       avatarUrl: null,
@@ -166,6 +170,7 @@ export async function updateCoach(
     timing?: string | null;
     specialization?: string | null;
     fixedSalary?: number;
+    commissionPercent?: number;
     status?: CoachStatus;
     role?: CoachRole;
     notes?: string | null;
@@ -283,6 +288,12 @@ export async function getCoachMonthlyAttendanceSerializable(
 export async function getCoachEarnings(
   coachId: string
 ): Promise<CoachMonthlyEarningRow[]> {
+  const coach = await (prisma as any).coach.findUnique({
+    where: { id: coachId },
+    select: { commissionPercent: true },
+  });
+  const commissionMultiplier = (coach?.commissionPercent ?? 50) / 100;
+
   const plans = await (prisma as any).studentPlan.findMany({
     where: {
       coachId,
@@ -298,7 +309,7 @@ export async function getCoachEarnings(
 
   return plans.map((plan: any) => {
     const totalFee: number = plan.fee;
-    const coachShare = Math.round(totalFee * 0.5);
+    const coachShare = Math.round(totalFee * commissionMultiplier);
     const planMonths: number = plan.planMonths ?? 1;
     const monthlyAmount = planMonths > 0 ? Math.round(coachShare / planMonths) : coachShare;
 
@@ -331,6 +342,7 @@ export async function getCoachEarnings(
       coachShare,
       planMonths,
       monthlyAmount,
+      commissionPercent: coach?.commissionPercent ?? 50,
       months,
     } satisfies CoachMonthlyEarningRow;
   });

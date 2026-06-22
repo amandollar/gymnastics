@@ -21,6 +21,7 @@ export const createStudentSchema = z.object({
   ]),
   notes: z.string().optional(),
   medicalHistory: z.string().optional(),
+  registrationFee: z.coerce.number().int().nonnegative().optional(),
 });
 
 export const updateStudentSchema = z.object({
@@ -44,6 +45,7 @@ export const updateStudentSchema = z.object({
   ]),
   notes: z.string().optional(),
   medicalHistory: z.string().optional(),
+  registrationFee: z.coerce.number().int().nonnegative().optional(),
 });
 
 export const assignPlanSchema = z.object({

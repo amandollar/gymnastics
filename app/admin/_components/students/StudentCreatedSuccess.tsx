@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import StudentAvatar from "./StudentAvatar";
-import { Check, ArrowRight } from "lucide-react";
+import { Check, ArrowRight, Printer } from "lucide-react";
 
 export default function StudentCreatedSuccess({
   studentId,
@@ -10,12 +10,14 @@ export default function StudentCreatedSuccess({
   studentNumber,
   avatarUrl,
   gender,
+  registrationFee,
 }: {
   studentId: string;
   studentName: string;
   studentNumber: number;
   avatarUrl?: string | null;
   gender?: string | null;
+  registrationFee?: number;
 }) {
   return (
     <div className="space-y-4">
@@ -73,6 +75,18 @@ export default function StudentCreatedSuccess({
               Create & assign plan
               <ArrowRight className="h-4 w-4" strokeWidth={2} />
             </Link>
+
+            {registrationFee && registrationFee > 0 ? (
+              <a
+                href={`/admin/students/${studentId}/admission-receipt`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-3 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-855 transition-colors cursor-pointer"
+              >
+                <Printer className="h-4 w-4 text-zinc-500" strokeWidth={2} />
+                Print Admission Receipt
+              </a>
+            ) : null}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Link

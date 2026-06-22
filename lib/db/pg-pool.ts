@@ -37,11 +37,13 @@ export function createPgPool(connectionString?: string): Pool {
 
   const pool = new Pool({
     connectionString: normalizeDatabaseUrl(raw),
-    // Keep up to 10 idle connections alive so subsequent requests don't pay
-    // the TCP + TLS handshake cost to Neon.
-    max: 10,
-    idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 5_000,
+    // Neon free tier supports ~3 concurrent connections per branch.
+    // Keeping max low avoids "too many connections" and cold-wake timeouts.
+    max: 3,
+    // Give Neon enough time to wake from idle (cold-start can take ~5–10 s).
+    connectionTimeoutMillis: 15_000,
+    // Keep idle connections alive for 60 s to avoid repeated cold-starts.
+    idleTimeoutMillis: 60_000,
   });
 
   // Log unexpected errors on idle pg clients to prevent unhandled process crashes.
