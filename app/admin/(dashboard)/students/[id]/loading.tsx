@@ -1,7 +1,7 @@
 import {
   SkeletonBlock,
   SkeletonCalendar,
-} from "@/components/ui/Skeleton";
+} from "@/app/_components/Skeleton";
 
 export default function StudentDetailLoading() {
   return (

@@ -1,7 +1,7 @@
 import {
   SkeletonBlock,
   SkeletonStatCard,
-} from "@/components/ui/Skeleton";
+} from "@/app/_components/Skeleton";
 
 export default function DashboardLoading() {
   return (

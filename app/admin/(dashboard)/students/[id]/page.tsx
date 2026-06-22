@@ -1,6 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import { getSession, getSessionUser } from "@/lib/auth-session";
-import StudentDetailClient from "@/components/students/studentProfile";
+import StudentDetailClient from "@/app/admin/_components/students/studentProfile";
 import { getStudentById } from "@/lib/services/cached";
 import { getAcademyProfile } from "@/lib/services/academy";
 

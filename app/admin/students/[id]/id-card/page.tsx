@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { redirect, notFound } from "next/navigation";
 import { getStudentById } from "@/lib/services/cached";
 import { getAcademyProfile } from "@/lib/services/academy";
-import StudentIDCardClient from "@/components/students/StudentIDCardClient";
+import StudentIDCardClient from "@/app/admin/_components/students/StudentIDCardClient";
 
 export default async function StudentIDCardPage({
   params,

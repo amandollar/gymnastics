@@ -2,7 +2,7 @@ import {
   SkeletonBlock,
   SkeletonPageHeader,
   SkeletonTable,
-} from "@/components/ui/Skeleton";
+} from "@/app/_components/Skeleton";
 
 export default function StudentsLoading() {
   return (

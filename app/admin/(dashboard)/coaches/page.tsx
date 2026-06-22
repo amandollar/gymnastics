@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth-session";
-import CoachesPageClient from "@/components/coaches/CoachesPageClient";
+import CoachesPageClient from "@/app/admin/_components/coaches/CoachesPageClient";
 import { listCoaches } from "@/lib/services/cached";
 
 export const metadata = {

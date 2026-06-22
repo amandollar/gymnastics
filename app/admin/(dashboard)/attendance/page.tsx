@@ -1,7 +1,7 @@
 import React from "react";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth-session";
-import AttendancePageClient from "@/components/attendance/AttendancePageClient";
+import AttendancePageClient from "@/app/admin/_components/attendance/AttendancePageClient";
 import {
   getMonthlyAttendanceData,
   getYearlyMonthlyBreakdown,

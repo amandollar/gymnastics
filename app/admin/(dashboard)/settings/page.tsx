@@ -7,7 +7,7 @@ import { listBatches } from "@/lib/services/batches";
 import { getGracePeriodMap } from "@/lib/services/grace-periods";
 import { getPricingMaps } from "@/lib/services/pricing";
 import { getAcademyProfile } from "@/lib/services/academy";
-import SettingsShell from "@/components/settings/SettingsShell";
+import SettingsShell from "@/app/admin/_components/settings/SettingsShell";
 
 export default async function SettingsPage() {
   const session = await getSession();

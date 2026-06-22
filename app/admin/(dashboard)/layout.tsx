@@ -2,8 +2,8 @@ import React from "react";
 import { signOut } from "@/auth";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth-session";
-import DashboardSidebar from "@/components/layout/DashboardSidebar";
-import { MobileBottomNav } from "@/components/layout/MobileDashboardNav";
+import DashboardSidebar from "@/app/admin/_components/layout/DashboardSidebar";
+import { MobileBottomNav } from "@/app/admin/_components/layout/MobileDashboardNav";
 
 export default async function DashboardLayout({
   children,

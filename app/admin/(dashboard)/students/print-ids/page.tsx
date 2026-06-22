@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getSession, getSessionUser } from "@/lib/auth-session";
 import { listStudents, listBatches } from "@/lib/services/cached";
 import { getAcademyProfile } from "@/lib/services/academy";
-import PrintIDsClient from "@/components/students/PrintIDsClient";
+import PrintIDsClient from "@/app/admin/_components/students/PrintIDsClient";
 
 export const metadata = {
   title: "Print ID Cards – TAG",

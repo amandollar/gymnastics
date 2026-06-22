@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth-session";
 import { getPaymentById } from "@/lib/services/payments";
 import { getAcademyProfile } from "@/lib/services/academy";
-import { FeeReceipt } from "@/components/students/studentProfile/FeeReceipt";
+import { FeeReceipt } from "@/app/admin/_components/students/studentProfile/FeeReceipt";
 
 export const metadata = {
   title: "Payment Receipt — The Academy Of Gymnastics",

@@ -12,7 +12,7 @@ export async function authenticate(
     await signIn("credentials", {
       email: rawData.email,
       password: rawData.password,
-      redirectTo: "/dashboard",
+      redirectTo: "/admin/dashboard",
     });
     return undefined;
   } catch (error) {
@@ -37,7 +37,7 @@ export async function authenticate(
   }
 }
 
-export async function authenticateParent(
+export async function authenticatePortal(
   prevState: string | undefined,
   formData: FormData
 ) {
@@ -46,7 +46,7 @@ export async function authenticateParent(
     await signIn("credentials", {
       email: rawData.email,
       password: rawData.password,
-      redirectTo: "/parents",
+      redirectTo: "/portal",
     });
     return undefined;
   } catch (error) {
@@ -66,7 +66,7 @@ export async function authenticateParent(
       throw error;
     }
 
-    console.error("Parent login error:", error);
+    console.error("Portal login error:", error);
     return "An unexpected error occurred. Please try again.";
   }
 }

@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth-session";
-import CoachProfileClient from "@/components/coaches/CoachProfileClient";
+import CoachProfileClient from "@/app/admin/_components/coaches/CoachProfileClient";
 import { getCoachById } from "@/lib/services/coaches";
 
 export const metadata = {

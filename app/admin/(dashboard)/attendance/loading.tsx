@@ -2,7 +2,7 @@ import {
   SkeletonBlock,
   SkeletonCalendar,
   SkeletonStatCard,
-} from "@/components/ui/Skeleton";
+} from "@/app/_components/Skeleton";
 
 export default function AttendanceLoading() {
   return (

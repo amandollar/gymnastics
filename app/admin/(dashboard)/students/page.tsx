@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession, getSessionUser } from "@/lib/auth-session";
-import StudentsListClient from "@/components/students/StudentsListClient";
+import StudentsListClient from "@/app/admin/_components/students/StudentsListClient";
 import { listStudents, listBatches } from "@/lib/services/cached";
 
 export default async function StudentsPage() {

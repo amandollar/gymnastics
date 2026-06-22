@@ -1,4 +1,4 @@
-import { SkeletonBlock, SkeletonPageHeader } from "@/components/ui/Skeleton";
+import { SkeletonBlock, SkeletonPageHeader } from "@/app/_components/Skeleton";
 
 export default function BulkUploadLoading() {
   return (

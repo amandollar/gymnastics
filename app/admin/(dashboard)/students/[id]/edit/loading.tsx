@@ -1,4 +1,4 @@
-import { SkeletonForm, SkeletonPageHeader } from "@/components/ui/Skeleton";
+import { SkeletonForm, SkeletonPageHeader } from "@/app/_components/Skeleton";
 
 export default function EditStudentLoading() {
   return (

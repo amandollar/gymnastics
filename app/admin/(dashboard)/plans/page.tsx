@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession, getSessionUser } from "@/lib/auth-session";
-import PlansPageClient from "@/components/plans/PlansPageClient";
+import PlansPageClient from "@/app/admin/_components/plans/PlansPageClient";
 import {
   listStudents,
   getPricingMaps,

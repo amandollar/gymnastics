@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession, getSessionUser } from "@/lib/auth-session";
-import AddStudentForm from "@/components/students/AddStudentForm";
+import AddStudentForm from "@/app/admin/_components/students/AddStudentForm";
 
 export default async function NewStudentPage() {
   const session = await getSession();

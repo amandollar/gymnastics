@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession, getSessionUser } from "@/lib/auth-session";
-import BulkUploadClient from "@/components/students/BulkUploadClient";
+import BulkUploadClient from "@/app/admin/_components/students/BulkUploadClient";
 
 export default async function BulkUploadPage() {
   const session = await getSession();

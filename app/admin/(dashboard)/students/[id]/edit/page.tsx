@@ -1,7 +1,7 @@
 import { redirect, notFound } from "next/navigation";
 import { getSession, getSessionUser } from "@/lib/auth-session";
 import { getStudentById, getPricingMaps, getGracePeriodMap, listBatches, listCoaches } from "@/lib/services/cached";
-import EditStudentForm from "@/components/students/EditStudentForm";
+import EditStudentForm from "@/app/admin/_components/students/EditStudentForm";
 import { computeStudentStatus } from "@/lib/utils/student";
 
 export default async function EditStudentPage({

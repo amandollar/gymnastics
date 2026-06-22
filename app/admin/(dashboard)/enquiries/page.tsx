@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession, getSessionUser } from "@/lib/auth-session";
-import EnquiryListClient from "@/components/enquiries/EnquiryListClient";
+import EnquiryListClient from "@/app/admin/_components/enquiries/EnquiryListClient";
 import { listEnquiries } from "@/lib/services/cached";
 
 export default async function EnquiriesPage() {

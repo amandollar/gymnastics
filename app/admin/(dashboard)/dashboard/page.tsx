@@ -1,6 +1,6 @@
 import React from "react";
 import { getSession, getCanManage } from "@/lib/auth-session";
-import DashboardOverview from "@/components/dashboard/DashboardOverview";
+import DashboardOverview from "@/app/admin/_components/dashboard/DashboardOverview";
 import { getDashboardData } from "@/lib/services/dashboard";
 import { getAcademyProfile } from "@/lib/services/academy";
 

@@ -471,7 +471,7 @@ export async function generateStudentCredentialsAction(
   }
 }
 
-export async function changeParentPasswordAction(
+export async function changePortalPasswordAction(
   studentId: string,
   currentPassword?: string,
   newPassword?: string
@@ -528,7 +528,7 @@ export async function changeParentPasswordAction(
 
     revalidatePath(`/admin/students/${studentId}`);
     revalidatePath("/admin/students");
-    revalidatePath("/parents");
+    revalidatePath("/portal");
     updateTag("students");
 
     return { success: true, message: "Password updated successfully" };

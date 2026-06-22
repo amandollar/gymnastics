@@ -1,4 +1,4 @@
-﻿import type { NextAuthConfig } from "next-auth";
+import type { NextAuthConfig } from "next-auth";
 
 export const authConfig = {
   pages: {
@@ -8,40 +8,62 @@ export const authConfig = {
     strategy: "jwt",
   },
   callbacks: {
-    authorized({ auth, request: { nextUrl } }) {
+    authorized({ auth, request }) {
+      const { nextUrl } = request;
       const isLoggedIn = !!auth?.user;
       const { pathname } = nextUrl;
       const role = (auth?.user as { role?: string })?.role;
 
-      const isAdminRoute = pathname.startsWith("/admin");
-      const isAdminLoginRoute = pathname === "/admin/login";
-      const isParentRoute = pathname.startsWith("/parents");
-      const isParentLoginRoute = pathname === "/parents/login";
-      const isSettingsRoute = pathname === "/admin/settings";
-      const requiresManageAccess =
-        pathname === "/admin/students" ||
-        pathname.startsWith("/admin/students/") ||
-        pathname === "/admin/enquiries" ||
-        pathname.startsWith("/admin/enquiries/") ||
-        pathname === "/admin/plans" ||
-        pathname.startsWith("/admin/plans/");
+      const hostname = request.headers.get("host") || "";
+      let currentHost = hostname;
+      if (currentHost.includes("localhost")) {
+        currentHost = currentHost.replace(".localhost:3000", "").replace("localhost:3000", "main");
+      } else {
+        const parts = currentHost.split(".");
+        if (parts.length >= 3) {
+          currentHost = parts[0];
+        } else {
+          currentHost = "main";
+        }
+      }
 
-      // If accessing a parent route
-      if (isParentRoute) {
-        if (isParentLoginRoute) {
+      // Map clean paths back to internal logical paths for auth checks
+      let logicalPath = pathname;
+      if (currentHost === "admin" && !pathname.startsWith("/admin")) {
+        logicalPath = `/admin${pathname === "/" ? "/dashboard" : pathname}`;
+      } else if (currentHost === "portal" && !pathname.startsWith("/portal")) {
+        logicalPath = `/portal${pathname === "/" ? "" : pathname}`;
+      }
+
+      const isAdminRoute = logicalPath.startsWith("/admin");
+      const isAdminLoginRoute = logicalPath === "/admin/login";
+      const isPortalRoute = logicalPath.startsWith("/portal");
+      const isPortalLoginRoute = logicalPath === "/portal/login" || logicalPath === "/portal"; // Adjust if /portal is login
+      const isSettingsRoute = logicalPath === "/admin/settings";
+      const requiresManageAccess =
+        logicalPath === "/admin/students" ||
+        logicalPath.startsWith("/admin/students/") ||
+        logicalPath === "/admin/enquiries" ||
+        logicalPath.startsWith("/admin/enquiries/") ||
+        logicalPath === "/admin/plans" ||
+        logicalPath.startsWith("/admin/plans/");
+
+      // If accessing a portal route
+      if (isPortalRoute) {
+        if (isPortalLoginRoute) {
           if (isLoggedIn) {
             if (role === "PARENT") {
-              return Response.redirect(new URL("/parents", nextUrl));
+              return Response.redirect(new URL("/portal", nextUrl));
             } else {
               return Response.redirect(new URL("/admin/dashboard", nextUrl));
             }
           }
-          return true; // allow unauthenticated access to parent login page
+          return true; // allow unauthenticated access to portal login page
         }
 
-        // For other parent routes, require logged-in parent
+        // For other portal routes, require logged-in parent
         if (!isLoggedIn) {
-          return Response.redirect(new URL("/parents/login", nextUrl));
+          return Response.redirect(new URL("/portal/login", nextUrl));
         }
 
         if (role !== "PARENT") {
@@ -56,7 +78,7 @@ export const authConfig = {
         if (isAdminLoginRoute) {
           if (isLoggedIn) {
             if (role === "PARENT") {
-              return Response.redirect(new URL("/parents", nextUrl));
+              return Response.redirect(new URL("/portal", nextUrl));
             } else {
               return Response.redirect(new URL("/admin/dashboard", nextUrl));
             }
@@ -70,7 +92,7 @@ export const authConfig = {
         }
 
         if (role === "PARENT") {
-          return Response.redirect(new URL("/parents", nextUrl));
+          return Response.redirect(new URL("/portal", nextUrl));
         }
 
         if (isSettingsRoute && role !== "ADMIN") {
@@ -81,7 +103,7 @@ export const authConfig = {
           return Response.redirect(new URL("/admin/dashboard", nextUrl));
         }
 
-        if (pathname === "/admin") {
+        if (logicalPath === "/admin") {
           return Response.redirect(new URL("/admin/dashboard", nextUrl));
         }
 
@@ -90,7 +112,7 @@ export const authConfig = {
 
       // Keep the academy website public even for logged-in users.
       // Role-based redirects only apply inside protected app sections.
-      if (pathname === "/") {
+      if (logicalPath === "/") {
         return true;
       }
 

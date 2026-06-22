@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth-session";
-import CoachesAttendanceClient from "@/components/coaches/CoachesAttendanceClient";
+import CoachesAttendanceClient from "@/app/admin/_components/coaches/CoachesAttendanceClient";
 import { listCoaches, getCoachMonthlyAttendanceSerializable } from "@/lib/services/cached";
 
 export const metadata = {

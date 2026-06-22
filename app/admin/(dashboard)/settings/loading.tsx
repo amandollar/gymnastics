@@ -1,4 +1,4 @@
-import { SkeletonBlock } from "@/components/ui/Skeleton";
+import { SkeletonBlock } from "@/app/_components/Skeleton";
 
 export default function SettingsLoading() {
   return (
