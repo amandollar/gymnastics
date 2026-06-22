@@ -16,7 +16,13 @@ import {
   PanelLeftOpen,
   Clock,
   Calendar,
-  Info
+  Info,
+  Dumbbell,
+  GraduationCap,
+  User,
+  Bell,
+  BellOff,
+  X
 } from "lucide-react";
 import { getPaymentByIdAction } from "@/lib/actions/payments";
 import { FeeReceipt } from "@/app/admin/_components/students/studentProfile/FeeReceipt";
@@ -25,16 +31,18 @@ import { LevelProgress } from "@/app/admin/_components/students/studentProfile/L
 import { PaymentHistory } from "@/app/admin/_components/students/studentProfile/PaymentHistory";
 import StudentAvatar from "@/app/admin/_components/students/StudentAvatar";
 import { formatAge } from "@/lib/utils/student";
-import ThemeSelector from "@/app/admin/_components/layout/ThemeSelector";
+import { markNotificationsAsReadAction } from "@/lib/actions/notifications";
 
 interface PortalDashboardClientProps {
   student: any;
   academyProfile: any;
+  initialNotifications?: any[];
 }
 
 export default function PortalDashboardClient({
   student,
   academyProfile,
+  initialNotifications = [],
 }: PortalDashboardClientProps) {
   const [printData, setPrintData] = useState<any | null>(null);
   const [isChangingPassword, setIsChangingPassword] = useState(student.isTempPassword);
@@ -42,10 +50,26 @@ export default function PortalDashboardClient({
   const [activeTab, setActiveTab] = useState<"overview" | "attendance" | "billing">("overview");
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState(initialNotifications);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const handleOpenNotifications = async () => {
+    setShowNotifications(true);
+    if (notifications.some((n: any) => !n.isRead)) {
+      setNotifications(prev => prev.map((n: any) => ({ ...n, isRead: true })));
+      await markNotificationsAsReadAction(student.id);
+    }
+  };
+
+  const unreadCount = useMemo(() => notifications.filter((n: any) => !n.isRead).length, [notifications]);
 
   useEffect(() => {
     const collapsed = localStorage.getItem("portal-sidebar-collapsed") === "true";
-    setIsCollapsed(collapsed);
+    if (collapsed) {
+      setTimeout(() => {
+        setIsCollapsed(true);
+      }, 0);
+    }
   }, []);
 
   const toggleCollapse = () => {
@@ -284,7 +308,7 @@ export default function PortalDashboardClient({
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[var(--background)] dark:bg-zinc-950 flex flex-col md:flex-row gap-0 transition-colors duration-200 font-sans antialiased text-zinc-900 dark:text-zinc-100">
+    <div className="dark min-h-[100dvh] bg-[#0c0c0e] text-zinc-100 flex flex-col md:flex-row gap-0 font-sans antialiased">
       
       {/* 1. FORCED PASSWORD CHANGE OVERLAY */}
       {isChangingPassword && (
@@ -531,35 +555,38 @@ export default function PortalDashboardClient({
           </nav>
         </div>
 
-        {/* Theme Selector */}
-        <ThemeSelector isCollapsed={isCollapsed} />
 
         {/* Bottom User Card */}
-        <div className={`p-3 bg-zinc-50/50 dark:bg-zinc-900/10 flex items-center justify-between ${
-          isCollapsed ? "justify-center" : "gap-3"
-        }`}>
-          <div className="flex items-center gap-3 min-w-0 flex-1">
+        <div className="p-3 bg-zinc-50/50 dark:bg-zinc-900/10 flex items-center justify-between">
+          <div className={`flex items-center gap-3 min-w-0 flex-1 ${isCollapsed ? "justify-center" : ""}`}>
             <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-orange-500 text-xs font-bold text-white shadow-2xs cursor-pointer"
-              title={isCollapsed ? `${student.parentName} (Parent) - Click to Logout` : undefined}
-              onClick={isCollapsed ? handleLogout : undefined}
+              onClick={isCollapsed ? handleOpenNotifications : undefined}
+              className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-orange-500 text-xs font-bold text-white shadow-2xs ${
+                isCollapsed ? "cursor-pointer select-none" : ""
+              }`}
             >
               {portalInitials}
+              {isCollapsed && unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5 rounded-full bg-brand-orange-500 ring-2 ring-white dark:ring-zinc-950" />
+              )}
             </div>
             {!isCollapsed && (
               <div className="min-w-0 flex-1 flex items-center justify-between gap-1">
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-1 flex flex-col">
                   <p className="truncate text-xs font-bold text-zinc-900 dark:text-zinc-100">{student.parentName}</p>
-                  <span className="inline-flex items-center rounded-md bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 text-[9px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mt-0.5">
+                  <span className="self-start inline-flex items-center rounded-md bg-zinc-150 dark:bg-zinc-800 px-1.5 py-0.5 text-[9px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mt-0.5">
                     Parent
                   </span>
                 </div>
                 <button
-                  onClick={handleLogout}
-                  className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-all cursor-pointer shrink-0"
-                  title="Logout"
+                  onClick={handleOpenNotifications}
+                  className="relative flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-brand-orange-500 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-all cursor-pointer shrink-0"
+                  title="Notifications"
                 >
-                  <LogOut className="h-4 w-4" strokeWidth={2} />
+                  <Bell className="h-4.5 w-4.5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-0.5 right-0.5 flex h-2 w-2 rounded-full bg-brand-orange-500 ring-2 ring-white dark:ring-zinc-900" />
+                  )}
                 </button>
               </div>
             )}
@@ -585,12 +612,14 @@ export default function PortalDashboardClient({
         </div>
 
         <button
-          onClick={handleLogout}
-          className="rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer flex items-center gap-1.5"
-          aria-label="Sign out"
+          onClick={handleOpenNotifications}
+          className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-brand-orange-500 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+          aria-label="Notifications"
         >
-          <span className="hidden sm:inline">Logout</span>
-          <LogOut className="h-4 w-4" strokeWidth={2} />
+          <Bell className="h-4.5 w-4.5" />
+          {unreadCount > 0 && (
+            <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5 rounded-full bg-brand-orange-500 ring-2 ring-white dark:ring-zinc-950" />
+          )}
         </button>
       </header>
 
@@ -599,194 +628,154 @@ export default function PortalDashboardClient({
         <main className="flex-1 p-4 sm:p-6 lg:p-8 pt-6 sm:pt-6 lg:pt-8 pb-24 md:pb-8 min-w-0 text-zinc-900 dark:text-zinc-100">
           
           {/* Tab Contents */}
-          <div className="transition-all duration-300">
-            
-            {/* TAB 1: OVERVIEW */}
+          <div className="transition-all duration-300">            {/* TAB 1: OVERVIEW */}
             {activeTab === "overview" && (
-              <div className="space-y-4 animate-fade-in">
-                {/* Student profile summary */}
-                <section className="overflow-hidden rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 shadow-sm">
-                  <div className="relative p-4 sm:p-5">
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-r from-brand-orange-500/12 via-transparent to-brand-orange-500/8" />
-                    <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center">
-                      <div className="relative w-fit">
-                        <div className="absolute inset-0 rounded-full bg-brand-orange-500/15 blur-xl" />
-                        <div className="relative rounded-full ring-4 ring-white dark:ring-zinc-900 shadow-lg shadow-brand-orange-500/10">
-                          <StudentAvatar student={student} size={100} />
+              <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
+                
+                {/* Mockup Card */}
+                <section className="relative overflow-hidden w-full bg-[#121212] border border-zinc-800/60 rounded-[2rem] p-4 sm:p-6 md:p-8 shadow-2xl">
+                  {/* Spotlight glow in top-left */}
+                  <div className="absolute -top-24 -left-24 w-80 h-80 bg-brand-orange-500/10 rounded-full blur-3xl pointer-events-none" />
+                  
+                  {/* Logout Button */}
+                  <button
+                    onClick={handleLogout}
+                    className="absolute top-4 right-4 sm:top-5 sm:right-5 text-zinc-500 hover:text-rose-500 hover:bg-rose-950/20 p-2.5 rounded-full transition-all cursor-pointer z-10"
+                    title="Logout"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                      {/* Top Profile Header */}
+                  <div className="relative flex flex-row items-center gap-4 sm:gap-5 mb-5">
+                    {/* Double border avatar */}
+                    <div className="relative shrink-0 flex items-center justify-center">
+                      <div className="absolute inset-0 rounded-full bg-brand-orange-500/10 blur-md" />
+                      {/* Outer orange ring */}
+                      <div className="w-[100px] h-[100px] rounded-full border border-brand-orange-500/80 flex items-center justify-center p-1 bg-transparent">
+                        {/* Inner gap and avatar */}
+                        <div className="w-full h-full rounded-full overflow-hidden border border-zinc-900 bg-[#121212] flex items-center justify-center">
+                          <StudentAvatar student={student} size={82} />
                         </div>
+                      </div>
+                    </div>
+
+                    <div className="text-left">
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.15em] text-zinc-500">
+                        STUDENT PROFILE
+                      </p>
+                      <h3 className="mt-1 text-2xl font-bold text-white tracking-tight leading-none">
+                        {student.name}
+                      </h3>
+                      <div className="mt-2.5 flex items-center gap-2">
+                        <span className="text-xs font-medium text-zinc-400">
+                          TAG{student.studentNumber}
+                        </span>
+                        <span className="px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-brand-orange-500 border border-brand-orange-500 bg-transparent rounded-full">
+                          {student.status}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SESSIONS USED block */}
+                  <div className="mb-4 bg-[#18181a] border border-zinc-800/40 rounded-2xl p-5 flex items-center justify-between shadow-inner">
+                    <div>
+                      <span className="text-[10px] font-semibold text-zinc-555 dark:text-zinc-500 uppercase tracking-widest block mb-1.5">
+                        SESSIONS USED
+                      </span>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-4xl font-bold text-white leading-none">
+                          {activePlan?.sessionsCompleted ?? 0}
+                        </span>
+                        <span className="text-zinc-555 dark:text-zinc-500 font-semibold text-lg leading-none">
+                          / {activePlan?.totalSessions ?? 0}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-950/20 border border-zinc-800/40 text-zinc-450 dark:text-zinc-400">
+                      <Calendar className="h-6 w-6" strokeWidth={1.5} />
+                    </div>
+                  </div>
+
+                  {/* PLAN PROGRESS block */}
+                  <div className="mb-4 bg-[#18181a] border border-zinc-800/40 rounded-2xl p-5 shadow-inner">
+                    <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-widest mb-3">
+                      <span className="text-zinc-500">Plan Progress</span>
+                      <span className="text-brand-orange-500 font-bold">{progressPercentage}%</span>
+                    </div>
+                    <div className="h-2.5 w-full bg-[#242426] rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-brand-orange-500 transition-all duration-500"
+                        style={{ width: `${progressPercentage}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Info Cards Grid (Age, Batch, Class Time) */}
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    {/* Age card */}
+                    <div className="col-span-1 bg-[#18181a] border border-zinc-800/40 rounded-2xl p-3 sm:p-4 flex items-center gap-2.5 shadow-inner">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-950/20 border border-zinc-800/40 text-brand-orange-500">
+                        <User className="h-4.5 w-4.5" strokeWidth={1.5} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                          <div>
-                            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
-                              Student profile
-                            </p>
-                            <h3 className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
-                              {student.name}
-                            </h3>
-                            <div className="mt-2 flex flex-wrap items-center gap-2">
-                              <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                                TAG{String(student.studentNumber).padStart(3, "0")}
-                              </p>
-                              <span className="inline-flex items-center rounded-full border border-brand-orange-200/70 bg-brand-orange-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-brand-orange-600 dark:border-brand-orange-900/40 dark:bg-brand-orange-950/25 dark:text-brand-orange-400">
-                                {student.status}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="rounded-2xl border border-zinc-200/70 dark:border-zinc-800/80 bg-zinc-50/90 dark:bg-zinc-950/50 px-3 py-2 sm:min-w-36">
-                            <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                              Sessions used
-                            </p>
-                            <div className="mt-1 flex items-end gap-2">
-                              <span className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                                {activePlan?.sessionsCompleted ?? 0}
-                              </span>
-                              <span className="pb-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                                / {activePlan?.totalSessions ?? 0}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
+                        <span className="text-[9px] font-semibold text-zinc-555 dark:text-zinc-500 uppercase tracking-widest block mb-0.5">
+                          Age
+                        </span>
+                        <span className="text-xs sm:text-sm font-semibold text-white block">
+                          {formatAge(student.dateOfBirth)}
+                        </span>
+                      </div>
+                    </div>
 
-                        <div className="mt-4">
-                          <div className="mb-3 flex items-center justify-between text-[11px]">
-                            <span className="font-medium text-zinc-500 dark:text-zinc-400">Current plan progress</span>
-                            <span className="font-semibold text-brand-orange-600 dark:text-brand-orange-400">
-                              {progressPercentage}%
-                            </span>
-                          </div>
-                          <div className="h-2.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-                            <div
-                              className="h-full rounded-full bg-gradient-to-r from-brand-orange-500 to-brand-orange-600 transition-all duration-500"
-                              style={{ width: `${progressPercentage}%` }}
-                            />
-                          </div>
-                        </div>
+                    {/* Batch card */}
+                    <div className="col-span-1 bg-[#18181a] border border-zinc-800/40 rounded-2xl p-3 sm:p-4 flex items-center gap-2.5 shadow-inner">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-950/20 border border-zinc-800/40 text-brand-orange-500">
+                        <GraduationCap className="h-4.5 w-4.5" strokeWidth={1.5} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[9px] font-semibold text-zinc-555 dark:text-zinc-500 uppercase tracking-widest block mb-0.5">
+                          Batch
+                        </span>
+                        <span className="text-xs sm:text-sm font-semibold text-white block leading-tight" title={activePlan?.batch?.name || "Not assigned"}>
+                          {activePlan?.batch?.name || "Not assigned"}
+                        </span>
+                      </div>
+                    </div>
 
-                        <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                          <div className="rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 bg-zinc-50/85 dark:bg-zinc-950/50 p-3">
-                            <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Age</p>
-                            <p className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-100">{formatAge(student.dateOfBirth)}</p>
-                          </div>
-                          <div className="rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 bg-zinc-50/85 dark:bg-zinc-950/50 p-3">
-                            <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Batch</p>
-                            <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                              {activePlan?.batch?.name || "Not assigned"}
-                            </p>
-                          </div>
-                          <div className="rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 bg-zinc-50/85 dark:bg-zinc-950/50 p-3">
-                            <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Class time</p>
-                            <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                              {activePlan?.batch?.timing || "Contact office"}
-                            </p>
-                          </div>
-                        </div>
+                    {/* Class Time card */}
+                    <div className="col-span-1 bg-[#18181a] border border-zinc-800/40 rounded-2xl p-3 sm:p-4 flex items-center gap-2.5 shadow-inner">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-950/20 border border-zinc-800/40 text-brand-orange-500">
+                        <Clock className="h-4.5 w-4.5" strokeWidth={1.5} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[9px] font-semibold text-zinc-555 dark:text-zinc-500 uppercase tracking-widest block mb-0.5">
+                          Class Time
+                        </span>
+                        <span className="text-xs sm:text-sm font-semibold text-white block leading-tight" title={activePlan?.batch?.timing || "Contact office"}>
+                          {activePlan?.batch?.timing || "Contact office"}
+                        </span>
                       </div>
                     </div>
                   </div>
+
+                  {/* Dumbbell Footer divider */}
+                  <div className="relative flex items-center justify-center my-7">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-zinc-800/50" />
+                    </div>
+                    <div className="relative bg-[#121212] px-4 text-[#f16d28]">
+                      <Dumbbell className="w-5 h-5 shrink-0" strokeWidth={1.5} />
+                    </div>
+                  </div>
+                  
+                  <p className="text-center text-[10px] font-semibold text-zinc-555 dark:text-zinc-500 tracking-[0.25em] uppercase">
+                    Stay consistent, see results.
+                  </p>
                 </section>
 
-                {/* Quick stats */}
-                <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <div className="relative overflow-hidden rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 p-4">
-                    <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-brand-orange-500 to-brand-orange-600" />
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-orange-50 text-brand-orange-600 dark:bg-brand-orange-950/30 dark:text-brand-orange-400">
-                          <Clock className="h-4 w-4" />
-                        </div>
-                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Remaining</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => toggleTooltip("remaining")}
-                        className="rounded-full p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
-                        aria-label="More about remaining sessions"
-                      >
-                        <Info className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                    <p className="mt-3 text-3xl font-semibold text-zinc-900 dark:text-zinc-100">
-                      {remainingSessions}
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                      Sessions left in the current plan
-                    </p>
-                    {activeTooltip === "remaining" && (
-                      <div className="absolute right-0 top-12 z-20 w-56 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 shadow-xl">
-                        <p className="text-xs text-zinc-600 dark:text-zinc-300">This shows how many sessions are still left in the current plan.</p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="relative overflow-hidden rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 p-4">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 dark:bg-sky-950/30 dark:text-sky-400">
-                          <Calendar className="h-4 w-4" />
-                        </div>
-                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Next class</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => toggleTooltip("nextclass")}
-                        className="rounded-full p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
-                        aria-label="More about schedule"
-                      >
-                        <Info className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                    <p className="mt-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                      {schedulePreview}
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                      {activePlan?.batch?.timing || "Timing not available"}
-                    </p>
-                    {activeTooltip === "nextclass" && (
-                      <div className="absolute right-0 top-12 z-20 w-56 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 shadow-xl">
-                        <p className="text-xs text-zinc-600 dark:text-zinc-300">These are the class days currently scheduled for the student.</p>
-                      </div>
-                    )}
-                  </div>
-                  <div className="relative overflow-hidden rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 p-4 sm:col-span-2 xl:col-span-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Plan ends</p>
-                        <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                          {planEndLabel}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => toggleTooltip("planend")}
-                        className="rounded-full p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
-                        aria-label="More about plan end date"
-                      >
-                        <Info className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {scheduleDays.length > 0 ? (
-                        scheduleDays.map((day: string) => (
-                          <span
-                            key={day}
-                            className="rounded-full bg-zinc-100 px-2.5 py-1 text-[10px] font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
-                          >
-                            {day}
-                          </span>
-                        ))
-                      ) : (
-                        <span className="text-xs text-zinc-500 dark:text-zinc-400">No schedule set</span>
-                      )}
-                    </div>
-                    {activeTooltip === "planend" && (
-                      <div className="absolute right-0 top-12 z-20 w-56 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 shadow-xl">
-                        <p className="text-xs text-zinc-600 dark:text-zinc-300">This is the final date of the currently active plan.</p>
-                      </div>
-                    )}
-                  </div>
-                </section>
-
-                <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+                {/* Level Progress & Important Details */}
+                <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
                   <LevelProgress
                     studentId={student.id}
                     studentName={student.name}
@@ -794,73 +783,43 @@ export default function PortalDashboardClient({
                     canManage={false}
                   />
 
-                  <section className="relative rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 p-4 shadow-sm">
+                  <section className="relative rounded-3xl border border-zinc-800/40 bg-[#121212] p-5 shadow-sm">
                     <div className="flex items-center justify-between gap-2">
-                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Important details</h3>
+                      <h3 className="text-sm font-semibold text-white">Important details</h3>
                       <button
                         type="button"
                         onClick={() => toggleTooltip("contact")}
-                        className="rounded-full p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200"
+                        className="rounded-full p-1 text-zinc-400 hover:text-zinc-200"
                         aria-label="More about contact details"
                       >
                         <Info className="h-3.5 w-3.5" />
                       </button>
                     </div>
                     {activeTooltip === "contact" && (
-                      <div className="absolute right-4 top-12 z-20 w-56 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-3 shadow-xl">
-                        <p className="text-xs text-zinc-600 dark:text-zinc-300">Use the phone number to quickly contact the office or parent support team.</p>
+                      <div className="absolute right-4 top-12 z-20 w-56 rounded-2xl border border-zinc-800 bg-zinc-950 p-3 shadow-xl">
+                        <p className="text-xs text-zinc-300">Use the phone number to quickly contact the office or parent support team.</p>
                       </div>
                     )}
-                    <dl className="mt-3 space-y-3 text-sm">
-                      <div className="flex items-center justify-between gap-3 border-b border-zinc-100 dark:border-zinc-800 pb-2.5">
-                        <dt className="text-zinc-400 dark:text-zinc-500">Gender</dt>
-                        <dd className="font-medium text-zinc-900 dark:text-zinc-100 capitalize">{student.gender}</dd>
+                    <dl className="mt-4 space-y-3.5 text-sm">
+                      <div className="flex items-center justify-between gap-3 border-b border-zinc-800/60 pb-2.5">
+                        <dt className="text-zinc-500 font-medium">Gender</dt>
+                        <dd className="font-semibold text-zinc-200 capitalize">{student.gender}</dd>
                       </div>
-                      <div className="flex items-center justify-between gap-3 border-b border-zinc-100 dark:border-zinc-800 pb-2.5">
-                        <dt className="text-zinc-400 dark:text-zinc-500">DOB</dt>
-                        <dd className="font-medium text-zinc-900 dark:text-zinc-100">
+                      <div className="flex items-center justify-between gap-3 border-b border-zinc-800/60 pb-2.5">
+                        <dt className="text-[#6c6c70] font-medium">DOB</dt>
+                        <dd className="font-semibold text-zinc-200">
                           {new Date(student.dateOfBirth).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                         </dd>
                       </div>
                       <div className="flex items-center justify-between gap-3">
-                        <dt className="text-zinc-400 dark:text-zinc-500">Parent contact</dt>
-                        <dd className="font-medium text-right">
+                        <dt className="text-zinc-500 font-medium">Parent contact</dt>
+                        <dd className="font-semibold text-right">
                           <a href={`tel:${student.contactNumber}`} className="text-brand-orange-500 hover:underline">{student.contactNumber}</a>
                         </dd>
                       </div>
                     </dl>
                   </section>
                 </div>
-
-                {activePlan && (
-                  <section className="rounded-3xl border border-zinc-200/60 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 p-4 shadow-sm">
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Plan progress</h3>
-                      <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                        {activePlan.planType === "ONE_TO_ONE" ? "Personal" : "Group"}
-                      </span>
-                    </div>
-
-                    <div className="mt-3 space-y-3">
-                      <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
-                        <span>{activePlan.sessionsCompleted} sessions done</span>
-                        <span>{activePlan.totalSessions} total</span>
-                      </div>
-                      <div className="h-2.5 rounded-full bg-zinc-100 dark:bg-zinc-800 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-brand-orange-500 transition-all duration-500"
-                          style={{ width: `${Math.min(100, Math.round((activePlan.sessionsCompleted / Math.max(activePlan.totalSessions, 1)) * 100))}%` }}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between gap-3 text-sm">
-                        <span className="text-zinc-500 dark:text-zinc-400">Schedule</span>
-                        <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-right">
-                          {fullSchedule}
-                        </span>
-                      </div>
-                    </div>
-                  </section>
-                )}
               </div>
             )}
 
@@ -1040,19 +999,17 @@ export default function PortalDashboardClient({
 
           {/* TAB 3: BILLING */}
           {activeTab === "billing" && (
-            <div className="space-y-4 animate-fade-in">
+            <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
               {/* Admission Receipt */}
               {student.registrationFee && student.registrationFee > 0 && (
-                <div 
-                  className="bg-white dark:bg-zinc-900 p-4 sm:p-5 shadow-sm transition-colors border border-zinc-200/60 dark:border-zinc-800/80"
-                  style={{ borderRadius: "1.5rem" }}
-                >
-                  <div className="flex items-center justify-between gap-3">
+                <div className="relative overflow-hidden w-full bg-[#121212] border border-zinc-800/60 rounded-[2rem] p-5 shadow-2xl">
+                  <div className="absolute -top-24 -left-24 w-80 h-80 bg-brand-orange-500/5 rounded-full blur-3xl pointer-events-none" />
+                  <div className="relative flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
                         One-Time Admission Fee
                       </p>
-                      <h3 className="mt-1 text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                      <h3 className="mt-1 text-base font-bold text-white">
                         Registration Receipt
                       </h3>
                     </div>
@@ -1060,110 +1017,116 @@ export default function PortalDashboardClient({
                       href="/portal/admission-receipt"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-sm cursor-pointer"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-850 bg-[#18181a] px-3.5 py-2 text-xs font-semibold text-zinc-300 hover:text-white hover:border-brand-orange-500/50 transition-colors shadow-sm cursor-pointer"
                     >
-                      <FileText className="w-4 h-4 text-zinc-500" />
+                      <FileText className="w-3.5 h-3.5 text-zinc-400" />
                       View Receipt
                     </a>
                   </div>
-                  <div className="mt-3 flex items-center justify-between text-sm">
-                    <span className="text-zinc-500 dark:text-zinc-400">Amount Paid</span>
-                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">{INR(student.registrationFee)}</span>
+                  <div className="relative mt-4 flex items-center justify-between text-xs bg-[#18181a] border border-zinc-800/40 rounded-xl p-3 shadow-inner">
+                    <span className="text-zinc-400 font-medium">Amount Paid</span>
+                    <span className="font-bold text-white">{INR(student.registrationFee)}</span>
                   </div>
                 </div>
               )}
 
               {/* Current plan card */}
               {activePlan ? (
-                <div 
-                  className="bg-white dark:bg-zinc-900 p-4 sm:p-5 shadow-sm transition-colors border border-zinc-200/60 dark:border-zinc-800/80"
-                  style={{ borderRadius: "1.5rem" }}
-                >
-                  <div className="flex items-center justify-between gap-3">
+                <div className="relative overflow-hidden w-full bg-[#121212] border border-zinc-800/60 rounded-[2rem] p-5 sm:p-6 shadow-2xl">
+                  {/* Spotlight glow */}
+                  <div className="absolute -top-24 -left-24 w-80 h-80 bg-brand-orange-500/10 rounded-full blur-3xl pointer-events-none" />
+                  
+                  <div className="relative flex items-center justify-between gap-3">
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">
+                      <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
                         Billing overview
                       </p>
-                      <h3 className="mt-1 text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                        Current plan
+                      <h3 className="mt-1 text-base font-bold text-white">
+                        Current Plan
                       </h3>
                     </div>
                     {activePlan.discountPercent > 0 && (
-                      <span className="rounded-full bg-emerald-50 dark:bg-emerald-950/30 px-2.5 py-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+                      <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 text-[10px] font-semibold text-emerald-400 shrink-0">
                         {activePlan.discountPercent}% off
                       </span>
                     )}
                   </div>
 
-                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-950/50 p-4">
-                      <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Total fee</p>
-                      <p className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">{INR(activePlan.fee)}</p>
-                      <p className="mt-1 text-xs font-medium text-rose-500 dark:text-rose-400">
+                  <div className="relative mt-5 grid grid-cols-3 gap-2.5 sm:gap-4">
+                    <div className="rounded-2xl bg-[#18181a] border border-zinc-800/40 p-3 sm:p-4 shadow-inner flex flex-col justify-between">
+                      <p className="text-[9px] uppercase tracking-wider text-zinc-500 font-semibold">Total Fee</p>
+                      <p className="mt-1 text-lg xs:text-xl sm:text-2xl font-bold text-white">{INR(activePlan.fee)}</p>
+                      <p className={`mt-1.5 text-[9px] font-bold uppercase tracking-wider ${
+                        (typeof activePlan.outstanding === "number" ? activePlan.outstanding : activePlan.fee) <= 0
+                          ? "text-emerald-400"
+                          : "text-rose-400"
+                      }`}>
                         {(typeof activePlan.outstanding === "number" ? activePlan.outstanding : activePlan.fee) <= 0
                           ? "Paid"
                           : `${INR(typeof activePlan.outstanding === "number" ? activePlan.outstanding : activePlan.fee)} due`}
                       </p>
                     </div>
-                    <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-950/50 p-4">
-                      <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Per session</p>
-                      <p className="mt-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
-                        {activePlan.totalSessions > 0 ? INR(Math.round(activePlan.fee / activePlan.totalSessions)) : "â€”"}
+                    <div className="rounded-2xl bg-[#18181a] border border-zinc-800/40 p-3 sm:p-4 shadow-inner flex flex-col justify-between">
+                      <p className="text-[9px] uppercase tracking-wider text-zinc-500 font-semibold">Per Session</p>
+                      <p className="mt-1 text-lg xs:text-xl sm:text-2xl font-bold text-white">
+                        {activePlan.totalSessions > 0 ? INR(Math.round(activePlan.fee / activePlan.totalSessions)) : "—"}
                       </p>
+                      <span className="mt-1.5 text-[9px] text-zinc-500 font-semibold uppercase tracking-wider">Avg. Rate</span>
                     </div>
-                    <div className="rounded-2xl bg-zinc-50 dark:bg-zinc-950/50 p-4">
-                      <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Discount</p>
-                      <p className="mt-1 text-2xl font-semibold text-emerald-600 dark:text-emerald-400">
-                        {activePlan.discountPercent > 0 ? `${activePlan.discountPercent}%` : "â€”"}
+                    <div className="rounded-2xl bg-[#18181a] border border-zinc-800/40 p-3 sm:p-4 shadow-inner flex flex-col justify-between">
+                      <p className="text-[9px] uppercase tracking-wider text-zinc-500 font-semibold">Discount</p>
+                      <p className="mt-1 text-lg xs:text-xl sm:text-2xl font-bold text-emerald-400">
+                        {activePlan.discountPercent > 0 ? `${activePlan.discountPercent}%` : "—"}
                       </p>
+                      <span className="mt-1.5 text-[9px] text-zinc-500 font-semibold uppercase tracking-wider">Saved</span>
                     </div>
                   </div>
 
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <section className="rounded-2xl bg-zinc-50 dark:bg-zinc-950/50 p-4">
-                      <h4 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">Plan details</h4>
-                      <dl className="mt-3 space-y-2.5 text-sm">
-                        <div className="flex items-center justify-between gap-3">
-                          <dt className="text-zinc-400 dark:text-zinc-500">Batch</dt>
-                          <dd className="font-semibold text-zinc-900 dark:text-zinc-100 text-right">{activePlan.batch?.name || "â€”"}</dd>
+                  <div className="relative mt-4 grid gap-4 sm:grid-cols-2">
+                    <section className="rounded-2xl bg-[#18181a] border border-zinc-800/40 p-4 shadow-inner">
+                      <h4 className="text-[9px] font-semibold uppercase tracking-[0.2em] text-zinc-500">Plan details</h4>
+                      <dl className="mt-3.5 space-y-3 text-xs">
+                        <div className="flex items-center justify-between gap-3 border-b border-zinc-800/50 pb-2">
+                          <dt className="text-zinc-400 font-medium">Batch</dt>
+                          <dd className="font-bold text-white text-right">{activePlan.batch?.name || "—"}</dd>
+                        </div>
+                        <div className="flex items-center justify-between gap-3 border-b border-zinc-800/50 pb-2">
+                          <dt className="text-zinc-400 font-medium">Timing</dt>
+                          <dd className="font-bold text-white text-right">{activePlan.batch?.timing || "—"}</dd>
                         </div>
                         <div className="flex items-center justify-between gap-3">
-                          <dt className="text-zinc-400 dark:text-zinc-500">Timing</dt>
-                          <dd className="font-semibold text-zinc-900 dark:text-zinc-100 text-right">{activePlan.batch?.timing || "â€”"}</dd>
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <dt className="text-zinc-400 dark:text-zinc-500">Type</dt>
-                          <dd className="font-semibold text-zinc-900 dark:text-zinc-100 text-right">{activePlan.planType === "ONE_TO_ONE" ? "Personal" : "Grouped"}</dd>
+                          <dt className="text-zinc-400 font-medium">Type</dt>
+                          <dd className="font-bold text-white text-right">{activePlan.planType === "ONE_TO_ONE" ? "Personal" : "Grouped"}</dd>
                         </div>
                       </dl>
                     </section>
 
-                    <section className="rounded-2xl bg-zinc-50 dark:bg-zinc-950/50 p-4">
-                      <h4 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-400 dark:text-zinc-500">Schedule</h4>
-                      <div className="mt-3 space-y-3">
+                    <section className="rounded-2xl bg-[#18181a] border border-zinc-800/40 p-4 shadow-inner">
+                      <h4 className="text-[9px] font-semibold uppercase tracking-[0.2em] text-zinc-500">Schedule</h4>
+                      <div className="mt-3 space-y-3.5">
                         <div className="flex flex-wrap gap-1.5">
                           {Array.isArray(activePlan.selectedDays) && activePlan.selectedDays.length > 0 ? (
                             activePlan.selectedDays.map((day: string) => (
                               <span
                                 key={day}
-                                className="rounded-full bg-brand-orange-50 dark:bg-brand-orange-950/30 px-2.5 py-1 text-[10px] font-semibold text-brand-orange-600 dark:text-brand-orange-400"
+                                className="rounded-full bg-brand-orange-500/10 border border-brand-orange-500/20 px-2 py-0.5 text-[9px] font-bold text-brand-orange-400"
                               >
                                 {day.substring(0, 3)}
                               </span>
                             ))
                           ) : (
-                            <span className="text-sm text-zinc-500 dark:text-zinc-400">No schedule set</span>
+                            <span className="text-xs text-zinc-500">No schedule set</span>
                           )}
                         </div>
-                        <div className="flex items-center justify-between gap-3 text-sm">
-                          <span className="text-zinc-400 dark:text-zinc-500">Start</span>
-                          <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                        <div className="flex items-center justify-between gap-3 text-xs border-b border-zinc-800/50 pb-2">
+                          <span className="text-zinc-400 font-medium">Start</span>
+                          <span className="font-bold text-white">
                             {new Date(activePlan.startDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between gap-3 text-sm">
-                          <span className="text-zinc-400 dark:text-zinc-500">Ends</span>
-                          <span className="font-semibold text-zinc-900 dark:text-zinc-100">
+                        <div className="flex items-center justify-between gap-3 text-xs">
+                          <span className="text-zinc-400 font-medium">Ends</span>
+                          <span className="font-bold text-white">
                             {new Date(activePlan.endDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                           </span>
                         </div>
@@ -1171,19 +1134,19 @@ export default function PortalDashboardClient({
                     </section>
                   </div>
 
-                  <section className="mt-4 rounded-2xl bg-zinc-50 dark:bg-zinc-950/50 p-4">
+                  <section className="relative mt-4 rounded-2xl bg-[#18181a] border border-zinc-800/40 p-4 shadow-inner">
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <p className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-500">Progress</p>
-                        <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                        <p className="text-[9px] font-semibold uppercase tracking-wider text-zinc-500">Progress</p>
+                        <p className="mt-1 text-xs font-bold text-white">
                           {activePlan.sessionsCompleted} / {activePlan.totalSessions} sessions
                         </p>
                       </div>
-                      <span className="text-sm font-semibold text-brand-orange-500">
+                      <span className="text-xs font-bold text-brand-orange-500">
                         {activePlan.totalSessions - activePlan.sessionsCompleted} left
                       </span>
                     </div>
-                    <div className="mt-3 h-2.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
+                    <div className="mt-3 h-2.5 rounded-full bg-[#242426] overflow-hidden">
                       <div
                         className="h-full rounded-full bg-brand-orange-500 transition-all duration-500"
                         style={{ width: `${Math.min(100, Math.round((activePlan.sessionsCompleted / Math.max(activePlan.totalSessions, 1)) * 100))}%` }}
@@ -1192,18 +1155,15 @@ export default function PortalDashboardClient({
                   </section>
                 </div>
               ) : (
-                <div 
-                  className="bg-white dark:bg-zinc-900 shadow-sm flex flex-col items-center justify-center text-center gap-5 py-16 px-8 animate-fade-in border border-zinc-200/60 dark:border-zinc-800/80"
-                  style={{ borderRadius: "1.5rem" }}
-                >
-                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800">
-                    <span className="text-zinc-400 dark:text-zinc-550 text-xl font-bold">Plan</span>
+                <div className="relative overflow-hidden w-full bg-[#121212] border border-zinc-800/60 rounded-[2rem] flex flex-col items-center justify-center text-center gap-5 py-16 px-8 shadow-2xl">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#18181a] border border-zinc-800/50 text-[#f16d28]">
+                    <Dumbbell className="w-7 h-7" strokeWidth={1.5} />
                   </div>
                   <div className="space-y-1.5">
-                    <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                    <h3 className="text-base font-bold text-white">
                       No active membership plan
                     </h3>
-                    <p className="text-sm text-zinc-400 dark:text-zinc-500 max-w-[240px]">
+                    <p className="text-xs text-zinc-400 max-w-[240px]">
                       Gymnast does not have an active membership plan. Contact the office.
                     </p>
                   </div>
@@ -1315,6 +1275,72 @@ export default function PortalDashboardClient({
             <FeeReceipt data={printData} academyProfile={academyProfile} />
           </div>
         </>
+      )}
+
+      {/* 7. NOTIFICATIONS POPUP MODAL */}
+      {showNotifications && (
+        <div className="fixed inset-0 z-55 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in animate-duration-200">
+          <div
+            className="w-full max-w-md bg-[#121212] border border-zinc-800 rounded-[2rem] p-5 shadow-2xl relative overflow-hidden flex flex-col max-h-[85vh] animate-scale-in animate-duration-200"
+            style={{ boxShadow: "0 32px 64px -12px rgba(0,0,0,0.5)" }}
+          >
+            {/* Background Glow */}
+            <div className="absolute -top-24 -left-24 w-80 h-80 bg-brand-orange-500/10 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Header */}
+            <div className="relative flex items-center justify-between pb-4 border-b border-zinc-800/60 mb-4">
+              <div className="flex items-center gap-2">
+                <Bell className="w-5 h-5 text-brand-orange-500" />
+                <h3 className="text-base font-bold text-white leading-tight">Notifications</h3>
+              </div>
+              <button
+                onClick={() => setShowNotifications(false)}
+                className="flex items-center justify-center w-8 h-8 rounded-xl bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-400 hover:text-white transition-all cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Notification items */}
+            <div className="relative overflow-y-auto pr-1 flex-1 scrollbar-thin">
+              {notifications.length === 0 ? (
+                <div className="flex flex-col items-center justify-center text-center gap-4 py-16 px-4">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#18181a] border border-zinc-850 text-zinc-500">
+                    <BellOff className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-zinc-300">No notifications yet</h4>
+                    <p className="text-xs text-zinc-500 max-w-[220px]">
+                      Alerts and announcements from the academy will appear here.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {notifications.map((n: any) => (
+                    <div
+                      key={n.id}
+                      className="bg-[#18181a] border border-zinc-850 p-4 rounded-2xl shadow-inner relative flex flex-col"
+                    >
+                      <div className="text-xs text-zinc-200 leading-relaxed font-semibold">
+                        {n.message}
+                      </div>
+                      <span className="text-[9px] text-zinc-550 font-medium uppercase mt-2.5 block tracking-wider">
+                        {new Date(n.createdAt).toLocaleDateString("en-IN", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

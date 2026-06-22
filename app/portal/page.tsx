@@ -10,9 +10,13 @@ export default async function PortalDashboardPage() {
     redirect("/portal/login");
   }
 
-  const [student, academyProfile] = await Promise.all([
+  const [student, academyProfile, notifications] = await Promise.all([
     getStudentById(user.id),
     prisma.academyProfile.findFirst(),
+    prisma.notification.findMany({
+      where: { studentId: user.id },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
 
   if (!student) {
@@ -33,6 +37,7 @@ export default async function PortalDashboardPage() {
     <PortalDashboardClient
       student={JSON.parse(JSON.stringify(student))}
       academyProfile={JSON.parse(JSON.stringify(profileData))}
+      initialNotifications={JSON.parse(JSON.stringify(notifications))}
     />
   );
 }

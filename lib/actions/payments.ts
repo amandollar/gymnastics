@@ -120,9 +120,22 @@ export async function collectFeeAction(
 
 export async function getPaymentByIdAction(paymentId: string) {
   try {
-    await assertCanManage();
+    const session = await auth();
+    if (!session?.user) return null;
+
+    const role = (session.user as { role?: string })?.role;
+    const userId = (session.user as { id?: string })?.id;
+
     const payment = await getPaymentById(paymentId);
     if (!payment) return null;
+
+    const canManage = role === "ADMIN" || role === "MANAGER";
+    const isOwner = role === "PARENT" && userId && payment.studentId === userId;
+
+    if (!canManage && !isOwner) {
+      return null;
+    }
+
     return JSON.parse(JSON.stringify(payment)); // clean serialization
   } catch {
     return null;

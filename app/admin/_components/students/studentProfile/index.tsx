@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { MoreVertical, Key } from "lucide-react";
+import { MoreVertical, Key, Bell } from "lucide-react";
 import { MedicalNotesCard } from "./MedicalNotesCard";
+import PushNotificationModal from "./PushNotificationModal";
 import StudentStatusBadge from "../StudentStatusBadge";
 import StudentAvatar from "../StudentAvatar";
 import {
@@ -65,6 +66,7 @@ export default function StudentDetailClient({
   const menuRef = useRef<HTMLDivElement>(null);
   const [printData, setPrintData] = useState<any | null>(null);
   const [showCredentials, setShowCredentials] = useState(false);
+  const [showPushNotification, setShowPushNotification] = useState(false);
 
   const handlePrint = async (paymentId: string) => {
     try {
@@ -200,6 +202,18 @@ export default function StudentDetailClient({
               >
                 <Key className="w-4 h-4 text-zinc-500" />
                 Credentials
+              </button>
+            )}
+
+            {/* Push Notification */}
+            {canManage && (
+              <button
+                type="button"
+                onClick={() => setShowPushNotification(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
+              >
+                <Bell className="w-4 h-4 text-zinc-500" />
+                Push Alert
               </button>
             )}
 
@@ -393,6 +407,21 @@ export default function StudentDetailClient({
                   >
                     <Key className="w-4 h-4 text-zinc-500 shrink-0" />
                     Credentials
+                  </button>
+                )}
+
+                {/* Push Notification */}
+                {canManage && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPushNotification(true);
+                      setMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors text-left font-medium cursor-pointer"
+                  >
+                    <Bell className="w-4 h-4 text-zinc-500 shrink-0" />
+                    Push Alert
                   </button>
                 )}
               </div>
@@ -651,6 +680,16 @@ export default function StudentDetailClient({
           parentPhoneNumber={student.contactNumber}
           hasPasswordSet={!!student.password}
           isTempPassword={!!student.isTempPassword}
+        />
+      )}
+
+      {/* Push Notification Modal */}
+      {showPushNotification && (
+        <PushNotificationModal
+          isOpen={showPushNotification}
+          onClose={() => setShowPushNotification(false)}
+          studentId={student.id}
+          studentName={student.name}
         />
       )}
 

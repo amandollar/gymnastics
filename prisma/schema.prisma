@@ -59,6 +59,7 @@ model Student {
   plans          StudentPlan[]
   attendances    Attendance[]
   payments       PaymentRecord[]
+  notifications  Notification[]
 }
 
 model SessionPricing {
@@ -314,4 +315,15 @@ model CoachSalaryPayment {
 
   @@unique([coachId, year, month])
   @@index([coachId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  message   String
+  createdAt DateTime @default(now())
+  isRead    Boolean  @default(false)
+
+  @@index([studentId])
 }
