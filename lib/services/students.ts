@@ -543,6 +543,145 @@ export async function updateStudentActivePlanBatch(
   });
 }
 
+export async function updateStudentActivePlan(
+  studentPlanId: string,
+  data: {
+    planType: PlanType;
+    startDate: Date;
+    endDate: Date;
+    selectedDays: WeekdayName[];
+    discountPercent: number;
+    batchId?: string | null;
+    coachId?: string | null;
+    pricingMaps: any;
+    gracePeriodMap: any;
+  }
+) {
+  const computed = computePlanFields({
+    planType: data.planType,
+    startDate: data.startDate,
+    endDate: data.endDate,
+    selectedDays: data.selectedDays,
+    discountPercent: data.discountPercent,
+    pricingMaps: data.pricingMaps,
+    gracePeriodMap: data.gracePeriodMap,
+  });
+
+  return prisma.studentPlan.update({
+    where: { id: studentPlanId },
+    data: {
+      planType: data.planType,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      selectedDays: data.selectedDays,
+      sessionsPerWeek: computed.sessionsPerWeek,
+      discountPercent: computed.discountPercent,
+      totalSessions: computed.totalSessions,
+      validityDays: computed.graceDays,
+      graceDays: computed.graceDays,
+      expiryDate: computed.expiryDate,
+      fee: computed.fee,
+      pricePerSession: computed.pricePerSession,
+      planMonths: computed.planMonths,
+      batchId: data.planType === "REGULAR" ? data.batchId : null,
+      coachId: data.planType === "ONE_TO_ONE" ? data.coachId : null,
+    },
+  });
+}
+
+export async function addFreezePeriod(
+  studentPlanId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<void> {
+  if (endDate < startDate) {
+    throw new Error("Freeze end date must be after freeze start date");
+  }
+
+  const plan = await prisma.studentPlan.findUnique({
+    where: { id: studentPlanId },
+    include: { freezePeriods: true },
+  });
+  if (!plan) throw new Error("Plan not found");
+  if (!plan.isActive) throw new Error("Plan is not active");
+
+  const pStart = startOfDay(new Date(plan.startDate));
+  const pEnd = startOfDay(new Date(plan.endDate));
+  const fStart = startOfDay(new Date(startDate));
+  const fEnd = startOfDay(new Date(endDate));
+
+  if (fStart < pStart || fEnd > pEnd) {
+    throw new Error("Freeze dates must be within the active plan window");
+  }
+
+  for (const fp of plan.freezePeriods) {
+    const existingStart = startOfDay(new Date(fp.startDate));
+    const existingEnd = startOfDay(new Date(fp.endDate));
+    if (fStart <= existingEnd && fEnd >= existingStart) {
+      throw new Error("Freeze period overlaps with an existing freeze period");
+    }
+  }
+
+  const durationMs = endDate.getTime() - startDate.getTime();
+  const durationDays = Math.ceil(durationMs / 86400000) + 1;
+
+  const newEndDate = new Date(plan.endDate);
+  newEndDate.setDate(newEndDate.getDate() + durationDays);
+
+  const newExpiryDate = new Date(plan.expiryDate);
+  newExpiryDate.setDate(newExpiryDate.getDate() + durationDays);
+
+  await prisma.$transaction([
+    prisma.freezePeriod.create({
+      data: {
+        studentPlanId,
+        startDate,
+        endDate,
+      },
+    }),
+    prisma.studentPlan.update({
+      where: { id: studentPlanId },
+      data: {
+        endDate: newEndDate,
+        expiryDate: newExpiryDate,
+      },
+    }),
+  ]);
+}
+
+export async function deleteFreezePeriod(
+  freezePeriodId: string
+): Promise<void> {
+  const freezePeriod = await prisma.freezePeriod.findUnique({
+    where: { id: freezePeriodId },
+    include: { studentPlan: true },
+  });
+  if (!freezePeriod) throw new Error("Freeze period not found");
+
+  const plan = freezePeriod.studentPlan;
+
+  const durationMs = freezePeriod.endDate.getTime() - freezePeriod.startDate.getTime();
+  const durationDays = Math.ceil(durationMs / 86400000) + 1;
+
+  const newEndDate = new Date(plan.endDate);
+  newEndDate.setDate(newEndDate.getDate() - durationDays);
+
+  const newExpiryDate = new Date(plan.expiryDate);
+  newExpiryDate.setDate(newExpiryDate.getDate() - durationDays);
+
+  await prisma.$transaction([
+    prisma.freezePeriod.delete({
+      where: { id: freezePeriodId },
+    }),
+    prisma.studentPlan.update({
+      where: { id: plan.id },
+      data: {
+        endDate: newEndDate,
+        expiryDate: newExpiryDate,
+      },
+    }),
+  ]);
+}
 
 export function parsePlanFormDates(start: string, end: string) {
   return {
@@ -659,3 +798,5 @@ export async function bulkImportStudents(students: BulkStudentPayload[]) {
     return results;
   });
 }
+
+
