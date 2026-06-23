@@ -7,7 +7,7 @@ export default async function NewStudentPage() {
   if (!session) redirect("/login");
 
   const user = await getSessionUser();
-  if (user?.role !== "ADMIN" && user?.role !== "MANAGER") {
+  if (user?.role !== "ADMIN" && user?.role !== "STAFF") {
     redirect("/students");
   }
 

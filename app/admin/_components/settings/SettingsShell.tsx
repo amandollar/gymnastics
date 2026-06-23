@@ -18,7 +18,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "MANAGER" | "TRAINER";
+  role: "ADMIN" | "STAFF";
   createdAt: Date;
 }
 

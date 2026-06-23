@@ -18,7 +18,7 @@ export default async function StudentDetailPage({
     getAcademyProfile(),
   ]);
 
-  const canManage = user?.role === "ADMIN" || user?.role === "MANAGER";
+  const canManage = user?.role === "ADMIN" || user?.role === "STAFF";
 
   const student = await getStudentById(id);
   if (!student) notFound();

@@ -13,7 +13,7 @@ import type { CoachAttendanceStatus, CoachRole } from "@prisma/client";
 async function assertCanManage() {
   const session = await auth();
   const role = (session?.user as { role?: string })?.role;
-  if (!session || (role !== "ADMIN" && role !== "MANAGER")) {
+  if (!session || (role !== "ADMIN" && role !== "STAFF")) {
     throw new Error("Unauthorized");
   }
 }
@@ -34,7 +34,6 @@ export async function createCoachAction(
     const timing = (formData.get("timing") as string) || undefined;
     const specialization = (formData.get("specialization") as string) || undefined;
     const fixedSalary = parseInt(formData.get("fixedSalary") as string) || 0;
-    const commissionPercent = formData.get("commissionPercent") ? parseInt(formData.get("commissionPercent") as string) : 50;
     const role = (formData.get("role") as CoachRole) || "COACH";
     const notes = (formData.get("notes") as string) || undefined;
     const address = (formData.get("address") as string) || undefined;
@@ -56,7 +55,6 @@ export async function createCoachAction(
       timing: timing?.trim() || undefined,
       specialization: specialization?.trim() || undefined,
       fixedSalary,
-      commissionPercent,
       role,
       notes: notes?.trim() || undefined,
       address: address.trim(),
@@ -92,7 +90,6 @@ export async function updateCoachAction(
     const timing = (formData.get("timing") as string) || null;
     const specialization = (formData.get("specialization") as string) || null;
     const fixedSalary = parseInt(formData.get("fixedSalary") as string) || 0;
-    const commissionPercent = formData.get("commissionPercent") ? parseInt(formData.get("commissionPercent") as string) : 50;
     const status = formData.get("status") as "WORKING" | "LEFT";
     const role = (formData.get("role") as CoachRole) || "COACH";
     const notes = (formData.get("notes") as string) || null;
@@ -114,7 +111,6 @@ export async function updateCoachAction(
       timing: timing?.trim() || null,
       specialization: specialization?.trim() || null,
       fixedSalary,
-      commissionPercent,
       status: status || "WORKING",
       role,
       notes: notes?.trim() || null,

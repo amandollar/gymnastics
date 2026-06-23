@@ -1,4 +1,4 @@
-﻿import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import type { PlanType, Prisma, StudentLevel } from "@prisma/client";
 import {
   computePlanFields,
@@ -343,14 +343,16 @@ export async function updateStudentLevel(id: string, level: StudentLevel) {
 
 export async function updateStudentNotesAndMedical(
   id: string,
-  data: { notes?: string | null; medicalHistory?: string | null }
+  data: { notes?: string | null; medicalHistory?: string | null; trainingFocus?: string | null }
 ) {
+  const updateData: any = {};
+  if (data.notes !== undefined) updateData.notes = data.notes;
+  if (data.medicalHistory !== undefined) updateData.medicalHistory = data.medicalHistory;
+  if (data.trainingFocus !== undefined) updateData.trainingFocus = data.trainingFocus;
+
   return prisma.student.update({
     where: { id },
-    data: {
-      notes: data.notes ?? null,
-      medicalHistory: data.medicalHistory ?? null,
-    },
+    data: updateData,
   });
 }
 
@@ -364,6 +366,7 @@ export async function assignPlanToStudent(
     discountPercent: number;
     batchId?: string | null;
     coachId?: string | null;
+    commissionPercent?: number;
   }
 ) {
   if (input.endDate < input.startDate) {
@@ -435,6 +438,7 @@ export async function assignPlanToStudent(
         pricePerSession: computed.pricePerSession,
         planMonths: computed.planMonths,
         isActive: true,
+        commissionPercent: input.planType === "ONE_TO_ONE" ? (input.commissionPercent ?? 50) : 50,
       },
     });
   });
@@ -553,6 +557,7 @@ export async function updateStudentActivePlan(
     discountPercent: number;
     batchId?: string | null;
     coachId?: string | null;
+    commissionPercent?: number;
     pricingMaps: any;
     gracePeriodMap: any;
   }
@@ -585,6 +590,7 @@ export async function updateStudentActivePlan(
       planMonths: computed.planMonths,
       batchId: data.planType === "REGULAR" ? data.batchId : null,
       coachId: data.planType === "ONE_TO_ONE" ? data.coachId : null,
+      commissionPercent: data.planType === "ONE_TO_ONE" ? (data.commissionPercent ?? 50) : 50,
     },
   });
 }

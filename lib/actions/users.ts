@@ -11,14 +11,14 @@ const CreateUserSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  role: z.enum(["ADMIN", "MANAGER", "TRAINER"]),
+  role: z.enum(["ADMIN", "STAFF"]),
 });
 
 const UpdateUserSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters").optional().or(z.literal("")),
-  role: z.enum(["ADMIN", "MANAGER", "TRAINER"]),
+  role: z.enum(["ADMIN", "STAFF"]),
 });
 
 // Helper to assert Admin permission
@@ -88,18 +88,29 @@ export async function createUser(prevState: any, formData: FormData) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
         role,
       },
+      select: {
+        id: true,
+        createdAt: true,
+      },
     });
 
     revalidatePath("/admin/settings");
     updateTag("users");
-    return { success: true, message: "User account created successfully." };
+    return {
+      success: true,
+      message: "User account created successfully.",
+      user: {
+        id: user.id,
+        createdAt: user.createdAt,
+      },
+    };
   } catch (error: any) {
     console.error("Error creating user:", error);
     return {

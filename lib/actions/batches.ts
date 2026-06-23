@@ -14,7 +14,7 @@ type ActionResult = { success: boolean; message?: string };
 async function assertCanManage() {
   const session = await auth();
   const role = (session?.user as { role?: string })?.role;
-  if (!session || (role !== "ADMIN" && role !== "MANAGER")) {
+  if (!session || (role !== "ADMIN" && role !== "STAFF")) {
     throw new Error("Unauthorized: only admins and managers can manage batches");
   }
 }

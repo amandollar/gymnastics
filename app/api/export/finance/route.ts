@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/auth-session";
-import { getPaymentsForExport } from "@/lib/services/export";
+import { getFinanceForExport } from "@/lib/services/export";
 
 export async function GET(request: NextRequest) {
   const session = await getSession();
@@ -14,30 +14,32 @@ export async function GET(request: NextRequest) {
   const to = searchParams.get("to") || undefined;
 
   try {
-    const data = await getPaymentsForExport(from, to);
+    const data = await getFinanceForExport(from, to);
 
     // Generate CSV string
     const headers = [
-      "Invoice Number",
-      "Student Number",
-      "Student Name",
-      "Amount",
+      "Date",
+      "Type",
+      "Reference",
+      "Party Name",
+      "Description",
       "Method",
-      "Paid At",
-      "Notes",
+      "Amount",
+      "Status",
     ];
 
     const csvRows = [
       headers.join(","),
       ...data.map((row) =>
         [
-          row.invoiceNumber,
-          row.studentNumber,
-          `"${row.studentName.replace(/"/g, '""')}"`,
-          row.amount,
+          row.date,
+          row.type,
+          row.reference,
+          `"${row.partyName.replace(/"/g, '""')}"`,
+          `"${row.description.replace(/"/g, '""')}"`,
           row.method,
-          row.paidAt,
-          `"${row.notes.replace(/"/g, '""')}"`,
+          row.amount,
+          row.status,
         ].join(",")
       ),
     ];
@@ -48,11 +50,11 @@ export async function GET(request: NextRequest) {
     return new NextResponse(csvContent, {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename=payments_export${dateSuffix}_${new Date().toISOString().split("T")[0]}.csv`,
+        "Content-Disposition": `attachment; filename=finance_ledger_export${dateSuffix}_${new Date().toISOString().split("T")[0]}.csv`,
       },
     });
   } catch (error) {
-    console.error("Export payments error:", error);
+    console.error("Export finance error:", error);
     return new NextResponse("Export Failed", { status: 500 });
   }
 }

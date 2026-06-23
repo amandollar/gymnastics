@@ -7,7 +7,7 @@ export default async function BulkUploadPage() {
   if (!session) redirect("/login");
 
   const user = await getSessionUser();
-  const canManage = user?.role === "ADMIN" || user?.role === "MANAGER";
+  const canManage = user?.role === "ADMIN" || user?.role === "STAFF";
 
   if (!canManage) {
     redirect("/students");

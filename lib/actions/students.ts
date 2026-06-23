@@ -23,7 +23,7 @@ import type { PlanType, StudentLevel } from "@prisma/client";
 async function assertCanManageStudents() {
   const session = await auth();
   const role = (session?.user as { role?: string })?.role;
-  if (!session || (role !== "ADMIN" && role !== "MANAGER")) {
+  if (!session || (role !== "ADMIN" && role !== "STAFF")) {
     throw new Error("Unauthorized");
   }
   return session;
@@ -245,6 +245,7 @@ export async function assignPlanAction(
       selectedDays,
       discountPercent: formData.get("discountPercent") || "0",
       batchId: formData.get("batchId") || "",
+      commissionPercent: formData.get("commissionPercent") || "50",
     };
 
     const parsed = assignPlanSchema.safeParse(raw);
@@ -267,6 +268,7 @@ export async function assignPlanAction(
       discountPercent: parsed.data.discountPercent,
       batchId: parsed.data.batchId || null,
       coachId: parsed.data.planType === "ONE_TO_ONE" ? (coachId || null) : null,
+      commissionPercent: parsed.data.planType === "ONE_TO_ONE" ? (parsed.data.commissionPercent ?? 50) : 50,
     });
 
     revalidatePath(`/admin/students/${studentId}`);
@@ -363,6 +365,7 @@ export async function updateStudentActivePlanAction(
     const discountPercent = parseFloat(formData.get("discountPercent") as string || "0") || 0;
     const batchId = (formData.get("batchId") as string) || null;
     const coachId = (formData.get("coachId") as string) || null;
+    const commissionPercent = formData.get("commissionPercent") ? parseInt(formData.get("commissionPercent") as string) : 50;
 
     if (!startDateRaw || !endDateRaw) {
       return { success: false, message: "Start date and End date are required." };
@@ -395,6 +398,7 @@ export async function updateStudentActivePlanAction(
       discountPercent,
       batchId: batchId || null,
       coachId: coachId || null,
+      commissionPercent,
       pricingMaps,
       gracePeriodMap,
     });
@@ -417,7 +421,7 @@ export async function updateStudentActivePlanAction(
 
 export async function updateStudentNotesAndMedicalAction(
   studentId: string,
-  data: { notes?: string | null; medicalHistory?: string | null }
+  data: { notes?: string | null; medicalHistory?: string | null; trainingFocus?: string | null }
 ): Promise<{ success: boolean; message?: string }> {
   try {
     await assertCanManageStudents();
@@ -428,11 +432,11 @@ export async function updateStudentNotesAndMedicalAction(
     revalidatePath("/admin/students");
     updateTag("students");
 
-    return { success: true, message: "Notes and medical history updated successfully" };
+    return { success: true, message: "Details updated successfully" };
   } catch (e) {
     return {
       success: false,
-      message: e instanceof Error ? e.message : "Failed to update notes and medical history",
+      message: e instanceof Error ? e.message : "Failed to update details",
     };
   }
 }
@@ -492,7 +496,7 @@ export async function changePortalPasswordAction(
     const userId = (session.user as any)?.id;
 
     const isParent = userRole === "PARENT" && userId === studentId;
-    const isStaff = userRole === "ADMIN" || userRole === "MANAGER";
+    const isStaff = userRole === "ADMIN" || userRole === "STAFF";
 
     if (!isParent && !isStaff) {
       throw new Error("Unauthorized");

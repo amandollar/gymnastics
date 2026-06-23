@@ -8,8 +8,7 @@ generator client {
 
 enum Role {
   ADMIN
-  MANAGER
-  TRAINER
+  STAFF
 }
 
 enum PlanType {
@@ -33,7 +32,7 @@ model User {
   email     String   @unique
   name      String
   password  String
-  role      Role     @default(TRAINER)
+  role      Role     @default(STAFF)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -49,6 +48,7 @@ model Student {
   admissionDate  DateTime      @default(now())
   notes          String?
   medicalHistory String?
+  trainingFocus  String?
   avatarUrl      String?
   registrationFee Int?
   level          StudentLevel  @default(BEGINNER)
@@ -123,6 +123,7 @@ model StudentPlan {
   sessionsCompleted Int          @default(0)
   planMonths        Int?
   isActive          Boolean      @default(true)
+  commissionPercent Int          @default(50)
   /// When set, the plan is frozen (holiday). Status = FREEZE.
   freezeStartDate   DateTime?
   /// End of the current freeze window.
@@ -274,8 +275,6 @@ model Coach {
   specialization String?
   /// Monthly fixed salary in ₹
   fixedSalary    Int                  @default(0)
-  /// Commission share percentage for personal training (0-100)
-  commissionPercent Int               @default(50)
   status         CoachStatus          @default(WORKING)
   role           CoachRole            @default(COACH)
   notes          String?

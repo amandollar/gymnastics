@@ -41,5 +41,5 @@ export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
  */
 export const getCanManage = cache(async (): Promise<boolean> => {
   const user = await getSessionUser();
-  return user?.role === "ADMIN" || user?.role === "MANAGER";
+  return user?.role === "ADMIN" || user?.role === "STAFF";
 });

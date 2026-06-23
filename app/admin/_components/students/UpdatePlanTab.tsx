@@ -75,6 +75,7 @@ type ActivePlan = {
   discountPercent: number;
   batchId?: string | null;
   coachId?: string | null;
+  commissionPercent?: number;
 };
 
 // ─── Expired Plan Summary Banner ──────────────────────────────────────────────
@@ -267,6 +268,9 @@ function EditPlanForm({
   const [selectedCoachId, setSelectedCoachId] = useState(
     activePlan.coachId ?? ""
   );
+  const [commissionPercent, setCommissionPercent] = useState(
+    activePlan.commissionPercent ?? 50
+  );
 
   const [state, action, pending] = useActionState(
     updateStudentActivePlanAction.bind(null, studentId),
@@ -335,6 +339,7 @@ function EditPlanForm({
       <input type="hidden" name="discountPercent" value={discountPercent} />
       <input type="hidden" name="batchId" value={selectedBatchId} />
       <input type="hidden" name="coachId" value={selectedCoachId} />
+      <input type="hidden" name="commissionPercent" value={commissionPercent} />
       {selectedDays.map((d) => (
         <input key={d} type="hidden" name="selectedDays" value={d} />
       ))}
@@ -366,15 +371,30 @@ function EditPlanForm({
 
         {/* Coach Selection */}
         {planType === "ONE_TO_ONE" && (
-          <div className="space-y-2 animate-fade-in">
-            <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-              Coach
-            </label>
-            <CoachPicker
-              coaches={coaches}
-              value={selectedCoachId}
-              onChange={setSelectedCoachId}
-            />
+          <div className="grid gap-4 sm:grid-cols-2 animate-fade-in">
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                Coach
+              </label>
+              <CoachPicker
+                coaches={coaches}
+                value={selectedCoachId}
+                onChange={setSelectedCoachId}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
+                PT Commission Share (%)
+              </label>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={commissionPercent}
+                onChange={(e) => setCommissionPercent(parseInt(e.target.value) || 0)}
+                className={inputClass}
+              />
+            </div>
           </div>
         )}
 

@@ -17,6 +17,7 @@ import {
   ArrowLeft,
   Check,
   Loader2,
+  Printer,
 } from "lucide-react";
 import {
   updateCoachAction,
@@ -39,7 +40,6 @@ interface CoachData {
   timing: string | null;
   specialization: string | null;
   fixedSalary: number;
-  commissionPercent: number;
   status: "WORKING" | "LEFT";
   role: CoachRole;
   notes: string | null;
@@ -59,6 +59,7 @@ interface CoachData {
     fee: number;
     planMonths: number;
     isActive: boolean;
+    commissionPercent: number;
     student: {
       id: string;
       name: string;
@@ -269,14 +270,14 @@ function CoachFormModal({
                     </div>
                   </div>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2">
                   <div>
                     <label className={labelCls}>Role *</label>
                     <select
-                      name="role"
-                      value={role}
-                      onChange={(e) => setRole(e.target.value as CoachRole)}
-                      className={inputCls}
+                       name="role"
+                       value={role}
+                       onChange={(e) => setRole(e.target.value as CoachRole)}
+                       className={inputCls}
                     >
                       <option value="COACH">Coach / Trainer</option>
                       <option value="STAFF">Staff Employee</option>
@@ -285,10 +286,6 @@ function CoachFormModal({
                   <div>
                     <label className={labelCls}>Fixed Salary (₹)</label>
                     <input name="fixedSalary" type="number" min={0} defaultValue={existing.fixedSalary} className={inputCls} />
-                  </div>
-                  <div>
-                    <label className={labelCls}>PT Commission (%)</label>
-                    <input name="commissionPercent" type="number" min={0} max={100} defaultValue={existing.commissionPercent ?? 50} className={inputCls} />
                   </div>
                 </div>
               </>
@@ -995,32 +992,52 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
 
               const paymentKey = `${monthVal.year}-${monthVal.month + 1}`;
               const currentPayment = paymentsState[paymentKey] || { paid: false, loading: false };
+              const dbPayment = coach.salaryPayments?.find(
+                (p) => p.year === monthVal.year && p.month === monthVal.month + 1
+              );
 
               return (
                 <div key={paymentKey} className="rounded-2xl bg-zinc-50 dark:bg-zinc-800/50 overflow-hidden border border-zinc-100 dark:border-zinc-800 shadow-sm">
                   {/* Month Header */}
                   <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100 dark:border-zinc-800 bg-white/40 dark:bg-zinc-900/40">
-                    <h2 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                      {monthLabel}
-                    </h2>
-                    {/* Paid / Unpaid Toggle */}
-                    <button
-                      onClick={() => handleTogglePayment(monthVal.year, monthVal.month + 1, totalPay)}
-                      disabled={currentPayment.loading}
-                      className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-xs font-semibold border transition-all cursor-pointer select-none ${
-                        currentPayment.paid
-                          ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/30 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                          : "bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-950/30"
-                      }`}
-                      title={currentPayment.paid ? "Click to mark as Unpaid" : "Click to mark as Paid"}
-                    >
-                      {currentPayment.loading ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <span className={`h-1.5 w-1.5 rounded-full ${currentPayment.paid ? "bg-emerald-500" : "bg-rose-500"}`} />
+                    <h2 className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider flex flex-wrap items-center gap-1.5">
+                      <span>{monthLabel}</span>
+                      {currentPayment.paid && (
+                        <span className="normal-case font-normal text-[10px] text-zinc-400 dark:text-zinc-500 shrink-0">
+                          · Paid {dbPayment?.paidAt ? new Date(dbPayment.paidAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "today"}
+                        </span>
                       )}
-                      {currentPayment.paid ? "Paid" : "Unpaid"}
-                    </button>
+                    </h2>
+                    <div className="flex items-center gap-2">
+                      {/* Printable Link */}
+                      <Link
+                        href={`/admin/coaches/${coach.id}/salary-slip/${monthVal.year}/${monthVal.month + 1}`}
+                        target="_blank"
+                        className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-semibold border bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 transition-all cursor-pointer select-none"
+                      >
+                        <Printer className="h-3.5 w-3.5 text-zinc-450 dark:text-zinc-400" />
+                        Slip
+                      </Link>
+
+                      {/* Paid / Unpaid Toggle */}
+                      <button
+                        onClick={() => handleTogglePayment(monthVal.year, monthVal.month + 1, totalPay)}
+                        disabled={currentPayment.loading}
+                        className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-xs font-semibold border transition-all cursor-pointer select-none ${
+                          currentPayment.paid
+                            ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/30 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                            : "bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-950/30"
+                        }`}
+                        title={currentPayment.paid ? "Click to mark as Unpaid" : "Click to mark as Paid"}
+                      >
+                        {currentPayment.loading ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <span className={`h-1.5 w-1.5 rounded-full ${currentPayment.paid ? "bg-emerald-500" : "bg-rose-500"}`} />
+                        )}
+                        {currentPayment.paid ? "Paid" : "Unpaid"}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Line items */}

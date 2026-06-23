@@ -39,13 +39,13 @@ async function main() {
     where: { email: managerEmail },
     update: {
       password: hashedManagerPassword,
-      role: Role.MANAGER,
+      role: Role.STAFF,
     },
     create: {
       email: managerEmail,
       name: "Saif Tamboli",
       password: hashedManagerPassword,
-      role: Role.MANAGER,
+      role: Role.STAFF,
     },
   });
   console.log(`Manager: ${manager.email}`);
@@ -57,13 +57,13 @@ async function main() {
     where: { email: trainerEmail },
     update: {
       password: hashedTrainerPassword,
-      role: Role.TRAINER,
+      role: Role.STAFF,
     },
     create: {
       email: trainerEmail,
       name: "Trainer Account",
       password: hashedTrainerPassword,
-      role: Role.TRAINER,
+      role: Role.STAFF,
     },
   });
   console.log(`Trainer: ${trainer.email}`);

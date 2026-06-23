@@ -774,6 +774,31 @@ export default function PortalDashboardClient({
                   </p>
                 </section>
 
+                {/* Training Focus & Emphasis Section */}
+                {student.trainingFocus && (
+                  <div className="rounded-3xl border border-brand-orange-500/20 bg-[#121212] p-6 shadow-sm relative overflow-hidden group">
+                    <div className="absolute right-0 top-0 h-24 w-24 translate-x-4 -translate-y-4 rounded-full bg-[#f16d28]/5 blur-xl pointer-events-none" />
+                    <div className="flex items-center gap-3">
+                      <span className="p-2 rounded-xl bg-[#f16d28]/10 text-[#f16d28] shrink-0">
+                        <Dumbbell className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <h3 className="text-sm font-bold text-white uppercase tracking-wider text-[11px]">
+                          Academy Training Focus &amp; Emphasis
+                        </h3>
+                        <p className="text-[9px] text-zinc-500 uppercase tracking-widest mt-0.5 font-semibold">
+                          Current Emphasis for {student.name}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-4 border-t border-zinc-800/60 pt-3.5">
+                      <p className="text-zinc-300 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
+                        {student.trainingFocus}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 {/* Level Progress & Important Details */}
                 <div className="grid gap-6 md:grid-cols-[1.1fr_0.9fr]">
                   <LevelProgress

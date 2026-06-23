@@ -17,7 +17,7 @@ import type { EnquiryStatus } from "@prisma/client";
 async function assertCanManageEnquiries() {
   const session = await auth();
   const role = (session?.user as { role?: string })?.role;
-  if (!session || (role !== "ADMIN" && role !== "MANAGER")) {
+  if (!session || (role !== "ADMIN" && role !== "STAFF")) {
     throw new Error("Unauthorized");
   }
   return session;

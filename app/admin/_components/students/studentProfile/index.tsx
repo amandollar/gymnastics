@@ -38,6 +38,7 @@ type StudentData = {
   level: StudentLevel;
   notes: string | null;
   medicalHistory: string | null;
+  trainingFocus?: string | null;
   avatarUrl?: string | null;
   status: StudentStatus;
   activePlan: PlanRow | null;
@@ -532,6 +533,7 @@ export default function StudentDetailClient({
             studentId={student.id}
             initialNotes={student.notes}
             initialMedicalHistory={student.medicalHistory}
+            initialTrainingFocus={student.trainingFocus}
             canManage={canManage}
           />
         </div>

@@ -18,6 +18,7 @@ import PlanBuilderFields from "./PlanBuilderFields";
 import StudentPicker, { type PlanStudentOption } from "./StudentPicker";
 import BatchPicker from "./BatchPicker";
 import CoachPicker, { type CoachOption } from "./CoachPicker";
+import { planInputClass } from "./plan-form-shared";
 
 function parseDaysFromBatchName(name: string): WeekdayName[] | null {
   const words = name.trim().split(/\s+/);
@@ -90,6 +91,7 @@ export default function CreateAssignPlanPanel({
   const [discountPercent, setDiscountPercent] = useState(0);
   const [selectedBatchId, setSelectedBatchId] = useState("");
   const [selectedCoachId, setSelectedCoachId] = useState("");
+  const [commissionPercent, setCommissionPercent] = useState(50);
   const [studentError, setStudentError] = useState<string | undefined>();
   const [batchError, setBatchError] = useState<string | undefined>();
   const [coachError, setCoachError] = useState<string | undefined>();
@@ -131,6 +133,7 @@ export default function CreateAssignPlanPanel({
     setDiscountPercent(0);
     setSelectedBatchId("");
     setSelectedCoachId("");
+    setCommissionPercent(50);
     setStudentError(undefined);
     setBatchError(undefined);
     setCoachError(undefined);
@@ -291,26 +294,44 @@ export default function CreateAssignPlanPanel({
               {/* Conditional: Batch (REGULAR) or Coach (ONE_TO_ONE) */}
               {isPersonalTraining ? (
                 <div className="space-y-3 animate-fade-in">
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                    Coach
-                  </p>
-                  <CoachPicker
-                    coaches={coaches}
-                    value={selectedCoachId}
-                    onChange={(id) => {
-                      setSelectedCoachId(id);
-                      setCoachError(undefined);
-                    }}
-                    error={coachError}
-                  />
-                  {coaches.filter((c) => c.status === "WORKING").length === 0 && (
-                    <p className="text-xs text-zinc-400 dark:text-zinc-500">
-                      No working coaches available.{" "}
-                      <Link href="/admin/coaches" className="text-brand-orange-500 hover:underline">
-                        Add a coach first.
-                      </Link>
-                    </p>
-                  )}
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                        Coach
+                      </p>
+                      <CoachPicker
+                        coaches={coaches}
+                        value={selectedCoachId}
+                        onChange={(id) => {
+                          setSelectedCoachId(id);
+                          setCoachError(undefined);
+                        }}
+                        error={coachError}
+                      />
+                      {coaches.filter((c) => c.status === "WORKING").length === 0 && (
+                        <p className="text-xs text-zinc-400 dark:text-zinc-500">
+                          No working coaches available.{" "}
+                          <Link href="/admin/coaches" className="text-brand-orange-500 hover:underline">
+                            Add a coach first.
+                          </Link>
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                        PT Commission Share (%)
+                      </p>
+                      <input
+                        name="commissionPercent"
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={commissionPercent}
+                        onChange={(e) => setCommissionPercent(parseInt(e.target.value) || 0)}
+                        className={planInputClass}
+                      />
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-3">

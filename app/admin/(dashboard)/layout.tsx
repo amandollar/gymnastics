@@ -17,7 +17,7 @@ export default async function DashboardLayout({
   }
 
   const user = session.user;
-  const userRole = (user as { role?: string })?.role || "TRAINER";
+  const userRole = (user as { role?: string })?.role || "STAFF";
   const isAdmin = userRole === "ADMIN";
 
   async function signOutAction() {

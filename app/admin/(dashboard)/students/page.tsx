@@ -8,7 +8,7 @@ export default async function StudentsPage() {
   if (!session) redirect("/login");
 
   const user = await getSessionUser();
-  const canManage = user?.role === "ADMIN" || user?.role === "MANAGER";
+  const canManage = user?.role === "ADMIN" || user?.role === "STAFF";
 
   const [students, batches] = await Promise.all([
     listStudents(),

@@ -7,7 +7,7 @@ import { revalidatePath, updateTag } from "next/cache";
 async function assertCanManage() {
   const session = await auth();
   const role = (session?.user as { role?: string })?.role;
-  if (!session || (role !== "ADMIN" && role !== "MANAGER")) {
+  if (!session || (role !== "ADMIN" && role !== "STAFF")) {
     throw new Error("Unauthorized");
   }
 }
@@ -48,7 +48,7 @@ export async function getStudentNotificationsAction(studentId: string) {
     const role = (session.user as { role?: string })?.role;
     const userId = (session.user as { id?: string })?.id;
 
-    const canManage = role === "ADMIN" || role === "MANAGER";
+    const canManage = role === "ADMIN" || role === "STAFF";
     const isOwner = role === "PARENT" && userId === studentId;
 
     if (!canManage && !isOwner) {
@@ -74,7 +74,7 @@ export async function markNotificationsAsReadAction(studentId: string) {
     const role = (session.user as { role?: string })?.role;
     const userId = (session.user as { id?: string })?.id;
 
-    const canManage = role === "ADMIN" || role === "MANAGER";
+    const canManage = role === "ADMIN" || role === "STAFF";
     const isOwner = role === "PARENT" && userId === studentId;
 
     if (!canManage && !isOwner) {

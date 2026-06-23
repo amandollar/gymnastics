@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import DashboardNav, { HomeIcon, SettingsIcon, UsersIcon, EnquiryIcon, GymIcon, DocIcon, CheckIcon } from "./DashboardNav";
+import DashboardNav, { HomeIcon, SettingsIcon, UsersIcon, EnquiryIcon, GymIcon, DocIcon, CheckIcon, FinanceIcon } from "./DashboardNav";
 import { Menu, X } from "lucide-react";
 
 export function MobileMenuButton({ onOpen }: { onOpen: () => void }) {
@@ -158,15 +158,26 @@ export function MobileBottomNav({
           Plans
         </Link>
         {isAdmin && (
-          <Link
-            href="/admin/settings"
-            className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
-              pathname === "/admin/settings" ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
-            }`}
-          >
-            <SettingsIcon className="h-4.5 w-4.5 shrink-0" />
-            Settings
-          </Link>
+          <>
+            <Link
+              href="/admin/finance"
+              className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
+                pathname.startsWith("/admin/finance") ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
+              }`}
+            >
+              <FinanceIcon className="h-4.5 w-4.5 shrink-0" />
+              Finance
+            </Link>
+            <Link
+              href="/admin/settings"
+              className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
+                pathname === "/admin/settings" ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
+              }`}
+            >
+              <SettingsIcon className="h-4.5 w-4.5 shrink-0" />
+              Settings
+            </Link>
+          </>
         )}
       </div>
     </nav>

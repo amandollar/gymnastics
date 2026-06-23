@@ -15,7 +15,7 @@ export default async function PlansPage() {
 
   const user = await getSessionUser();
   const role = user?.role;
-  const canManage = role === "ADMIN" || role === "MANAGER";
+  const canManage = role === "ADMIN" || role === "STAFF";
 
   const [students, pricingMaps, gracePeriodMap, batches, coaches] = await Promise.all([
     listStudents(),

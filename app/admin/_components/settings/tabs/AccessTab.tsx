@@ -9,7 +9,7 @@ interface User {
   id: string;
   name: string;
   email: string;
-  role: "ADMIN" | "MANAGER" | "TRAINER";
+  role: "ADMIN" | "STAFF";
   createdAt: Date;
 }
 
@@ -37,12 +37,12 @@ type ActionResult = {
   };
 };
 
-const getPermissionsList = (role: "ADMIN" | "MANAGER" | "TRAINER") => {
+const getPermissionsList = (role: "ADMIN" | "STAFF") => {
   return [
     { label: "Can access", allowed: true },
     { label: "Academy", allowed: role === "ADMIN" },
     { label: "Users", allowed: role === "ADMIN" },
-    { label: "Batches", allowed: role === "ADMIN" },
+    { label: "Batches", allowed: true },
     { label: "Grace Periods", allowed: role === "ADMIN" },
     { label: "Fee Structure", allowed: role === "ADMIN" },
     { label: "Data Export", allowed: role === "ADMIN" },
@@ -262,13 +262,13 @@ export default function AccessTab({
 
   // "Add new user" state
   const [selectedCoach, setSelectedCoach] = useState<Coach | null>(null);
-  const [formRole, setFormRole] = useState<"ADMIN" | "MANAGER" | "TRAINER">("TRAINER");
+  const [formRole, setFormRole] = useState<"ADMIN" | "STAFF">("STAFF");
   const [formPassword, setFormPassword] = useState("");
 
   // "Edit user" state
   const [editFormName, setEditFormName] = useState("");
   const [editFormEmail, setEditFormEmail] = useState("");
-  const [editFormRole, setEditFormRole] = useState<"ADMIN" | "MANAGER" | "TRAINER">("TRAINER");
+  const [editFormRole, setEditFormRole] = useState<"ADMIN" | "STAFF">("STAFF");
   const [editFormPassword, setEditFormPassword] = useState("");
 
   const showToast = (type: "success" | "error", message: string) => {
@@ -289,7 +289,7 @@ export default function AccessTab({
     setEditingUser(null);
     setIsAddingNew(true);
     setSelectedCoach(null);
-    setFormRole("TRAINER");
+    setFormRole("STAFF");
     setFormPassword("");
   };
 
@@ -297,11 +297,11 @@ export default function AccessTab({
     setIsAddingNew(false);
     setEditingUser(null);
     setSelectedCoach(null);
-    setFormRole("TRAINER");
+    setFormRole("STAFF");
     setFormPassword("");
     setEditFormName("");
     setEditFormEmail("");
-    setEditFormRole("TRAINER");
+    setEditFormRole("STAFF");
     setEditFormPassword("");
   };
 
@@ -320,19 +320,19 @@ export default function AccessTab({
 
   const [createState, createAction, isCreatePending] = useActionState(
     async (state: ActionResult | null, formData: FormData) => {
-      const result = (await createUser(state, formData)) as ActionResult;
+      const result = (await createUser(state, formData)) as any;
       if (result.success) {
         showToast("success", result.message || "User created.");
         setIsAddingNew(false);
         setSelectedCoach(null);
-        setFormRole("TRAINER");
+        setFormRole("STAFF");
         setFormPassword("");
         const newUser: User = {
-          id: Math.random().toString(),
+          id: result.user?.id || Math.random().toString(),
           name: formData.get("name") as string,
           email: formData.get("email") as string,
-          role: formData.get("role") as "ADMIN" | "MANAGER" | "TRAINER",
-          createdAt: new Date(),
+          role: formData.get("role") as "ADMIN" | "STAFF",
+          createdAt: result.user?.createdAt ? new Date(result.user.createdAt) : new Date(),
         };
         setUsers((prev) => [newUser, ...prev]);
       } else {
@@ -359,7 +359,7 @@ export default function AccessTab({
           ...editingUser,
           name: formData.get("name") as string,
           email: formData.get("email") as string,
-          role: formData.get("role") as "ADMIN" | "MANAGER" | "TRAINER",
+          role: formData.get("role") as "ADMIN" | "STAFF",
         };
         setUsers((prev) =>
           prev.map((u) => (u.id === editingUser.id ? updatedUser : u))
@@ -367,7 +367,7 @@ export default function AccessTab({
         setEditingUser(null);
         setEditFormName("");
         setEditFormEmail("");
-        setEditFormRole("TRAINER");
+        setEditFormRole("STAFF");
         setEditFormPassword("");
       } else {
         showToast("error", result.message || "Could not update user.");
@@ -409,7 +409,7 @@ export default function AccessTab({
 
   // ─── Show all employees, but disable ones that cannot be granted access yet ──
   const existingEmails = new Set(users.map((u) => u.email.toLowerCase()));
-  const employeeOptions = coaches;
+  const employeeOptions = coaches.filter((c) => c.role === "STAFF");
   const disabledEmployeeIds = new Set(
     employeeOptions
       .filter(
@@ -543,8 +543,7 @@ export default function AccessTab({
                         onChange={(e) => setFormRole(e.target.value as any)}
                         className={inputClass}
                       >
-                        <option value="TRAINER">Trainer</option>
-                        <option value="MANAGER">Manager</option>
+                        <option value="STAFF">Staff</option>
                         <option value="ADMIN">Admin</option>
                       </select>
                     </div>
@@ -646,8 +645,7 @@ export default function AccessTab({
                         onChange={(e) => setEditFormRole(e.target.value as any)}
                         className={inputClass}
                       >
-                        <option value="TRAINER">Trainer</option>
-                        <option value="MANAGER">Manager</option>
+                        <option value="STAFF">Staff</option>
                         <option value="ADMIN">Admin</option>
                       </select>
                     </div>
@@ -716,8 +714,7 @@ export default function AccessTab({
               >
                 <option value="ALL">Access role</option>
                 <option value="ADMIN">Admin</option>
-                <option value="MANAGER">Manager</option>
-                <option value="TRAINER">Trainer</option>
+                <option value="STAFF">Staff</option>
               </select>
             </div>
 

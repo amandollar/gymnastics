@@ -1,4 +1,4 @@
-﻿import type { NextAuthConfig } from "next-auth";
+import type { NextAuthConfig } from "next-auth";
 import { NextResponse } from "next/server";
 import { buildAppUrl, getAppHost } from "@/lib/utils/host";
 
@@ -87,7 +87,7 @@ export const authConfig = {
           return redirectTo("admin", "/dashboard");
         }
 
-        if (requiresManageAccess && role !== "ADMIN" && role !== "MANAGER") {
+        if (requiresManageAccess && role !== "ADMIN" && role !== "STAFF") {
           return redirectTo("admin", "/dashboard");
         }
 

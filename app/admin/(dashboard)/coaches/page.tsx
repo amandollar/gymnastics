@@ -4,8 +4,8 @@ import CoachesPageClient from "@/app/admin/_components/coaches/CoachesPageClient
 import { listCoaches } from "@/lib/services/cached";
 
 export const metadata = {
-  title: "Coaches — TAG CRM",
-  description: "Manage coaches, track daily attendance and view monthly earnings for personal training.",
+  title: "Employees — TAG CRM",
+  description: "Manage employees, track daily attendance, and view monthly earnings.",
 };
 
 export default async function CoachesPage() {

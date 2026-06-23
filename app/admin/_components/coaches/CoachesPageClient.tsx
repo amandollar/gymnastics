@@ -342,25 +342,21 @@ function CoachFormModal({
                 )}
                 {role === "COACH" && (
                   <div className="space-y-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div className={isEdit ? "grid gap-4 sm:grid-cols-2" : ""}>
                       <div>
                         <label className={labelCls}>Fixed Monthly Salary (₹)</label>
                         <input name="fixedSalary" type="number" min={0} defaultValue={existing?.fixedSalary ?? 0} className={inputCls} />
                       </div>
-                      <div>
-                        <label className={labelCls}>PT Commission Share (%)</label>
-                        <input name="commissionPercent" type="number" min={0} max={100} defaultValue={(existing as any)?.commissionPercent ?? 50} className={inputCls} />
-                      </div>
+                      {isEdit && (
+                        <div>
+                          <label className={labelCls}>Status</label>
+                          <select name="status" defaultValue={existing?.status ?? "WORKING"} className={inputCls}>
+                            <option value="WORKING">Working</option>
+                            <option value="LEFT">Left</option>
+                          </select>
+                        </div>
+                      )}
                     </div>
-                    {isEdit && (
-                      <div>
-                        <label className={labelCls}>Status</label>
-                        <select name="status" defaultValue={existing?.status ?? "WORKING"} className={inputCls}>
-                          <option value="WORKING">Working</option>
-                          <option value="LEFT">Left</option>
-                        </select>
-                      </div>
-                    )}
                   </div>
                 )}
                 <div>
@@ -820,9 +816,9 @@ export default function CoachesPageClient({ coaches: initialCoaches, todayStr }:
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl sm:text-5xl font-light tracking-tight text-zinc-900 dark:text-zinc-50">Coaches</h1>
+          <h1 className="text-3xl sm:text-5xl font-light tracking-tight text-zinc-900 dark:text-zinc-50">Employees</h1>
           <p className="mt-1 text-sm text-zinc-400 dark:text-zinc-500">
-            {coaches.filter((c) => c.status === "WORKING").length} active coach{coaches.filter((c) => c.status === "WORKING").length !== 1 ? "es" : ""}
+            {coaches.filter((c) => c.status === "WORKING").length} active employee{coaches.filter((c) => c.status === "WORKING").length !== 1 ? "s" : ""}
           </p>
         </div>
         <div className="flex items-center gap-3">

@@ -27,11 +27,11 @@ export const listStudents = unstable_cache(
   { tags: ["students"] }
 );
 
-export const getStudentById = unstable_cache(
-  async (id: string) => dbGetStudentById(id),
-  ["student-by-id"],
+export const getStudentById = (id: string) => unstable_cache(
+  async () => dbGetStudentById(id),
+  ["student-by-id", id],
   { tags: ["students"] }
-);
+)();
 
 export const listBatches = unstable_cache(
   async () => dbListBatches(),
@@ -46,11 +46,11 @@ export const listEnquiries = unstable_cache(
   { tags: ["enquiries"] }
 );
 
-export const getEnquiryById = unstable_cache(
-  async (id: string) => dbGetEnquiryById(id),
-  ["enquiry-by-id"],
+export const getEnquiryById = (id: string) => unstable_cache(
+  async () => dbGetEnquiryById(id),
+  ["enquiry-by-id", id],
   { tags: ["enquiries"] }
-);
+)();
 
 export const getPricingMaps = unstable_cache(
   async () => dbGetPricingMaps(),
@@ -64,18 +64,17 @@ export const getGracePeriodMap = unstable_cache(
   { tags: ["grace-periods"] }
 );
 
-export const getMonthlyAttendanceData = unstable_cache(
-  async (year: number, month: number) =>
-    dbGetMonthlyAttendanceData(year, month),
-  ["attendance-monthly-v2"],
+export const getMonthlyAttendanceData = (year: number, month: number) => unstable_cache(
+  async () => dbGetMonthlyAttendanceData(year, month),
+  ["attendance-monthly-v2", String(year), String(month)],
   { tags: ["attendance"] }
-);
+)();
 
-export const getYearlyMonthlyBreakdown = unstable_cache(
-  async (year: number) => dbGetYearlyMonthlyBreakdown(year),
-  ["attendance-yearly"],
+export const getYearlyMonthlyBreakdown = (year: number) => unstable_cache(
+  async () => dbGetYearlyMonthlyBreakdown(year),
+  ["attendance-yearly", String(year)],
   { tags: ["attendance"] }
-);
+)();
 
 export const getAllUsers = unstable_cache(
   async () => dbGetAllUsers(),

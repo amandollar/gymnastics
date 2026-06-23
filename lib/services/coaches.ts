@@ -123,7 +123,6 @@ export async function createCoach(data: {
   timing?: string;
   specialization?: string;
   fixedSalary?: number;
-  commissionPercent?: number;
   role?: CoachRole;
   notes?: string;
   address?: string;
@@ -138,7 +137,6 @@ export async function createCoach(data: {
       timing: data.timing || null,
       specialization: data.specialization || null,
       fixedSalary: data.fixedSalary ?? 0,
-      commissionPercent: data.commissionPercent ?? 50,
       notes: data.notes || null,
       address: data.address || null,
       avatarUrl: null,
@@ -170,7 +168,6 @@ export async function updateCoach(
     timing?: string | null;
     specialization?: string | null;
     fixedSalary?: number;
-    commissionPercent?: number;
     status?: CoachStatus;
     role?: CoachRole;
     notes?: string | null;
@@ -288,12 +285,6 @@ export async function getCoachMonthlyAttendanceSerializable(
 export async function getCoachEarnings(
   coachId: string
 ): Promise<CoachMonthlyEarningRow[]> {
-  const coach = await (prisma as any).coach.findUnique({
-    where: { id: coachId },
-    select: { commissionPercent: true },
-  });
-  const commissionMultiplier = (coach?.commissionPercent ?? 50) / 100;
-
   const plans = await (prisma as any).studentPlan.findMany({
     where: {
       coachId,
@@ -308,6 +299,8 @@ export async function getCoachEarnings(
   });
 
   return plans.map((plan: any) => {
+    const commissionPercent = plan.commissionPercent ?? 50;
+    const commissionMultiplier = commissionPercent / 100;
     const totalFee: number = plan.fee;
     const coachShare = Math.round(totalFee * commissionMultiplier);
     const planMonths: number = plan.planMonths ?? 1;
@@ -342,7 +335,7 @@ export async function getCoachEarnings(
       coachShare,
       planMonths,
       monthlyAmount,
-      commissionPercent: coach?.commissionPercent ?? 50,
+      commissionPercent,
       months,
     } satisfies CoachMonthlyEarningRow;
   });

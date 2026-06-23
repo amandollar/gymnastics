@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 async function assertCanManage() {
   const session = await auth();
   const role = (session?.user as { role?: string })?.role;
-  if (!session || (role !== "ADMIN" && role !== "MANAGER")) {
+  if (!session || (role !== "ADMIN" && role !== "STAFF")) {
     throw new Error("Unauthorized");
   }
 }
@@ -129,7 +129,7 @@ export async function getPaymentByIdAction(paymentId: string) {
     const payment = await getPaymentById(paymentId);
     if (!payment) return null;
 
-    const canManage = role === "ADMIN" || role === "MANAGER";
+    const canManage = role === "ADMIN" || role === "STAFF";
     const isOwner = role === "PARENT" && userId && payment.studentId === userId;
 
     if (!canManage && !isOwner) {
