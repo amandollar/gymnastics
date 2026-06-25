@@ -1,7 +1,9 @@
+
 "use client";
 
 import { useMemo, useState, useRef, useEffect, useTransition } from "react";
 import Link from "next/link";
+import { resolveTemplate, getEffectiveTemplate } from "@/lib/utils/whatsapp-templates";
 import AddEnquiryModal from "@/app/admin/_components/enquiries/AddEnquiryModal";
 import EditEnquiryModal from "@/app/admin/_components/enquiries/EditEnquiryModal";
 import { useRouter } from "next/navigation";
@@ -309,9 +311,11 @@ function RowMenu({
 export default function EnquiryListClient({
   enquiries,
   canManage,
+  academyProfile,
 }: {
   enquiries: EnquiryListItem[];
   canManage: boolean;
+  academyProfile?: any;
 }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -325,14 +329,14 @@ export default function EnquiryListClient({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const triggerWhatsAppFollowUp = (enquiry: EnquiryListItem) => {
-    let defaultText = "";
-    if (enquiry.interestedIn) {
-      defaultText = `Hi ${enquiry.parentName},\n\nHope you're doing well! This is Team TAG Academy 🤸.\n\nWe wanted to follow up on your interest in our ${enquiry.interestedIn} program for ${enquiry.childName}. We would love to welcome them for a trial class!\n\nWould you like to schedule a free trial session this week? Let us know if you have any questions!\n\nBest regards,\nTAG Academy`;
-    } else {
-      defaultText = `Hi ${enquiry.parentName},\n\nHope you're doing well! This is Team TAG Academy 🤸.\n\nWe wanted to follow up on your enquiry for ${enquiry.childName}. We would love to welcome them for a trial class!\n\nWould you like to schedule a free trial session this week? Let us know if you have any questions!\n\nBest regards,\nTAG Academy`;
-    }
+    const template = getEffectiveTemplate(academyProfile?.templateEnquiryFollowUp, "templateEnquiryFollowUp");
+    const text = resolveTemplate(template, {
+      parentName: enquiry.parentName,
+      studentName: enquiry.childName,
+      planType: enquiry.interestedIn || "gymnastics",
+    });
     setFollowUpEnquiry(enquiry);
-    setMessageText(defaultText);
+    setMessageText(text);
   };
 
   const insertEmoji = (emoji: string) => {

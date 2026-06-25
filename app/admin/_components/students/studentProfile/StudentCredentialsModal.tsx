@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { X, Copy, Check, ShieldAlert, Key, RefreshCw, MessageCircle, Sparkles, Lock } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, Copy, Check, ShieldAlert, Key, RefreshCw, MessageCircle, Sparkles, Lock, User } from "lucide-react";
 import { generateStudentCredentialsAction } from "@/lib/actions/students";
+import { getAcademyTemplatesAction } from "@/lib/actions/academy";
+import { resolveTemplate, getEffectiveTemplate } from "@/lib/utils/whatsapp-templates";
+import { getPortalBaseUrl } from "@/lib/utils/portal-url";
 
 interface StudentCredentialsModalProps {
   isOpen: boolean;
@@ -27,34 +30,66 @@ export default function StudentCredentialsModal({
 }: StudentCredentialsModalProps) {
   const [copiedLogin, setCopiedLogin] = useState(false);
   const [copiedPass, setCopiedPass] = useState(false);
+  const [copiedBoth, setCopiedBoth] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [hasPassword, setHasPassword] = useState(initialHasPassword);
   const [isTemp, setIsTemp] = useState(initialIsTemp);
   const [error, setError] = useState<string | null>(null);
+  const [customTemplate, setCustomTemplate] = useState<string | null>(null);
+  const [academyWebsite, setAcademyWebsite] = useState<string | null>(null);
+  const [customPortalUrl, setCustomPortalUrl] = useState<string | null>(null);
+  const [whatsappMessageText, setWhatsappMessageText] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const fetchTemplate = async () => {
+      try {
+        const res = await getAcademyTemplatesAction();
+        if (res.success) {
+          if (res.templates?.templateLoginCredentials) {
+            setCustomTemplate(res.templates.templateLoginCredentials);
+          }
+          if (res.website) {
+            setAcademyWebsite(res.website);
+          }
+          if (res.parentPortalUrl) {
+            setCustomPortalUrl(res.parentPortalUrl);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load credentials template", err);
+      }
+    };
+    fetchTemplate();
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   const formattedRollNumber = `TAG${String(studentNumber).padStart(3, "0")}`;
-  const loginUrl =
-    typeof window === "undefined" ? "/portal/login" : `${window.location.origin}/portal/login`;
+
+  const loginUrl = `${getPortalBaseUrl(customPortalUrl, academyWebsite)}/portal/login`;
   const cleanParentPhoneNumber = (parentPhoneNumber ?? "").replace(/\D/g, "");
   const whatsappNumber =
     cleanParentPhoneNumber.length === 10
       ? `91${cleanParentPhoneNumber}`
       : cleanParentPhoneNumber;
 
-  const whatsappMessage = tempPassword
-    ? [
-        "Hello,",
-        "",
-        `Here are the parent portal login credentials for ${studentName}:`,
-        `Login ID: ${formattedRollNumber}`,
-        `Password: ${tempPassword}`,
-        "",
-        `Website: ${loginUrl}`,
-      ].join("\n")
-    : "";
+  useEffect(() => {
+    if (tempPassword) {
+      const template = getEffectiveTemplate(customTemplate, "templateLoginCredentials");
+      const resolved = resolveTemplate(template, {
+        parentName: "Parent",
+        studentName: studentName,
+        loginId: formattedRollNumber,
+        password: tempPassword,
+        portalLink: loginUrl,
+      });
+      setWhatsappMessageText(resolved);
+    } else {
+      setWhatsappMessageText("");
+    }
+  }, [tempPassword, customTemplate, studentName, formattedRollNumber, loginUrl]);
 
   const copyToClipboard = (text: string, type: "login" | "pass") => {
     navigator.clipboard.writeText(text);
@@ -65,6 +100,14 @@ export default function StudentCredentialsModal({
       setCopiedPass(true);
       setTimeout(() => setCopiedPass(false), 2000);
     }
+  };
+
+  const handleCopyCredentials = () => {
+    if (!tempPassword) return;
+    const credentialsText = `Login ID: ${formattedRollNumber}\nPassword: ${tempPassword}`;
+    navigator.clipboard.writeText(credentialsText);
+    setCopiedBoth(true);
+    setTimeout(() => setCopiedBoth(false), 2000);
   };
 
   const handleGenerate = async () => {
@@ -87,8 +130,8 @@ export default function StudentCredentialsModal({
   };
 
   const handleWhatsAppShare = () => {
-    if (!whatsappMessage || !whatsappNumber) return;
-    const encodedMessage = encodeURIComponent(whatsappMessage);
+    if (!whatsappMessageText || !whatsappNumber) return;
+    const encodedMessage = encodeURIComponent(whatsappMessageText);
     window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, "_blank", "noopener,noreferrer");
   };
 
@@ -104,41 +147,29 @@ export default function StudentCredentialsModal({
         className="w-full max-w-[420px] rounded-[28px] bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-700/60 shadow-2xl shadow-black/20 dark:shadow-black/60 overflow-hidden animate-scale-in animate-duration-200"
         style={{ boxShadow: "0 32px 64px -12px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.05)" }}
       >
-        {/* ── Header gradient band ── */}
-        <div className="relative px-6 pt-6 pb-5 bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 dark:from-zinc-950 dark:via-zinc-900 dark:to-zinc-950 overflow-hidden">
-          {/* Decorative glow */}
-          <div className="absolute -top-6 -right-6 w-32 h-32 rounded-full bg-brand-orange-500/10 blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full bg-brand-orange-500/8 blur-2xl pointer-events-none" />
-
-          <div className="relative flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-brand-orange-500/15 border border-brand-orange-500/25 text-brand-orange-400">
-                <Key className="w-4.5 h-4.5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-white leading-tight">
-                  Parent Portal Access
-                </h3>
-                <p className="text-xs text-zinc-400 mt-0.5">{studentName}</p>
-              </div>
+        {/* Header */}
+        <div className="relative px-6 pt-6 pb-2 flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-brand-orange-50 dark:bg-brand-orange-950/30 text-brand-orange-600 dark:text-brand-orange-400">
+              <User className="w-5 h-5" />
             </div>
-            <button
-              onClick={onClose}
-              className="flex items-center justify-center w-8 h-8 rounded-xl bg-white/8 hover:bg-white/14 border border-white/10 text-zinc-400 hover:text-white transition-all cursor-pointer"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
+            <div>
+              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 leading-tight">
+                {studentName}
+              </h3>
+              <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">Reset credentials</p>
+            </div>
           </div>
-
-          {/* Status pill */}
-          <div className={`mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold ${statusConfig.bg} ${statusConfig.border} ${statusConfig.color}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot} ${hasPassword && isTemp ? "animate-pulse" : ""}`} />
-            {statusConfig.label}
-          </div>
+          <button
+            onClick={onClose}
+            className="flex items-center justify-center w-8 h-8 rounded-full text-zinc-400 hover:text-zinc-655 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         {/* ── Body ── */}
-        <div className="px-6 py-5 space-y-4">
+        <div className={`px-6 py-5 space-y-4 ${tempPassword ? "pb-6" : ""}`}>
 
           {/* Error */}
           {error && (
@@ -161,7 +192,7 @@ export default function StudentCredentialsModal({
                 </span>
                 <button
                   onClick={() => copyToClipboard(formattedRollNumber, "login")}
-                  className="flex items-center justify-center w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all cursor-pointer"
+                  className="flex items-center justify-center w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-750 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all cursor-pointer"
                   title="Copy Login ID"
                 >
                   {copiedLogin
@@ -190,7 +221,7 @@ export default function StudentCredentialsModal({
                   {tempPassword && (
                     <button
                       onClick={() => copyToClipboard(tempPassword, "pass")}
-                      className="flex items-center justify-center w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all cursor-pointer"
+                      className="flex items-center justify-center w-7 h-7 rounded-lg text-zinc-400 hover:text-zinc-750 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all cursor-pointer"
                       title="Copy Password"
                     >
                       {copiedPass
@@ -199,57 +230,90 @@ export default function StudentCredentialsModal({
                     </button>
                   )}
                 </div>
-
-                {tempPassword && (
-                  <div className="mt-2 flex items-center gap-1.5 text-[11px] text-amber-600 dark:text-amber-400/90 font-semibold ml-1">
-                    <Lock className="w-3 h-3 shrink-0" />
-                    Copy now — this password won&apos;t be shown again
-                  </div>
-                )}
               </div>
             )}
           </div>
+
+          {/* WhatsApp message template preview */}
+          {tempPassword && (
+            <div className="space-y-2 animate-fade-in pt-2">
+              <label className="block text-[10px] font-bold tracking-widest text-zinc-400 dark:text-zinc-500 uppercase ml-1">
+                WhatsApp Message Preview
+              </label>
+              <textarea
+                rows={6}
+                value={whatsappMessageText}
+                onChange={(e) => setWhatsappMessageText(e.target.value)}
+                className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-4 text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 focus:border-brand-orange-500 transition-all resize-none leading-relaxed"
+                placeholder="Message to send..."
+              />
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={handleCopyCredentials}
+                  className="w-full flex items-center justify-center gap-2 rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-850 text-xs font-semibold text-zinc-700 dark:text-zinc-300 py-2.5 transition-all cursor-pointer"
+                >
+                  {copiedBoth ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-500" />
+                      Credentials Copied!
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4" />
+                      Copy Credentials
+                    </>
+                  )}
+                </button>
+
+                {whatsappNumber ? (
+                  <button
+                    type="button"
+                    onClick={handleWhatsAppShare}
+                    className="w-full flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-xs font-semibold text-white py-2.5 transition-all shadow-sm shadow-emerald-500/20 cursor-pointer"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Send on WhatsApp
+                  </button>
+                ) : (
+                  <p className="text-[10px] text-red-500 font-semibold ml-1">
+                    Parent phone number is missing or invalid. Message cannot be sent.
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ── Footer ── */}
-        <div className="px-6 pb-6 flex items-center gap-2.5">
-          {/* WhatsApp */}
-          <button
-            type="button"
-            onClick={handleWhatsAppShare}
-            disabled={!tempPassword || !whatsappNumber}
-            title={
-              tempPassword
-                ? whatsappNumber
-                  ? "Share credentials on WhatsApp"
-                  : "Parent phone number is required"
-                : "Generate credentials first"
-            }
-            className="flex items-center gap-2 rounded-2xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-emerald-500 disabled:active:scale-100 px-4 py-2.5 text-sm font-semibold text-white transition-all shadow-sm shadow-emerald-500/20 cursor-pointer"
-          >
-            <MessageCircle className="w-4 h-4" />
-            WhatsApp
-          </button>
+        {!tempPassword && (
+          <div className="px-6 pb-6 flex items-center justify-between">
+            {/* Cancel/Close Button */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2.5 rounded-2xl border border-zinc-200 dark:border-zinc-855 text-sm font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-850 cursor-pointer transition-colors"
+            >
+              Close
+            </button>
 
-          {/* Spacer */}
-          <div className="flex-1" />
-
-          {/* Generate / Reset */}
-          <button
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className="flex items-center gap-2 bg-brand-orange-500 hover:bg-brand-orange-600 active:scale-95 disabled:opacity-60 disabled:active:scale-100 text-white px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all cursor-pointer shadow-sm shadow-brand-orange-500/25"
-          >
-            {isGenerating ? (
-              <RefreshCw className="w-4 h-4 animate-spin" />
-            ) : hasPassword ? (
-              <RefreshCw className="w-4 h-4" />
-            ) : (
-              <Sparkles className="w-4 h-4" />
-            )}
-            {hasPassword ? "Reset" : "Generate"}
-          </button>
-        </div>
+            {/* Generate / Reset */}
+            <button
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              className="flex items-center gap-2 bg-brand-orange-500 hover:bg-brand-orange-600 active:scale-95 disabled:opacity-60 disabled:active:scale-100 text-white px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all cursor-pointer shadow-sm shadow-brand-orange-500/25"
+            >
+              {isGenerating ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : hasPassword ? (
+                <RefreshCw className="w-4 h-4" />
+              ) : (
+                <Sparkles className="w-4 h-4" />
+              )}
+              {hasPassword ? "Reset" : "Generate"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

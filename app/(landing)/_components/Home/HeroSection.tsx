@@ -79,10 +79,10 @@ export default function HeroSection() {
             className={`${aclonica.className} text-4xl sm:text-5xl md:text-[7.5vw] font-normal text-white leading-tight md:leading-[1.1] drop-shadow-lg flex flex-col`}
           >
             <span className="block">
-              <LineText text="It All Starts" startDelay={0.12} />
+              <LineText text="It All Starts" startDelay={2.5} />
             </span>
             <span className="block mt-2 md:mt-0">
-              <LineText text="with a Dream" startDelay={0.12} />
+              <LineText text="with a Dream" startDelay={2.5} />
             </span>
           </h1>
         </div>

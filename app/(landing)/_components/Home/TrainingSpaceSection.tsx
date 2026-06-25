@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React from "react";
 import { Aclonica } from "next/font/google";
 
 const aclonica = Aclonica({
@@ -9,239 +9,74 @@ const aclonica = Aclonica({
 });
 
 export default function TrainingSpaceSection() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [scrollProgress, setScrollProgress] = useState(0.5);
-  const [isMobile, setIsMobile] = useState(true);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    const handleScroll = () => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-
-      // Start calculating when the section's top enters the viewport
-      const start = windowHeight;
-      // End calculating when the section's bottom leaves the viewport
-      const end = -rect.height;
-
-      const totalDist = start - end;
-      const currentDist = start - rect.top;
-
-      const progress = currentDist / totalDist;
-      setScrollProgress(Math.min(Math.max(progress, 0), 1));
-    };
-
-    handleResize();
-    handleScroll();
-
-    window.addEventListener("resize", handleResize);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
-
-  // Parallax offsets based on progress (0 when centered on screen at progress = 0.5)
-  // Staggered columns (2 and 4) are configured to scroll the fastest upwards
-  const col1Offset = isMobile ? 0 : (scrollProgress - 0.5) * 50;
-  const col2Offset = isMobile ? 0 : (scrollProgress - 0.5) * -170;
-  const col3Offset = isMobile ? 0 : (scrollProgress - 0.5) * 80;
-  const col4Offset = isMobile ? 0 : (scrollProgress - 0.5) * -150;
+  const images = [
+    { src: "/traingin-space/38b68195-c328-4cad-be28-81e5bcabb6b2.png", alt: "Gymnast main floor layout" },
+    { src: "/traingin-space/download.jpeg", alt: "Gymnast parallel bars area" },
+    { src: "/traingin-space/unnamed.jpg", alt: "Gymnast rings setup" },
+    { src: "/traingin-space/unnamed (1).jpg", alt: "Gymnast vaulting horse" },
+    { src: "/traingin-space/38b68195-c328-4cad-be28-81e5bcabb6b2.png", alt: "Gymnast training facility overview" },
+    { src: "/traingin-space/download.jpeg", alt: "Gymnast practice foam pit" },
+  ];
 
   return (
-    <section
-      ref={containerRef}
-      className="relative w-full bg-white text-zinc-950 overflow-hidden pt-24 pb-48 md:pb-64 px-4 sm:px-6 md:px-8 border-b border-zinc-200/80"
-    >
+    <section className="relative w-full bg-white text-zinc-950 pt-24 pb-20 md:pt-[10vw] md:pb-[8vw] px-4 sm:px-6 md:px-[4vw] border-b border-zinc-200/80">
       <style
         dangerouslySetInnerHTML={{
           __html: `
-            .space-card {
-              border-radius: 1.5rem;
-              transition: border-radius 1.6s cubic-bezier(0.05, 0.9, 0.05, 1), 
-                          box-shadow 1.6s cubic-bezier(0.05, 0.9, 0.05, 1), 
-                          border-color 1.6s cubic-bezier(0.05, 0.9, 0.05, 1);
-              will-change: border-radius, transform;
-              isolation: isolate;
-              transform: translateZ(0);
-              -webkit-mask-image: -webkit-radial-gradient(white, black);
+            .space-grid-card {
+              border-radius: 3.5rem 0px 0px 0px;
+              transition: border-radius 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+              will-change: border-radius;
             }
-            @media (hover: hover) {
-              .space-card {
-                border-radius: 16vw;
-              }
-              @media (min-width: 1536px) {
-                .space-card {
-                  border-radius: 12vw;
-                }
-              }
-              .space-card:hover {
-                border-radius: 24px;
-              }
+            .space-grid-card:hover {
+              border-radius: 0px 0px 3.5rem 0px;
             }
-            .space-card-image {
-              transition: transform 1.6s cubic-bezier(0.05, 0.9, 0.05, 1);
+            .space-grid-img {
+              transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
               will-change: transform;
             }
-            .space-card:hover .space-card-image {
-              transform: scale(1.025);
+            .space-grid-card:hover .space-grid-img {
+              transform: scale(1.06);
+            }
+            @media (min-width: 768px) {
+              .space-grid-card {
+                border-radius: 4vw 0px 0px 0px;
+              }
+              .space-grid-card:hover {
+                border-radius: 0px 0px 4vw 0px;
+              }
             }
           `,
         }}
       />
 
       <div className="w-full">
-        {/* Header (Layout matching the design: Title on left, Description on right) */}
-        <div className="mb-20 text-left flex flex-col md:flex-row md:items-start justify-between gap-8 w-full">
-          <div className="max-w-xl">
-            <h2 className={`${aclonica.className} text-4xl sm:text-5xl md:text-6xl font-normal tracking-tight leading-[1.1] text-zinc-900 uppercase`}>
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-[5vw] items-start">
+          
+          {/* Left Column: Sticky Title & Description */}
+          <div className="md:col-span-5 lg:col-span-4 md:sticky md:top-[8vw] flex flex-col gap-6 md:gap-[2vw] text-left">
+            <h2 className={`${aclonica.className} text-4xl sm:text-5xl md:text-[3.5vw] font-normal tracking-tight leading-[1.1] text-zinc-900 uppercase`}>
               Our training<br />space
             </h2>
-          </div>
-          <div className="max-w-md pt-2 md:pt-4">
-            <p className="text-zinc-500 text-sm sm:text-base font-light leading-relaxed">
+            <p className="text-zinc-500 text-sm sm:text-base md:text-[1.1vw] lg:text-[1vw] font-light leading-relaxed max-w-md md:max-w-[24vw]">
               A state-of-the-art facility meticulously designed to help athletes unlock their full physical potential and train with absolute precision.
             </p>
           </div>
-        </div>
 
-        {/* Mobile Layout (2 columns, 6 images in total, no shifts/offsets) */}
-        <div className="grid grid-cols-2 gap-1.5 md:hidden pt-4 w-full">
-          <div className="space-card group relative w-full aspect-[4/5] overflow-hidden bg-zinc-50 shadow-2xs hover:shadow-xs">
-            <img
-              src="/images/gym-floor.png"
-              alt="Gymnast main floor"
-              className="space-card-image w-full h-full object-cover select-none pointer-events-none"
-            />
-          </div>
-          <div className="space-card group relative w-full aspect-[4/5] overflow-hidden bg-zinc-50 shadow-2xs hover:shadow-xs">
-            <img
-              src="/images/bar-equipment.webp"
-              alt="Gymnast equipment area"
-              className="space-card-image w-full h-full object-cover select-none pointer-events-none"
-            />
-          </div>
-          <div className="space-card group relative w-full aspect-[4/5] overflow-hidden bg-zinc-50 shadow-2xs hover:shadow-xs">
-            <img
-              src="/images/gymnast_potential.png"
-              alt="Gymnast training close up"
-              className="space-card-image w-full h-full object-cover select-none pointer-events-none"
-            />
-          </div>
-          <div className="space-card group relative w-full aspect-[4/5] overflow-hidden bg-zinc-50 shadow-2xs hover:shadow-xs">
-            <img
-              src="/images/boy-doing-bar-move.webp"
-              alt="Boy doing gymnast routine"
-              className="space-card-image w-full h-full object-cover select-none pointer-events-none"
-            />
-          </div>
-          <div className="space-card group relative w-full aspect-[4/5] overflow-hidden bg-zinc-50 shadow-2xs hover:shadow-xs">
-            <img
-              src="/images/gymnast_strength.png"
-              alt="Gymnast strength training area"
-              className="space-card-image w-full h-full object-cover select-none pointer-events-none"
-            />
-          </div>
-          <div className="space-card group relative w-full aspect-[4/5] overflow-hidden bg-zinc-50 shadow-2xs hover:shadow-xs">
-            <img
-              src="/images/gym-floor.png"
-              alt="Gymnast vault area"
-              className="space-card-image w-full h-full object-cover select-none pointer-events-none"
-            />
-          </div>
-        </div>
-
-        {/* Desktop Layout (3 columns, staggered layout with tiny gaps, 4 columns on 2xl+) */}
-        <div className="hidden md:grid grid-cols-3 2xl:grid-cols-4 gap-1.5 md:gap-2 items-start pt-4 w-full">
-          
-          {/* Column 1 (Slightly faster scroll) */}
-          <div
-            className="flex flex-col gap-1.5 md:gap-2 will-change-transform transition-transform duration-75 ease-out"
-            style={{ transform: `translateY(${col1Offset}px)` }}
-          >
-            <div className="space-card group relative w-full aspect-[4/5] overflow-hidden bg-zinc-50 shadow-2xs hover:shadow-xs">
-              <img
-                src="/images/gym-floor.png"
-                alt="Gymnast main floor"
-                className="space-card-image w-full h-full object-cover select-none pointer-events-none"
-              />
-            </div>
-            <div className="space-card group relative w-full aspect-[4/5] overflow-hidden bg-zinc-50 shadow-2xs hover:shadow-xs">
-              <img
-                src="/images/bar-equipment.webp"
-                alt="Gymnast equipment area"
-                className="space-card-image w-full h-full object-cover select-none pointer-events-none"
-              />
-            </div>
-          </div>
-
-          {/* Column 2 (Counter-scroll parallax & initial vertical offset) */}
-          <div
-            className="flex flex-col gap-1.5 md:gap-2 will-change-transform transition-transform duration-75 ease-out"
-            style={{ transform: `translateY(calc(25% + ${col2Offset}px))` }}
-          >
-            <div className="space-card group relative w-full aspect-[4/5] overflow-hidden bg-zinc-50 shadow-2xs hover:shadow-xs">
-              <img
-                src="/images/gymnast_potential.png"
-                alt="Gymnast training close up"
-                className="space-card-image w-full h-full object-cover select-none pointer-events-none"
-              />
-            </div>
-            <div className="space-card group relative w-full aspect-[4/5] overflow-hidden bg-zinc-50 shadow-2xs hover:shadow-xs">
-              <img
-                src="/images/boy-doing-bar-move.webp"
-                alt="Boy doing gymnast routine"
-                className="space-card-image w-full h-full object-cover select-none pointer-events-none"
-              />
-            </div>
-          </div>
-
-          {/* Column 3 (Fastest scroll) */}
-          <div
-            className="flex flex-col gap-1.5 md:gap-2 will-change-transform transition-transform duration-75 ease-out"
-            style={{ transform: `translateY(${col3Offset}px)` }}
-          >
-            <div className="space-card group relative w-full aspect-[4/5] overflow-hidden bg-zinc-50 shadow-2xs hover:shadow-xs">
-              <img
-                src="/images/gymnast_strength.png"
-                alt="Gymnast strength training area"
-                className="space-card-image w-full h-full object-cover select-none pointer-events-none"
-              />
-            </div>
-            <div className="space-card group relative w-full aspect-[4/5] overflow-hidden bg-zinc-50 shadow-2xs hover:shadow-xs">
-              <img
-                src="/images/gym-floor.png"
-                alt="Gymnast vault area"
-                className="space-card-image w-full h-full object-cover select-none pointer-events-none"
-              />
-            </div>
-          </div>
-
-          {/* Column 4 (Visible only on 2xl+ screens) */}
-          <div
-            className="hidden 2xl:flex flex-col gap-1.5 md:gap-2 will-change-transform transition-transform duration-75 ease-out"
-            style={{ transform: `translateY(calc(25% + ${col4Offset}px))` }}
-          >
-            <div className="space-card group relative w-full aspect-[4/5] overflow-hidden bg-zinc-50 shadow-2xs hover:shadow-xs">
-              <img
-                src="/images/bar-equipment.webp"
-                alt="Gymnast equipment area 2"
-                className="space-card-image w-full h-full object-cover select-none pointer-events-none"
-              />
-            </div>
-            <div className="space-card group relative w-full aspect-[4/5] overflow-hidden bg-zinc-50 shadow-2xs hover:shadow-xs">
-              <img
-                src="/images/gymnast_potential.png"
-                alt="Gymnast training close up 2"
-                className="space-card-image w-full h-full object-cover select-none pointer-events-none"
-              />
-            </div>
+          {/* Right Column: 6-Image Grid */}
+          <div className="md:col-span-7 lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-[1.5vw] w-full">
+            {images.map((img, idx) => (
+              <div 
+                key={idx} 
+                className="space-grid-card group relative w-full aspect-[4/3] overflow-hidden bg-zinc-100"
+              >
+                <img
+                  src={img.src}
+                  alt={img.alt}
+                  className="space-grid-img w-full h-full object-cover select-none pointer-events-none"
+                />
+              </div>
+            ))}
           </div>
 
         </div>

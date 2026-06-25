@@ -71,34 +71,34 @@ interface StatsBlockProps {
 function StatsBlock({ animate, className = "" }: StatsBlockProps) {
   return (
     <div
-      className={`grid grid-cols-3 border border-brand-orange-500/30 rounded-none divide-x divide-brand-orange-500/30 bg-white/80 overflow-hidden shadow-none ${className}`}
+      className={`grid grid-cols-3 border border-zinc-200 rounded-none divide-x divide-zinc-200 bg-white shadow-md overflow-hidden ${className}`}
     >
       {/* Cell 1: Programs */}
-      <div className="flex flex-col items-start justify-center p-3 sm:p-4 text-left">
-        <span className="text-3xl sm:text-4xl md:text-5xl font-extralight text-zinc-950 leading-none tracking-tight">
+      <div className="flex flex-col items-start justify-center p-3 sm:p-4 md:p-5 text-left transition-all duration-300 hover:bg-zinc-50">
+        <span className="text-3xl sm:text-4xl md:text-5xl font-black text-zinc-950 leading-none tracking-tight">
           <Counter value={4} startTrigger={animate} />
         </span>
-        <span className="text-[7.5px] sm:text-[8.5px] md:text-[9.5px] font-bold text-zinc-500 uppercase tracking-widest mt-1.5 sm:mt-2.5 whitespace-nowrap">
+        <span className="text-[7.5px] sm:text-[8.5px] md:text-[9.5px] font-extrabold text-zinc-500 uppercase tracking-widest mt-1.5 sm:mt-2.5 whitespace-nowrap">
           Competitive Programs
         </span>
       </div>
 
       {/* Cell 2: Classes */}
-      <div className="flex flex-col items-start justify-center p-3 sm:p-4 text-left">
-        <span className="text-3xl sm:text-4xl md:text-5xl font-extralight text-zinc-950 leading-none tracking-tight">
+      <div className="flex flex-col items-start justify-center p-3 sm:p-4 md:p-5 text-left transition-all duration-300 hover:bg-zinc-50">
+        <span className="text-3xl sm:text-4xl md:text-5xl font-black text-zinc-950 leading-none tracking-tight">
           <Counter value={200} suffix="+" startTrigger={animate} />
         </span>
-        <span className="text-[7.5px] sm:text-[8.5px] md:text-[9.5px] font-bold text-zinc-500 uppercase tracking-widest mt-1.5 sm:mt-2.5 whitespace-nowrap">
+        <span className="text-[7.5px] sm:text-[8.5px] md:text-[9.5px] font-extrabold text-zinc-500 uppercase tracking-widest mt-1.5 sm:mt-2.5 whitespace-nowrap">
           Classes Every Week
         </span>
       </div>
 
       {/* Cell 3: Space */}
-      <div className="flex flex-col items-start justify-center p-3 sm:p-4 text-left">
-        <span className="text-3xl sm:text-4xl md:text-5xl font-extralight text-zinc-950 leading-none tracking-tight">
+      <div className="flex flex-col items-start justify-center p-3 sm:p-4 md:p-5 text-left transition-all duration-300 hover:bg-zinc-50">
+        <span className="text-3xl sm:text-4xl md:text-5xl font-black text-zinc-950 leading-none tracking-tight">
           <Counter value={30000} startTrigger={animate} />
         </span>
-        <span className="text-[7.5px] sm:text-[8.5px] md:text-[9.5px] font-bold text-zinc-500 uppercase tracking-widest mt-1.5 sm:mt-2.5 whitespace-nowrap">
+        <span className="text-[7.5px] sm:text-[8.5px] md:text-[9.5px] font-extrabold text-zinc-500 uppercase tracking-widest mt-1.5 sm:mt-2.5 whitespace-nowrap">
           SQ Feet Space
         </span>
       </div>

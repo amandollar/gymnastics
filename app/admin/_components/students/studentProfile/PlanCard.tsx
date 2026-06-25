@@ -10,6 +10,7 @@ import { UnfreezeButton } from "./FreezePlanPopup";
 import { MoreVertical, Trash2, Snowflake, AlertTriangle, MessageCircle, CreditCard } from "lucide-react";
 import { deleteFreezePeriodAction } from "@/lib/actions/plans";
 import { resolveTemplate, getEffectiveTemplate } from "@/lib/utils/whatsapp-templates";
+import { getPortalBaseUrl } from "@/lib/utils/portal-url";
 
 // ─── Grace WhatsApp Block ─────────────────────────────────────────────────────
 
@@ -18,24 +19,49 @@ function GraceWhatsAppBlock({
   plan,
   graceDeadline,
   template,
+  academyProfile,
 }: {
   student: { name: string; parentName: string; contactNumber: string };
   plan: PlanRow;
   graceDeadline: Date;
   template?: string | null;
+  academyProfile?: any;
 }) {
   const [copied, setCopied] = useState(false);
   const effectiveTemplate = getEffectiveTemplate(template, "templateGrace");
-  const initialMessage = resolveTemplate(effectiveTemplate, {
+  
+  const portalBaseUrl = getPortalBaseUrl(
+    academyProfile?.parentPortalUrl,
+    academyProfile?.website
+  );
+  
+  const remainingSessions = Math.max(0, plan.totalSessions - plan.sessionsCompleted);
+
+  let initialMessage = resolveTemplate(effectiveTemplate, {
     studentName: student.name,
     parentName: student.parentName,
     phone: student.contactNumber,
     planType: plan.planType === "ONE_TO_ONE" ? "Personal training" : "Group class",
     graceDeadline: graceDeadline.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }),
     daysLeft: String(computeDaysLeft(graceDeadline) ?? 0),
-    portalLink: typeof window !== "undefined" ? `${window.location.origin}/portal/login` : "",
+    portalLink: portalBaseUrl,
+    remainingSessions: String(remainingSessions),
   });
+
+  initialMessage = initialMessage
+    .replace(/\[Parent Name\]/gi, student.parentName || "")
+    .replace(/\[Student Name\]/gi, student.name || "")
+    .replace(/\[Remaining Sessions\]/gi, String(remainingSessions))
+    .replace(/\[Portal URL\]/gi, portalBaseUrl || "")
+    .replace(/\[Portal Link\]/gi, portalBaseUrl || "")
+    .replace(/\[Plan Type\]/gi, plan.planType === "ONE_TO_ONE" ? "Personal training" : "Group class");
+
   const [waMessage, setWaMessage] = useState(initialMessage);
+  
+  useEffect(() => {
+    setWaMessage(initialMessage);
+  }, [initialMessage]);
+
   const msgRef = useRef<HTMLTextAreaElement>(null);
 
   function copyMessage() {
@@ -444,7 +470,7 @@ export function PlanCard({
   };
   canManage: boolean;
   setShowFreeze: (v: boolean) => void;
-  academyProfile?: { templateGrace?: string | null; templateFeeReminder?: string | null; templateInactive?: string | null } | null;
+  academyProfile?: any;
 }) {
   if (!plan) return null;
 
@@ -800,6 +826,7 @@ export function PlanCard({
             plan={plan}
             graceDeadline={new Date(plan.expiryDate)}
             template={academyProfile?.templateGrace}
+            academyProfile={academyProfile}
           />
         </div>
       )}

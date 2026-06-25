@@ -236,12 +236,19 @@ model AcademyProfile {
   phone2             String?
   address            String?
   website            String?
+  parentPortalUrl    String?
   /// WhatsApp template for grace-period reminders. Supports {{variables}}.
   templateGrace      String?
   /// WhatsApp template for fee-due reminders. Supports {{variables}}.
   templateFeeReminder String?
   /// WhatsApp template for inactive/expired re-engagement. Supports {{variables}}.
   templateInactive   String?
+  /// WhatsApp template for inactive/expired re-engagement when all sessions are complete.
+  templateInactiveSessionComplete String?
+  /// WhatsApp template for sharing login credentials. Supports {{variables}}.
+  templateLoginCredentials String?
+  /// WhatsApp template for enquiry follow-up. Supports {{variables}}.
+  templateEnquiryFollowUp    String?
   updatedAt          DateTime @updatedAt
 }
 

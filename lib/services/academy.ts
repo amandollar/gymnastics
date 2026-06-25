@@ -22,6 +22,7 @@ export async function updateAcademyProfile(data: {
   phone2?: string;
   address?: string;
   website?: string;
+  parentPortalUrl?: string;
 }) {
   const profile = await getAcademyProfile();
   return prisma.academyProfile.update({
@@ -32,6 +33,7 @@ export async function updateAcademyProfile(data: {
       phone2: data.phone2 ?? null,
       address: data.address ?? null,
       website: data.website ?? null,
+      parentPortalUrl: data.parentPortalUrl ?? null,
     },
   });
 }

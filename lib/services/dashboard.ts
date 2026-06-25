@@ -21,11 +21,13 @@ export type DashboardStudent = {
   name: string;
   studentNumber: number;
   contactNumber: string;
+  parentName: string;
   avatarUrl: string | null;
   gender: string | null;
   sessionsCompleted: number;
   totalSessions: number;
   statusEntryDate: string;
+  planType?: string;
 };
 
 export type DashboardData = {
@@ -75,12 +77,14 @@ export async function getDashboardData(): Promise<DashboardData> {
         name: true,
         studentNumber: true,
         contactNumber: true,
+        parentName: true,
         avatarUrl: true,
         gender: true,
         plans: {
           where: { isActive: true },
           take: 1,
           select: {
+            planType: true,
             sessionsCompleted: true,
             totalSessions: true,
             endDate: true,
@@ -149,11 +153,13 @@ export async function getDashboardData(): Promise<DashboardData> {
           name: s.name,
           studentNumber: s.studentNumber,
           contactNumber: s.contactNumber,
+          parentName: s.parentName,
           avatarUrl: s.avatarUrl,
           gender: s.gender,
           sessionsCompleted: activePlan.sessionsCompleted,
           totalSessions: activePlan.totalSessions,
           statusEntryDate: activePlan.endDate.toISOString(),
+          planType: activePlan.planType === "ONE_TO_ONE" ? "Personal training" : "Group class",
         });
       }
     } else if (status === "INACTIVE" || status === "EXPIRED") {
@@ -170,11 +176,13 @@ export async function getDashboardData(): Promise<DashboardData> {
           name: s.name,
           studentNumber: s.studentNumber,
           contactNumber: s.contactNumber,
+          parentName: s.parentName,
           avatarUrl: s.avatarUrl,
           gender: s.gender,
           sessionsCompleted: activePlan.sessionsCompleted,
           totalSessions: activePlan.totalSessions,
           statusEntryDate: entryDate.toISOString(),
+          planType: activePlan.planType === "ONE_TO_ONE" ? "Personal training" : "Group class",
         });
       }
     }

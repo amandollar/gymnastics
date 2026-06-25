@@ -20,7 +20,6 @@ export default function Navbar() {
   }, []);
 
   const navLinks = [
-    { name: "Home", href: "/" },
     { name: "About", href: "/about" },
     { name: "Program", href: "/program" },
     { name: "FAQ", href: "/faq" },
@@ -48,27 +47,14 @@ export default function Navbar() {
         <div className="flex h-16 items-center justify-between">
           {/* Logo and Brand */}
           <div className="flex items-center gap-3">
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <div className={`h-9 w-9 overflow-hidden rounded-full border p-0.5 shadow-inner transition-transform group-hover:scale-105 duration-300 ${
-                isTransparent ? "border-white/20 bg-white/10" : "border-zinc-200 bg-zinc-100"
-              }`}>
+            <Link href="/" className="flex items-center group">
+              <div className="h-16 w-16 transition-transform group-hover:scale-105 duration-300">
                 <img
-                  src="/logo.webp"
+                  src="/icons/TAG-preloader-icon.webp"
                   alt="Academy of Gymnastics Logo"
-                  className={`h-full w-full object-cover rounded-full transition-all duration-500 ${
-                    isTransparent ? "filter brightness-110" : "filter grayscale group-hover:grayscale-0"
-                  }`}
+                  className="h-full w-full object-contain transition-all duration-300"
+                  style={{ filter: isTransparent ? "brightness(0) invert(1)" : "none" }}
                 />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-widest text-brand-orange-500 leading-none">
-                  The Academy
-                </span>
-                <span className={`text-xs font-bold tracking-wide mt-0.5 leading-none transition-colors duration-300 ${
-                  isTransparent ? "text-white" : "text-zinc-900"
-                }`}>
-                  of Gymnastics
-                </span>
               </div>
             </Link>
           </div>
@@ -99,17 +85,17 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-4">
             <Link
               href="/register"
-              className={`text-xs font-bold uppercase tracking-wider px-4 py-2 rounded-lg transition-all duration-200 cursor-pointer border ${
+              className={`text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-full transition-all duration-200 cursor-pointer border shadow-sm ${
                 isTransparent
-                  ? "text-zinc-300 hover:text-white border-white/20 hover:border-white"
-                  : "text-zinc-650 hover:text-zinc-900 border-zinc-200 hover:border-zinc-400"
+                  ? "text-zinc-950 bg-white hover:bg-zinc-100 border-white"
+                  : "text-white bg-zinc-900 hover:bg-zinc-800 border-zinc-900"
               }`}
             >
               Register
             </Link>
             <Link
               href="/portal"
-              className="text-xs font-bold uppercase tracking-wider text-white bg-brand-orange-500 hover:bg-brand-orange-600 px-4 py-2 rounded-lg transition-all duration-200 shadow-md shadow-brand-orange-500/10 hover:shadow-brand-orange-500/20 active:scale-[0.98] cursor-pointer"
+              className="text-xs font-bold uppercase tracking-wider text-white bg-brand-orange-500 hover:bg-brand-orange-600 px-5 py-2.5 rounded-full transition-all duration-200 shadow-md shadow-brand-orange-500/10 hover:shadow-brand-orange-500/20 active:scale-[0.98] cursor-pointer"
             >
               Parent Portal
             </Link>
@@ -154,7 +140,7 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`block rounded-lg px-3 py-2 text-xs font-bold uppercase tracking-wider transition-colors ${
+                  className={`block rounded-lg px-3 py-2 text-sm font-bold uppercase tracking-wider transition-colors ${
                     active
                       ? isTransparent 
                         ? "bg-white/10 text-brand-orange-500" 
@@ -174,10 +160,10 @@ export default function Navbar() {
               <Link
                 href="/register"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`flex items-center justify-center rounded-lg py-2.5 text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer border ${
+                className={`flex items-center justify-center rounded-full py-2.5 text-xs font-bold uppercase tracking-wider transition-all duration-200 cursor-pointer border shadow-sm ${
                   isTransparent
-                    ? "border-white/20 text-zinc-300 hover:text-white"
-                    : "border-zinc-200 text-zinc-650 hover:text-zinc-900"
+                    ? "text-zinc-950 bg-white hover:bg-zinc-100 border-white"
+                    : "text-white bg-zinc-900 hover:bg-zinc-800 border-zinc-900"
                 }`}
               >
                 Register
@@ -185,7 +171,7 @@ export default function Navbar() {
               <Link
                 href="/portal"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center justify-center rounded-lg bg-brand-orange-500 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-brand-orange-600 transition-all duration-200 cursor-pointer"
+                className="flex items-center justify-center rounded-full bg-brand-orange-500 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-brand-orange-600 transition-all duration-200 cursor-pointer"
               >
                 Portal
               </Link>

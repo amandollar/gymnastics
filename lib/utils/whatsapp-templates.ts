@@ -23,6 +23,9 @@ export type TemplateVars = Partial<{
   fee: string;
   outstanding: string;
   portalLink: string;
+  loginId: string;
+  password: string;
+  remainingSessions: string;
 }>;
 
 export const ALL_VARIABLES: { key: keyof TemplateVars; label: string; example: string }[] = [
@@ -35,13 +38,19 @@ export const ALL_VARIABLES: { key: keyof TemplateVars; label: string; example: s
   { key: "fee",           label: "Total Fee",       example: "₹12,000" },
   { key: "outstanding",   label: "Outstanding",     example: "₹6,000" },
   { key: "portalLink",    label: "Portal Link",     example: "https://tag.app/portal/login" },
+  { key: "loginId",       label: "Login ID",        example: "TAG001" },
+  { key: "password",      label: "Password",        example: "123456" },
+  { key: "remainingSessions", label: "Remaining Sessions", example: "3" },
 ];
 
 /** Default template strings shipped as fallbacks before admin customises them. */
 export const DEFAULT_TEMPLATES = {
-  templateGrace: `Hi {{parentName}}, 🙏\n\n{{studentName}}'s gymnastics plan ({{planType}}) has ended.\n\nYou have a grace period until {{graceDeadline}} ({{daysLeft}} days left). Please renew the plan soon to avoid a break in sessions.\n\nThank you! 🤸`,
+  templateGrace: `Hello {{parentName}},\n\n{{studentName}}’s training plan has reached its validity date, with {{remainingSessions}} session(s) still remaining.\n\nAs a courtesy, the academy has provided a grace period to allow completion of these remaining sessions. We kindly request you to utilize them within this period.\n\nTo view their details and progress, please visit the parent portal at:\n{{portalLink}}\n\nThank you for being part of our gymnastics family.\n\nTeam \nThe Academy Of Gymnastics`,
   templateFeeReminder: `Hi {{parentName}}, 🙏\n\nThis is a gentle reminder that a fee of {{outstanding}} is pending for {{studentName}}'s gymnastics plan.\n\nKindly arrange the payment at your earliest convenience. Thank you! 🤸`,
-  templateInactive: `Hi {{parentName}}, 🙏\n\nWe miss {{studentName}} at TAG! 🤸\n\nWe'd love to have them back on the gymnastics floor. If you'd like to re-enrol or have any questions, please feel free to reach out.\n\nHope to see you soon! 💛`,
+  templateInactive: `Hello {{parentName}},\n\nWe miss {{studentName}} at the academy! We noticed that they still have sessions pending under their current training plan.\n\nTo ensure uninterrupted progress and continued development, we would love to welcome them back to the gymnastics floor at your convenience.\n\nThank you for being part of our gymnastics family.\n\nTeam \nThe Academy Of Gymnastics`,
+  templateInactiveSessionComplete: `Hello {{parentName}},\n\nWe are pleased to inform you that {{studentName}} has successfully completed all sessions under the current training plan.\n\nTo ensure uninterrupted progress and continued development, kindly renew the membership at your convenience.\n\nThank you for being part of our gymnastics family.\n\nTeam \nThe Academy Of Gymnastics`,
+  templateLoginCredentials: `Hello {{parentName}},\n\nHere are the parent portal login credentials for {{studentName}}:\nLogin ID: {{loginId}}\nPassword: {{password}}\n\nWebsite: {{portalLink}}`,
+  templateEnquiryFollowUp: `Hi {{parentName}},\n\nHope you're doing well! This is Team TAG Academy 🤸.\n\nWe wanted to follow up on your interest in our {{planType}} program for {{studentName}}. We would love to welcome them for a trial class!\n\nWould you like to schedule a free trial session this week? Let us know if you have any questions!\n\nBest regards,\nTAG Academy`,
 };
 
 /**

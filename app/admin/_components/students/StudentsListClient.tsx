@@ -367,6 +367,7 @@ function RowMenu({
           studentId={student.id}
           studentNumber={student.studentNumber}
           studentName={student.name}
+          parentPhoneNumber={student.contactNumber}
           hasPasswordSet={!!student.password}
           isTempPassword={!!student.isTempPassword}
         />

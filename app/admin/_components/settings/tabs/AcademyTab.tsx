@@ -23,6 +23,7 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
   const [phone2, setPhone2] = useState(initialProfile.phone2 || "");
   const [email, setEmail] = useState(initialProfile.email || "");
   const [website, setWebsite] = useState(initialProfile.website || "");
+  const [parentPortalUrl, setParentPortalUrl] = useState(initialProfile.parentPortalUrl || "");
   const [address, setAddress] = useState(initialProfile.address || "");
 
   useEffect(() => {
@@ -30,6 +31,7 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
     setPhone2(initialProfile.phone2 || "");
     setEmail(initialProfile.email || "");
     setWebsite(initialProfile.website || "");
+    setParentPortalUrl(initialProfile.parentPortalUrl || "");
     setAddress(initialProfile.address || "");
   }, [initialProfile]);
 
@@ -38,6 +40,7 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
     phone2 !== (initialProfile.phone2 || "") ||
     email !== (initialProfile.email || "") ||
     website !== (initialProfile.website || "") ||
+    parentPortalUrl !== (initialProfile.parentPortalUrl || "") ||
     address !== (initialProfile.address || "");
 
   const showToast = (type: "success" | "error", message: string) => {
@@ -148,6 +151,20 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
               placeholder="e.g. www.theacademyofgymnastics.com"
+              className={inputClass}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-zinc-650 dark:text-zinc-400 mb-1.5">
+              Parent Portal URL (Optional - defaults to portal subdomain of website)
+            </label>
+            <input
+              type="text"
+              name="parentPortalUrl"
+              value={parentPortalUrl}
+              onChange={(e) => setParentPortalUrl(e.target.value)}
+              placeholder="e.g. portal.theacademyofgymnastics.com"
               className={inputClass}
             />
           </div>
