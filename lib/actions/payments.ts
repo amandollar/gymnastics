@@ -104,6 +104,7 @@ export async function collectFeeAction(
     revalidatePath("/admin/students");
     revalidatePath("/admin/dashboard");
     updateTag("students");
+    updateTag("dashboard");
 
     return {
       success: true,

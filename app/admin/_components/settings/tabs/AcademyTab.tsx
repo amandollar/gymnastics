@@ -23,7 +23,9 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
   const [phone2, setPhone2] = useState(initialProfile.phone2 || "");
   const [email, setEmail] = useState(initialProfile.email || "");
   const [website, setWebsite] = useState(initialProfile.website || "");
-  const [parentPortalUrl, setParentPortalUrl] = useState(initialProfile.parentPortalUrl || "");
+  const [parentPortalUrl, setParentPortalUrl] = useState(
+    initialProfile.parentPortalUrl || "",
+  );
   const [address, setAddress] = useState(initialProfile.address || "");
 
   useEffect(() => {
@@ -58,7 +60,7 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
       }
       return result;
     },
-    null
+    null,
   );
 
   return (
@@ -83,7 +85,7 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
             Academy Profile
           </h2>
         </div>
-        <form action={formAction} className="space-y-4">
+        <form action={formAction} className="space-y-6">
           {/* Logo & Academy Name (Non-editable) */}
           <div className="flex flex-col items-center justify-center gap-3 pt-4 pb-10 select-none pointer-events-none">
             <img
@@ -99,7 +101,7 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
           <div className="grid lg:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-semibold text-zinc-650 dark:text-zinc-400 mb-1.5">
-                Contact Phone 1
+                Contact Phone 1 *
               </label>
               <input
                 type="text"
@@ -113,7 +115,7 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
             </div>
             <div>
               <label className="block text-xs font-semibold text-zinc-650 dark:text-zinc-400 mb-1.5">
-                Contact Phone 2
+                Contact Phone 2 *
               </label>
               <input
                 type="text"
@@ -129,7 +131,7 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
 
           <div>
             <label className="block text-xs font-semibold text-zinc-650 dark:text-zinc-400 mb-1.5">
-              Contact Email (Optional)
+              Contact Email
             </label>
             <input
               type="email"
@@ -141,32 +143,34 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-zinc-650 dark:text-zinc-400 mb-1.5">
-              Website URL (Optional)
-            </label>
-            <input
-              type="text"
-              name="website"
-              value={website}
-              onChange={(e) => setWebsite(e.target.value)}
-              placeholder="e.g. www.theacademyofgymnastics.com"
-              className={inputClass}
-            />
-          </div>
+          <div className="grid lg:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-zinc-650 dark:text-zinc-400 mb-1.5">
+                Website URL
+              </label>
+              <input
+                type="text"
+                name="website"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+                placeholder="e.g. www.theacademyofgymnastics.com"
+                className={inputClass}
+              />
+            </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-zinc-650 dark:text-zinc-400 mb-1.5">
-              Parent Portal URL (Optional - defaults to portal subdomain of website)
-            </label>
-            <input
-              type="text"
-              name="parentPortalUrl"
-              value={parentPortalUrl}
-              onChange={(e) => setParentPortalUrl(e.target.value)}
-              placeholder="e.g. portal.theacademyofgymnastics.com"
-              className={inputClass}
-            />
+            <div>
+              <label className="block text-xs font-semibold text-zinc-650 dark:text-zinc-400 mb-1.5">
+                Parent Portal URL
+              </label>
+              <input
+                type="text"
+                name="parentPortalUrl"
+                value={parentPortalUrl}
+                onChange={(e) => setParentPortalUrl(e.target.value)}
+                placeholder="e.g. portal.theacademyofgymnastics.com"
+                className={inputClass}
+              />
+            </div>
           </div>
 
           <div>

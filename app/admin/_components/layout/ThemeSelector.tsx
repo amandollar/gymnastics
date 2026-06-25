@@ -63,15 +63,15 @@ export default function ThemeSelector({ isCollapsed = false }: { isCollapsed?: b
             <button
               key={opt.value}
               onClick={() => setTheme(opt.value)}
-              className={`flex-1 flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer h-8 rounded-md ${
+              className={`flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer h-8 rounded-md ${
                 isActive
-                  ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-xs text-xs font-semibold"
-                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-white/40 dark:hover:bg-zinc-700/20"
+                  ? "flex-1 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-xs text-xs font-semibold"
+                  : "w-12 flex-none text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-white/40 dark:hover:bg-zinc-700/20"
               }`}
               title={`${opt.label} Theme`}
             >
               {opt.icon}
-              {isActive && <span className="text-[11px] font-semibold lg:inline hidden">{opt.label}</span>}
+              {isActive && <span className="text-[11px] font-semibold">{opt.label}</span>}
             </button>
           );
         })}

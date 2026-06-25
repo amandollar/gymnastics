@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Home, Users, FileText, CheckCircle, Settings, Dumbbell, ClipboardList, CreditCard } from "lucide-react";
+import { Home, Users, FileText, CheckCircle, Settings, Dumbbell, ClipboardList, IndianRupee } from "lucide-react";
 
 export const navLinkClass = (active: boolean, isCollapsed = false) =>
   `flex items-center ${isCollapsed ? "justify-center" : "gap-2.5"} rounded-lg ${isCollapsed ? "px-2" : "px-3"} ${
@@ -137,7 +137,7 @@ export function EnquiryIcon({ className = "h-4 w-4 shrink-0" }: { className?: st
 }
 
 export function FinanceIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {}) {
-  return <CreditCard className={className} strokeWidth={2} />;
+  return <IndianRupee className={className} strokeWidth={2} />;
 }
 
 export { HomeIcon, SettingsIcon };

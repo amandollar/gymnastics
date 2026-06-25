@@ -5,7 +5,6 @@ import Link from "next/link";
 import { MoreVertical, Key, Bell } from "lucide-react";
 import { MedicalNotesCard } from "./MedicalNotesCard";
 import PushNotificationModal from "./PushNotificationModal";
-import StudentStatusBadge from "../StudentStatusBadge";
 import StudentAvatar from "../StudentAvatar";
 import {
   formatAge,
@@ -23,6 +22,7 @@ import { LevelProgress } from "./LevelProgress";
 import { PaymentHistory } from "./PaymentHistory";
 import { getPaymentByIdAction } from "@/lib/actions/payments";
 import { FeeReceipt } from "./FeeReceipt";
+import { AdmissionReceipt } from "./AdmissionReceipt";
 import StudentCredentialsModal from "./StudentCredentialsModal";
 // ─── Student type ─────────────────────────────────────────────────────────────
 
@@ -66,6 +66,7 @@ export default function StudentDetailClient({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [printData, setPrintData] = useState<any | null>(null);
+  const [printAdmission, setPrintAdmission] = useState(false);
   const [showCredentials, setShowCredentials] = useState(false);
   const [showPushNotification, setShowPushNotification] = useState(false);
 
@@ -90,8 +91,19 @@ export default function StudentDetailClient({
     }
   };
 
+  const handlePrintAdmission = () => {
+    const firstName = student.name.trim().split(/\s+/)[0]?.toLowerCase() || "student";
+    const newTitle = `TAG${student.studentNumber}-${firstName}-admission-receipt`;
+    document.title = newTitle;
+    const titleEl = document.querySelector('title');
+    if (titleEl) {
+      titleEl.textContent = newTitle;
+    }
+    setPrintAdmission(true);
+  };
+
   useEffect(() => {
-    if (printData) {
+    if (printData || printAdmission) {
       const timer = setTimeout(() => {
         window.print();
         const standardTitle = "TAG CRM · Academy of Gymnastics";
@@ -101,6 +113,7 @@ export default function StudentDetailClient({
           titleEl.textContent = standardTitle;
         }
         setPrintData(null);
+        setPrintAdmission(false);
       }, 600);
       return () => {
         clearTimeout(timer);
@@ -112,7 +125,7 @@ export default function StudentDetailClient({
         }
       };
     }
-  }, [printData]);
+  }, [printData, printAdmission]);
   useEffect(() => {
     if (!menuOpen) return;
     function handleClickOutside(event: MouseEvent) {
@@ -128,48 +141,21 @@ export default function StudentDetailClient({
 
   return (
     <div className="space-y-6 min-w-0">
-      {/* Page title + action buttons */}
       <div className="flex flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-light tracking-tight text-zinc-900 dark:text-zinc-55 truncate">
-            Student Profile
-          </h1>
-          <StudentStatusBadge status={student.status} />
-        </div>
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-light tracking-tight text-zinc-900 dark:text-zinc-55 truncate">
+          Student Profile
+        </h1>
         <div className="flex items-center gap-2 shrink-0">
           {/* Desktop view: inline buttons */}
           <div className="hidden min-[1025px]:flex items-center gap-2">
-            {/* Admission Receipt */}
-            {student.registrationFee && student.registrationFee > 0 ? (
-              <a
-                href={`/admin/students/${student.id}/admission-receipt`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-350 visited:text-zinc-700 dark:visited:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
-              >
-                <svg
-                  className="w-4 h-4 text-zinc-500"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.8}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                Admission Receipt
-              </a>
-            ) : null}
+
 
             {/* Print ID card */}
             <a
               href={`/admin/students/${student.id}/id-card`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-350 visited:text-zinc-700 dark:visited:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
+              className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-350 visited:text-zinc-700 dark:visited:text-zinc-350 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
             >
               <svg
                 className="w-4 h-4 text-zinc-500"
@@ -199,7 +185,7 @@ export default function StudentDetailClient({
               <button
                 type="button"
                 onClick={() => setShowCredentials(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
+                className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-350 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
               >
                 <Key className="w-4 h-4 text-zinc-500" />
                 Credentials
@@ -211,46 +197,20 @@ export default function StudentDetailClient({
               <button
                 type="button"
                 onClick={() => setShowPushNotification(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-350 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
+                className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-350 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
               >
                 <Bell className="w-4 h-4 text-zinc-500" />
                 Push Alert
               </button>
             )}
 
-            {/* Freeze plan */}
-            {canManage &&
-              student.activePlan &&
-              student.status !== "INACTIVE" &&
-              student.status !== "NO_PLAN" &&
-              student.status !== "EXPIRED" && (
-                <button
-                  type="button"
-                  onClick={() => setShowFreeze(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-350 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
-                >
-                  <svg
-                    className="w-4 h-4 text-zinc-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.8}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M12 3v18M3 12h18M12 9l-3-3M12 15l-3 3M12 9l3-3M12 15l3 3M9 12L6 9M15 12l3-3M9 12l-3 3M15 12l3 3"
-                    />
-                  </svg>
-                  Freeze plan
-                </button>
-              )}
+
 
             {/* Edit details */}
             {canManage && (
               <a
                 href={`/admin/students/${student.id}/edit`}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors shadow-sm"
+                className="inline-flex items-center gap-1.5 rounded-full bg-brand-orange-500 hover:bg-brand-orange-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors shadow-sm"
               >
                 <svg
                   className="w-4 h-4"
@@ -275,7 +235,7 @@ export default function StudentDetailClient({
             <button
               type="button"
               onClick={() => setMenuOpen(!menuOpen)}
-              className="inline-flex items-center justify-center h-9 w-9 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
+              className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
               aria-label="More actions"
               aria-expanded={menuOpen}
             >
@@ -308,62 +268,9 @@ export default function StudentDetailClient({
                   </Link>
                 )}
 
-                {/* Freeze plan */}
-                {canManage &&
-                  student.activePlan &&
-                  student.status !== "INACTIVE" &&
-                  student.status !== "NO_PLAN" &&
-                  student.status !== "EXPIRED" && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowFreeze(true);
-                        setMenuOpen(false);
-                      }}
-                      className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left font-semibold cursor-pointer"
-                    >
-                      <svg
-                        className="w-4 h-4 text-zinc-500 shrink-0"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={1.8}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M12 3v18M3 12h18M12 9l-3-3M12 15l-3 3M12 9l3-3M12 15l3 3M9 12L6 9M15 12l3-3M9 12l-3 3M15 12l3 3"
-                        />
-                      </svg>
-                      Freeze plan
-                    </button>
-                  )}
 
-                {/* Admission Receipt */}
-                {student.registrationFee && student.registrationFee > 0 && (
-                  <a
-                    href={`/admin/students/${student.id}/admission-receipt`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-2.5 w-full px-3.5 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 visited:text-zinc-700 dark:visited:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left font-medium cursor-pointer"
-                  >
-                    <svg
-                      className="w-4 h-4 text-zinc-500 shrink-0"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={1.8}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    Admission Receipt
-                  </a>
-                )}
+
+
 
                 {/* Print ID */}
                 <a
@@ -569,7 +476,7 @@ export default function StudentDetailClient({
               {canManage && (
                 <Link
                   href={`/admin/plans?student=${student.id}`}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-brand-orange-500 hover:bg-brand-orange-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors shadow-sm"
+                  className="inline-flex items-center gap-2 rounded-full bg-brand-orange-500 hover:bg-brand-orange-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors shadow-sm"
                 >
                   <svg
                     className="w-4 h-4"
@@ -626,7 +533,7 @@ export default function StudentDetailClient({
                     </div>
                     <Link
                       href={`/admin/plans?student=${student.id}`}
-                      className="inline-flex items-center gap-2 rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 px-4.5 py-2.5 text-sm font-semibold text-white transition-colors shadow-sm shrink-0"
+                      className="inline-flex items-center gap-2 rounded-full bg-brand-orange-500 hover:bg-brand-orange-600 px-4.5 py-2.5 text-sm font-semibold text-white transition-colors shadow-sm shrink-0"
                     >
                       <svg
                         className="w-4 h-4"
@@ -658,7 +565,13 @@ export default function StudentDetailClient({
           )}
 
           <PlanHistory plans={student.plans} />
-          <PaymentHistory payments={student.payments} studentId={student.id} onPrint={handlePrint} />
+          <PaymentHistory
+            payments={student.payments}
+            studentId={student.id}
+            registrationFee={student.registrationFee}
+            onPrint={handlePrint}
+            onPrintAdmission={handlePrintAdmission}
+          />
         </div>
       </div>
 
@@ -696,7 +609,7 @@ export default function StudentDetailClient({
       )}
 
       {/* Print styles and hidden receipt container */}
-      {printData && (
+      {(printData || printAdmission) && (
         <>
           <style dangerouslySetInnerHTML={{__html: `
             @page {
@@ -747,7 +660,11 @@ export default function StudentDetailClient({
               display: "none",
             }}
           >
-            <FeeReceipt data={printData} academyProfile={academyProfile} />
+            {printAdmission ? (
+              <AdmissionReceipt student={student} academyProfile={academyProfile} />
+            ) : (
+              <FeeReceipt data={printData} academyProfile={academyProfile} />
+            )}
           </div>
         </>
       )}

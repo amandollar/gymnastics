@@ -8,13 +8,15 @@ import type { PlanRow } from "./types";
 import { getFreezeDaysCount } from "./types";
 import { UnfreezeButton } from "./FreezePlanPopup";
 import { MoreVertical, Trash2, Snowflake, AlertTriangle, MessageCircle, CreditCard } from "lucide-react";
+import StudentStatusBadge from "../StudentStatusBadge";
 import { deleteFreezePeriodAction } from "@/lib/actions/plans";
 import { resolveTemplate, getEffectiveTemplate } from "@/lib/utils/whatsapp-templates";
 import { getPortalBaseUrl } from "@/lib/utils/portal-url";
+import WhatsAppModal from "@/app/admin/_components/common/WhatsAppModal";
 
-// ─── Grace WhatsApp Block ─────────────────────────────────────────────────────
+// ─── Helpers: build WhatsApp messages ─────────────────────────────────────────
 
-function GraceWhatsAppBlock({
+function buildGraceMessage({
   student,
   plan,
   graceDeadline,
@@ -26,18 +28,14 @@ function GraceWhatsAppBlock({
   graceDeadline: Date;
   template?: string | null;
   academyProfile?: any;
-}) {
-  const [copied, setCopied] = useState(false);
+}): string {
   const effectiveTemplate = getEffectiveTemplate(template, "templateGrace");
-  
   const portalBaseUrl = getPortalBaseUrl(
     academyProfile?.parentPortalUrl,
     academyProfile?.website
   );
-  
   const remainingSessions = Math.max(0, plan.totalSessions - plan.sessionsCompleted);
-
-  let initialMessage = resolveTemplate(effectiveTemplate, {
+  let msg = resolveTemplate(effectiveTemplate, {
     studentName: student.name,
     parentName: student.parentName,
     phone: student.contactNumber,
@@ -47,71 +45,17 @@ function GraceWhatsAppBlock({
     portalLink: portalBaseUrl,
     remainingSessions: String(remainingSessions),
   });
-
-  initialMessage = initialMessage
+  msg = msg
     .replace(/\[Parent Name\]/gi, student.parentName || "")
     .replace(/\[Student Name\]/gi, student.name || "")
     .replace(/\[Remaining Sessions\]/gi, String(remainingSessions))
     .replace(/\[Portal URL\]/gi, portalBaseUrl || "")
     .replace(/\[Portal Link\]/gi, portalBaseUrl || "")
     .replace(/\[Plan Type\]/gi, plan.planType === "ONE_TO_ONE" ? "Personal training" : "Group class");
-
-  const [waMessage, setWaMessage] = useState(initialMessage);
-  
-  useEffect(() => {
-    setWaMessage(initialMessage);
-  }, [initialMessage]);
-
-  const msgRef = useRef<HTMLTextAreaElement>(null);
-
-  function copyMessage() {
-    navigator.clipboard.writeText(waMessage).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
-
-  function openWhatsApp() {
-    const encoded = encodeURIComponent(waMessage);
-    const phone = student.contactNumber.replace(/\D/g, "");
-    window.open(`https://wa.me/91${phone}?text=${encoded}`, "_blank");
-  }
-
-  return (
-    <div className="space-y-2">
-      <p className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
-        Message preview
-      </p>
-      <textarea
-        ref={msgRef}
-        value={waMessage}
-        onChange={(event) => setWaMessage(event.target.value)}
-        rows={5}
-        className="w-full text-xs rounded-xl border border-amber-200 dark:border-amber-800/60 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 px-3 py-2 resize-none focus:outline-none"
-      />
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={copyMessage}
-          className="flex-1 rounded-xl border border-amber-300 dark:border-amber-700 bg-white dark:bg-zinc-900 px-3 py-2 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-955 transition-colors cursor-pointer"
-        >
-          {copied ? "✓ Copied!" : "Copy message"}
-        </button>
-        <button
-          type="button"
-          onClick={openWhatsApp}
-          className="flex-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-colors cursor-pointer"
-        >
-          Open WhatsApp
-        </button>
-      </div>
-    </div>
-  );
+  return msg;
 }
 
-// ─── Fee Reminder WhatsApp Block ──────────────────────────────────────────────
-
-function FeeReminderWhatsAppBlock({
+function buildFeeReminderMessage({
   student,
   plan,
   template,
@@ -119,12 +63,10 @@ function FeeReminderWhatsAppBlock({
   student: { name: string; parentName: string; contactNumber: string };
   plan: PlanRow;
   template?: string | null;
-}) {
-  const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
+}): string {
   const effectiveTemplate = getEffectiveTemplate(template, "templateFeeReminder");
   const outstanding = typeof plan.outstanding === "number" ? plan.outstanding : plan.fee;
-  const initialMessage = resolveTemplate(effectiveTemplate, {
+  return resolveTemplate(effectiveTemplate, {
     studentName: student.name,
     parentName: student.parentName,
     phone: student.contactNumber,
@@ -132,64 +74,9 @@ function FeeReminderWhatsAppBlock({
     outstanding: formatINR(outstanding),
     portalLink: typeof window !== "undefined" ? `${window.location.origin}/portal/login` : "",
   });
-  const [waMessage, setWaMessage] = useState(initialMessage);
-
-  function openWhatsApp() {
-    const encoded = encodeURIComponent(waMessage);
-    const phone = student.contactNumber.replace(/\D/g, "");
-    window.open(`https://wa.me/91${phone}?text=${encoded}`, "_blank");
-  }
-
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/25 border border-rose-200 dark:border-rose-800/40 px-3 py-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-      >
-        <CreditCard className="w-3.5 h-3.5" />
-        Send Fee Reminder
-      </button>
-    );
-  }
-
-  return (
-    <div className="rounded-2xl border border-rose-200 dark:border-rose-800/40 bg-rose-50 dark:bg-rose-955/30 p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-bold text-rose-700 dark:text-rose-400">Fee Reminder</p>
-        <button type="button" onClick={() => setOpen(false)} className="text-xs text-zinc-400 hover:text-zinc-600 cursor-pointer">
-          ✕
-        </button>
-      </div>
-      <textarea
-        value={waMessage}
-        onChange={(e) => setWaMessage(e.target.value)}
-        rows={5}
-        className="w-full text-xs rounded-xl border border-rose-200 dark:border-rose-700/60 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 px-3 py-2 resize-none focus:outline-none"
-      />
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => { navigator.clipboard.writeText(waMessage); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-          className="flex-1 rounded-xl border border-rose-300 dark:border-rose-700 bg-white dark:bg-zinc-900 px-3 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 transition-colors cursor-pointer"
-        >
-          {copied ? "✓ Copied!" : "Copy"}
-        </button>
-        <button
-          type="button"
-          onClick={openWhatsApp}
-          className="flex-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-colors cursor-pointer"
-        >
-          <span className="flex items-center justify-center gap-1.5"><MessageCircle className="w-3.5 h-3.5" /> WhatsApp</span>
-        </button>
-      </div>
-    </div>
-  );
 }
 
-// ─── Inactive Re-engage WhatsApp Block ────────────────────────────────────────
-
-function InactiveWhatsAppBlock({
+function buildInactiveMessage({
   student,
   plan,
   template,
@@ -197,70 +84,15 @@ function InactiveWhatsAppBlock({
   student: { name: string; parentName: string; contactNumber: string };
   plan: PlanRow;
   template?: string | null;
-}) {
-  const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
+}): string {
   const effectiveTemplate = getEffectiveTemplate(template, "templateInactive");
-  const initialMessage = resolveTemplate(effectiveTemplate, {
+  return resolveTemplate(effectiveTemplate, {
     studentName: student.name,
     parentName: student.parentName,
     phone: student.contactNumber,
     planType: plan.planType === "ONE_TO_ONE" ? "Personal training" : "Group class",
     portalLink: typeof window !== "undefined" ? `${window.location.origin}/portal/login` : "",
   });
-  const [waMessage, setWaMessage] = useState(initialMessage);
-
-  function openWhatsApp() {
-    const encoded = encodeURIComponent(waMessage);
-    const phone = student.contactNumber.replace(/\D/g, "");
-    window.open(`https://wa.me/91${phone}?text=${encoded}`, "_blank");
-  }
-
-  if (!open) {
-    return (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-xl bg-sky-50 dark:bg-sky-950/25 border border-sky-200 dark:border-sky-800/40 px-3 py-1.5 text-xs font-semibold text-sky-600 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-950/40 transition-colors cursor-pointer"
-      >
-        <MessageCircle className="w-3.5 h-3.5" />
-        Re-engage on WhatsApp
-      </button>
-    );
-  }
-
-  return (
-    <div className="rounded-2xl border border-sky-200 dark:border-sky-800/40 bg-sky-50 dark:bg-sky-955/30 p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-bold text-sky-700 dark:text-sky-400">Re-engagement Message</p>
-        <button type="button" onClick={() => setOpen(false)} className="text-xs text-zinc-400 hover:text-zinc-600 cursor-pointer">
-          ✕
-        </button>
-      </div>
-      <textarea
-        value={waMessage}
-        onChange={(e) => setWaMessage(e.target.value)}
-        rows={5}
-        className="w-full text-xs rounded-xl border border-sky-200 dark:border-sky-700/60 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 px-3 py-2 resize-none focus:outline-none"
-      />
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => { navigator.clipboard.writeText(waMessage); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-          className="flex-1 rounded-xl border border-sky-300 dark:border-sky-700 bg-white dark:bg-zinc-900 px-3 py-2 text-xs font-semibold text-sky-600 dark:text-sky-400 hover:bg-sky-50 transition-colors cursor-pointer"
-        >
-          {copied ? "✓ Copied!" : "Copy"}
-        </button>
-        <button
-          type="button"
-          onClick={openWhatsApp}
-          className="flex-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition-colors cursor-pointer"
-        >
-          <span className="flex items-center justify-center gap-1.5"><MessageCircle className="w-3.5 h-3.5" /> WhatsApp</span>
-        </button>
-      </div>
-    </div>
-  );
 }
 
 // ─── Remove Freeze Period Confirmation Popup ──────────────────────────────────
@@ -324,14 +156,14 @@ function RemoveConfirmPopup({
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-xl border border-zinc-200 dark:border-zinc-700 px-3 py-2.5 text-xs font-semibold text-zinc-650 dark:text-zinc-305 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            className="flex-1 rounded-full border border-zinc-200 dark:border-zinc-700 px-3 py-2.5 text-xs font-semibold text-zinc-650 dark:text-zinc-305 hover:bg-zinc-55 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={pending}
-            className="flex-1 rounded-xl bg-red-600 hover:bg-red-700 px-3 py-2.5 text-xs font-semibold text-white transition-colors cursor-pointer disabled:opacity-50"
+            className="flex-1 rounded-full bg-red-600 hover:bg-red-700 px-3 py-2.5 text-xs font-semibold text-white transition-colors cursor-pointer disabled:opacity-50"
           >
             {pending ? "Removing…" : "Confirm Remove"}
           </button>
@@ -474,6 +306,12 @@ export function PlanCard({
 }) {
   if (!plan) return null;
 
+  const [waModal, setWaModal] = useState<{ open: boolean; message: string; title: string }>({
+    open: false,
+    message: "",
+    title: "Send on WhatsApp",
+  });
+
   const daysLeft = plan.sessionsCompleted >= plan.totalSessions ? 0 : computeDaysLeft(new Date(plan.expiryDate));
   const progress = Math.min(
     100,
@@ -493,14 +331,61 @@ export function PlanCard({
     Sun: "Sunday",
   };
 
+  // Determine if this plan has a status-based WA prompt below the title
+  const showGraceBanner = status === "GRACE" && plan.graceDays > 0;
+  const showInactiveBanner = canManage && (status === "INACTIVE" || status === "EXPIRED");
+
+  // Determine fee reminder visibility (in header)
+  const showFeeReminder =
+    canManage &&
+    (typeof plan.outstanding === "number" ? plan.outstanding : plan.fee) > 0;
+
+  function openGraceModal() {
+    const msg = buildGraceMessage({
+      student,
+      plan: plan!,
+      graceDeadline: new Date(plan!.expiryDate),
+      template: academyProfile?.templateGrace,
+      academyProfile,
+    });
+    setWaModal({ open: true, message: msg, title: "Grace Period — Send Reminder" });
+  }
+
+  function openFeeReminderModal() {
+    const msg = buildFeeReminderMessage({
+      student,
+      plan: plan!,
+      template: academyProfile?.templateFeeReminder,
+    });
+    setWaModal({ open: true, message: msg, title: "Send Fee Reminder" });
+  }
+
+  function openInactiveModal() {
+    const msg = buildInactiveMessage({
+      student,
+      plan: plan!,
+      template: academyProfile?.templateInactive,
+    });
+    setWaModal({ open: true, message: msg, title: "Re-engage on WhatsApp" });
+  }
+
   return (
+    <>
+    <WhatsAppModal
+      isOpen={waModal.open}
+      onClose={() => setWaModal((prev) => ({ ...prev, open: false }))}
+      contactNumber={student.contactNumber}
+      defaultMessageText={waModal.message}
+      title={waModal.title}
+    />
     <div className="rounded-3xl bg-white dark:bg-zinc-900 p-6 shadow-sm space-y-6 transition-colors">
       {/* Header Row */}
       <div className="flex items-center justify-between">
-        <div>
+        <div className="flex items-center gap-2.5">
           <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
             Current plan
           </h3>
+          <StudentStatusBadge status={status} />
         </div>
 
         <div className="flex items-center gap-3">
@@ -510,11 +395,23 @@ export function PlanCard({
             </span>
           )}
 
+          {/* Fee Reminder button — in header */}
+          {showFeeReminder && (
+            <button
+              type="button"
+              onClick={openFeeReminderModal}
+              className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500 hover:bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors cursor-pointer"
+            >
+              <span className="text-sm leading-none">₹</span>
+              Send Fee Reminder
+            </button>
+          )}
+
           {canManage && status !== "INACTIVE" && status !== "NO_PLAN" && status !== "EXPIRED" && (
             <button
               type="button"
               onClick={() => setShowFreeze(true)}
-              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/30 transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/30 text-zinc-900 dark:text-zinc-100 px-3 py-1.5 text-xs font-bold transition-all cursor-pointer shadow-2xs"
             >
               <Snowflake className="w-3.5 h-3.5" />
               Freeze Plan
@@ -522,6 +419,49 @@ export function PlanCard({
           )}
         </div>
       </div>
+
+      {/* One-liner WA prompt — Grace */}
+      {showGraceBanner && (
+        <div className="flex items-center gap-3 rounded-2xl bg-zinc-100 dark:bg-zinc-950/60 px-4 py-3">
+          <AlertTriangle className="w-4 h-4 text-amber-500 dark:text-amber-400 shrink-0" />
+          <p className="flex-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Grace period active until{" "}
+            <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+              {new Date(plan.expiryDate).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+            </span>
+          </p>
+          <button
+            type="button"
+            onClick={openGraceModal}
+            className="inline-flex items-center gap-1.5 rounded-full bg-brand-orange-500 hover:bg-brand-orange-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors cursor-pointer shrink-0"
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            Send on WhatsApp
+          </button>
+        </div>
+      )}
+
+      {/* One-liner WA prompt — Inactive / Expired */}
+      {showInactiveBanner && (
+        <div className="flex items-center gap-3 rounded-2xl bg-zinc-100 dark:bg-zinc-950/60 px-4 py-3">
+          <MessageCircle className="w-4 h-4 text-zinc-400 dark:text-zinc-500 shrink-0" />
+          <p className="flex-1 text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            Student is{" "}
+            <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+              {status === "EXPIRED" ? "expired" : "inactive"}
+            </span>
+            {" "}&mdash; send a re-engagement message
+          </p>
+          <button
+            type="button"
+            onClick={openInactiveModal}
+            className="inline-flex items-center gap-1.5 rounded-full bg-brand-orange-500 hover:bg-brand-orange-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors cursor-pointer shrink-0"
+          >
+            <MessageCircle className="w-3.5 h-3.5" />
+            Send on WhatsApp
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 min-[1200px]:grid-cols-2 gap-6">
         {/* CARD 1: Class & Batch Info Card */}
@@ -800,58 +740,7 @@ export function PlanCard({
         </div>
       )}
 
-      {/* Grace Period Banner */}
-      {status === "GRACE" && plan.graceDays > 0 && (
-        <div className="rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-955/30 p-4 space-y-3">
-          <div className="flex items-start gap-2.5">
-            <AlertTriangle className="w-4 h-4 text-amber-550 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-xs font-bold text-amber-855 dark:text-amber-300">
-                Plan ended — Grace period active
-              </p>
-              <p className="text-[11px] text-amber-700 dark:text-amber-400 mt-0.5">
-                {plan.graceDays}-day grace period until{" "}
-                <strong>
-                  {new Date(plan.expiryDate).toLocaleDateString("en-IN", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </strong>
-              </p>
-            </div>
-          </div>
-          <GraceWhatsAppBlock
-            student={student}
-            plan={plan}
-            graceDeadline={new Date(plan.expiryDate)}
-            template={academyProfile?.templateGrace}
-            academyProfile={academyProfile}
-          />
-        </div>
-      )}
-
-      {/* Fee Reminder button — shown when outstanding balance exists */}
-      {canManage && (typeof plan.outstanding === "number" ? plan.outstanding : plan.fee) > 0 && status !== "GRACE" && (
-        <div className="pt-1">
-          <FeeReminderWhatsAppBlock
-            student={student}
-            plan={plan}
-            template={academyProfile?.templateFeeReminder}
-          />
-        </div>
-      )}
-
-      {/* Re-engage button — shown for inactive / expired students */}
-      {canManage && (status === "INACTIVE" || status === "EXPIRED") && (
-        <div className="pt-1">
-          <InactiveWhatsAppBlock
-            student={student}
-            plan={plan}
-            template={academyProfile?.templateInactive}
-          />
-        </div>
-      )}
     </div>
+    </>
   );
 }

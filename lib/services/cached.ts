@@ -17,6 +17,8 @@ import {
 import { getAllUsers as dbGetAllUsers } from "./users";
 import { listPlanTemplates as dbListPlanTemplates } from "./plan-templates";
 import { listCoaches as dbListCoaches } from "./coaches";
+import { getDashboardData as dbGetDashboardData } from "./dashboard";
+import { getAcademyProfile as dbGetAcademyProfile } from "./academy";
 import type { StudentStatus } from "@/lib/utils/student";
 import type { EnquiryStatus, CoachStatus, CoachRole } from "@prisma/client";
 
@@ -105,4 +107,16 @@ export const getCoachMonthlyAttendanceSerializable = unstable_cache(
     dbGetCoachMonthlyAttendanceSerializable(year, month),
   ["coaches-monthly-attendance"],
   { tags: ["coaches"] }
+);
+
+export const getDashboardData = unstable_cache(
+  async () => dbGetDashboardData(),
+  ["dashboard-data"],
+  { tags: ["dashboard"], revalidate: 60 }
+);
+
+export const getAcademyProfile = unstable_cache(
+  async () => dbGetAcademyProfile(),
+  ["academy-profile"],
+  { tags: ["academy"] }
 );

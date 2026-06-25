@@ -245,5 +245,13 @@ svg:focus {
   }
 }
 
+/* 6. Global Button Radius override: Round all buttons and action links (except cards and calendar cells) */
+button:not([class*="rounded-3xl"]):not([class*="aspect-"]),
+a.inline-flex[class*="rounded-"]:not([class*="rounded-3xl"]):not([class*="aspect-"]),
+a.flex[class*="rounded-"]:not([class*="rounded-3xl"]):not([class*="aspect-"]) {
+  border-radius: 9999px !important;
+}
+
+
 
 

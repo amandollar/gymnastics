@@ -6,6 +6,7 @@ import Link from "next/link";
 import { resolveTemplate, getEffectiveTemplate } from "@/lib/utils/whatsapp-templates";
 import AddEnquiryModal from "@/app/admin/_components/enquiries/AddEnquiryModal";
 import EditEnquiryModal from "@/app/admin/_components/enquiries/EditEnquiryModal";
+import WhatsAppModal from "@/app/admin/_components/common/WhatsAppModal";
 import { useRouter } from "next/navigation";
 import EnquiryStatusBadge from "./EnquiryStatusBadge";
 import type { EnquiryStatus } from "@prisma/client";
@@ -956,117 +957,13 @@ export default function EnquiryListClient({
       </div>
 
       {/* WhatsApp Custom Modal */}
-      {followUpEnquiry && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl border border-zinc-200 dark:border-zinc-800/80 overflow-hidden flex flex-col">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 pt-6 pb-2 shrink-0">
-              <div>
-                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-50">
-                  Follow up with WhatsApp
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setFollowUpEnquiry(null)}
-                className="h-8 w-8 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-400 dark:text-zinc-505 hover:text-zinc-650 dark:hover:text-zinc-300 transition-colors flex items-center justify-center cursor-pointer"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="px-6 py-3 space-y-4">
-              <div className="space-y-1.5">
-                <textarea
-                  ref={textareaRef}
-                  rows={16}
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                  className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-4 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-450 dark:placeholder-zinc-650 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 focus:border-brand-orange-500 transition-all resize-none"
-                  placeholder="Type your follow-up message..."
-                />
-              </div>
-
-              {/* Emoji Bar */}
-              <div className="space-y-2">
-                <p className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-                  Quick Emojis
-                </p>
-                <div className="flex flex-wrap gap-3 py-1">
-                  {[
-                    "🤸",
-                    "🤸‍♀️",
-                    "🤸‍♂️",
-                    "🏆",
-                    "📞",
-                    "👍",
-                    "😊",
-                    "📝",
-                    "👋",
-                    "🌟",
-                    "✨",
-                    "❤️",
-                  ].map((emoji) => (
-                    <button
-                      key={emoji}
-                      type="button"
-                      onClick={() => insertEmoji(emoji)}
-                      className="text-xl hover:scale-125 transition-transform duration-200 cursor-pointer focus:outline-none"
-                    >
-                      {emoji}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-2 px-6 pb-6 pt-3 bg-transparent shrink-0">
-              <button
-                type="button"
-                onClick={() => setFollowUpEnquiry(null)}
-                className="px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-sm font-semibold text-zinc-600 dark:text-zinc-405 hover:bg-zinc-100 dark:hover:bg-zinc-850 cursor-pointer transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  const url = getWhatsAppCleanUrl(
-                    followUpEnquiry.contactNumber,
-                    messageText,
-                  );
-                  window.open(url, "_blank");
-                  setFollowUpEnquiry(null);
-                }}
-                className="inline-flex items-center gap-2 rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-              >
-                <svg
-                  className="w-4 h-4 shrink-0"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12.016 2a10 10 0 0 0-8.77 14.77l-1.45 5.31 5.43-1.42A10 10 0 1 0 12.016 2zm0 18.18a8.18 8.18 0 0 1-4.23-1.16l-.3-.18-3.1.81.82-3.01-.19-.31a8.18 8.18 0 1 1 7 3.85zm4.49-5.96c-.25-.12-1.46-.72-1.69-.8-.22-.08-.39-.12-.55.12-.16.24-.62.8-.76.96-.14.16-.28.18-.53.06-.25-.12-1.07-.39-2.03-1.25-.75-.67-1.25-1.5-1.4-1.74-.15-.24-.01-.37.11-.49.11-.11.25-.28.37-.42.12-.14.16-.24.24-.4.08-.16.04-.31-.02-.44-.06-.13-.55-1.32-.75-1.81-.2-.48-.4-.41-.55-.42-.14-.01-.3-.01-.46-.01s-.42.06-.64.29c-.22.23-.85.83-.85 2.03s.87 2.35 1 2.51c.12.16 1.7 2.6 4.12 3.64.57.24 1.02.39 1.37.5.58.18 1.11.16 1.53.1.47-.07 1.45-.59 1.65-1.16.2-.57.2-1.06.14-1.16-.06-.1-.23-.16-.48-.28z" />
-                </svg>
-                Send via WhatsApp
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <WhatsAppModal
+        isOpen={!!followUpEnquiry}
+        onClose={() => setFollowUpEnquiry(null)}
+        contactNumber={followUpEnquiry?.contactNumber || ""}
+        defaultMessageText={messageText}
+        title="Follow up with WhatsApp"
+      />
 
       {/* Add Enquiry Popup Modal */}
       <AddEnquiryModal

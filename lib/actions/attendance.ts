@@ -187,6 +187,7 @@ export async function markAttendanceAction(studentId: string, dateStr: string) {
     revalidatePath("/admin/students");
     updateTag("attendance");
     updateTag("students");
+    updateTag("dashboard");
 
     return {
       success: true,
@@ -366,6 +367,7 @@ export async function undoMarkAttendanceAction(studentId: string, dateStr: strin
     revalidatePath("/admin/students");
     updateTag("attendance");
     updateTag("students");
+    updateTag("dashboard");
 
     return { success: true, message: `Attendance undone successfully for ${student.name}` };
   } catch (err: any) {

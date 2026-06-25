@@ -1200,6 +1200,8 @@ export default function PortalDashboardClient({
                 <PaymentHistory
                   payments={student.payments}
                   studentId={student.id}
+                  registrationFee={student.registrationFee}
+                  admissionReceiptUrl="/portal/admission-receipt"
                   onPrint={handlePrint}
                 />
               </div>

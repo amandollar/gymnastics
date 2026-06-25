@@ -3,7 +3,7 @@
 
 interface AdmissionReceiptData {
   admissionDate: Date | string;
-  registrationFee: number;
+  registrationFee?: number | null;
   name: string;
   studentNumber: number;
   dateOfBirth: Date | string;
@@ -11,8 +11,8 @@ interface AdmissionReceiptData {
   contactNumber: string;
 }
 
-function formatINRReceipt(n: number) {
-  return `₹${n.toLocaleString("en-IN")}`;
+function formatINRReceipt(n: number | null | undefined) {
+  return `₹${(n || 0).toLocaleString("en-IN")}`;
 }
 
 function formatDateReceipt(d: Date | string) {

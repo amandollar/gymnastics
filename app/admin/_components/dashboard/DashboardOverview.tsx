@@ -7,46 +7,33 @@ import {
   UserPlus,
   UserCheck,
   IndianRupee,
-  ChevronLeft,
   ChevronRight,
   X,
   Check,
-  Copy,
-  ChevronDown,
-  ChevronUp,
-  MoreVertical,
-  MessageCircle,
-  Calendar,
 } from "lucide-react";
 import { getPortalBaseUrl } from "@/lib/utils/portal-url";
 import { resolveTemplate, DEFAULT_TEMPLATES } from "@/lib/utils/whatsapp-templates";
+import WhatsAppModal from "@/app/admin/_components/common/WhatsAppModal";
 import { useMediaQuery } from "@/app/_components/useMediaQuery";
-import ChartBox from "@/app/admin/_components/charts/ChartBox";
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Line,
-  LineChart,
-  Tooltip,
-  XAxis,
-  YAxis,
   PieChart,
   Pie,
   Cell,
 } from "recharts";
 import type { DashboardData } from "@/lib/services/dashboard";
-import { useRouter } from "next/navigation";
 import { FeeReceipt } from "@/app/admin/_components/students/studentProfile/FeeReceipt";
 import type { AcademyProfile } from "@prisma/client";
 import {
   getPaymentByIdAction,
-  getRevenueChartDataAction,
 } from "@/lib/actions/payments";
 import AttendanceModal from "./AttendanceModal";
 import CollectFeeModal from "./CollectFeeModal";
-import StudentAvatar from "@/app/admin/_components/students/StudentAvatar";
+import StudentLists from "./StudentLists";
 import AddEnquiryModal from "@/app/admin/_components/enquiries/AddEnquiryModal";
+import AdmissionsChart from "./AdmissionsChart";
+import RenewalsChart from "./RenewalsChart";
+import RevenueChart from "./RevenueChart";
+import AttendanceChart from "./AttendanceChart";
 
 const CHART_H = 260;
 const CHART_H_SM = 224;
@@ -133,149 +120,6 @@ export default function DashboardOverview({
     return () => observer.disconnect();
   }, []);
 
-  // View States for daily/weekly vs monthly toggles
-  const [attendanceView, setAttendanceView] = useState<"daily" | "monthly">(
-    "daily",
-  );
-  const [admissionsView, setAdmissionsView] = useState<"daily" | "monthly">(
-    "monthly",
-  );
-  const [renewalsView, setRenewalsView] = useState<"daily" | "monthly">(
-    "monthly",
-  );
-  const [revenueView, setRevenueView] = useState<"daily" | "monthly">(
-    "monthly",
-  );
-
-  const [revenueDate, setRevenueDate] = useState<Date>(() => new Date());
-  const [revenueData, setRevenueData] = useState<
-    { label: string; revenue: number }[]
-  >(() => dashboardData.revenueMonthly);
-
-  const revenueChartTitle = useMemo(() => {
-    if (revenueView === "daily") {
-      const monthLabel = revenueDate
-        .toLocaleString("en-US", { month: "short" })
-        .toUpperCase();
-      return `REVENUE ${monthLabel}`;
-    } else {
-      return `REVENUE ${revenueDate.getFullYear()}`;
-    }
-  }, [revenueView, revenueDate]);
-
-  useEffect(() => {
-    const now = new Date();
-    const isCurrentMonth =
-      revenueDate.getMonth() === now.getMonth() &&
-      revenueDate.getFullYear() === now.getFullYear();
-    const isCurrentYear = revenueDate.getFullYear() === now.getFullYear();
-
-    if (revenueView === "daily" && isCurrentMonth) {
-      setRevenueData(dashboardData.revenueDaily);
-      return;
-    }
-    if (revenueView === "monthly" && isCurrentYear) {
-      setRevenueData(dashboardData.revenueMonthly);
-      return;
-    }
-
-    let active = true;
-    const fetchRevenue = async () => {
-      const res = await getRevenueChartDataAction(
-        revenueView,
-        revenueDate.getFullYear(),
-        revenueView === "daily" ? revenueDate.getMonth() : undefined,
-      );
-      if (active && res.success && res.data) {
-        setRevenueData(res.data);
-      }
-    };
-    fetchRevenue();
-    return () => {
-      active = false;
-    };
-  }, [revenueView, revenueDate, dashboardData]);
-
-  // Sliding Window States for daily views (pages of 10 days)
-  const [attendanceStartIndex, setAttendanceStartIndex] = useState(20);
-  const [admissionsStartIndex, setAdmissionsStartIndex] = useState(20);
-  const [renewalsStartIndex, setRenewalsStartIndex] = useState(20);
-
-  // Derive chart datasets dynamically from database props
-  const attendanceChartData = useMemo(() => {
-    if (attendanceView === "daily") {
-      return dashboardData.attendanceDaily.map((d) => ({
-        label: d.day.replace(/^0/, ""), // "05" -> "5" (makes labels shorter)
-        present: d.present,
-      }));
-    } else {
-      return dashboardData.attendanceMonthly.map((d) => ({
-        label: d.month,
-        present: d.present,
-      }));
-    }
-  }, [attendanceView, dashboardData]);
-
-  const visibleAttendanceData = useMemo(() => {
-    if (attendanceView === "daily") {
-      return attendanceChartData.slice(
-        attendanceStartIndex,
-        attendanceStartIndex + 10,
-      );
-    }
-    return attendanceChartData;
-  }, [attendanceChartData, attendanceView, attendanceStartIndex]);
-
-  const admissionsChartData = useMemo(() => {
-    if (admissionsView === "daily") {
-      return dashboardData.admissionsDaily.map((d) => ({
-        label: d.day.replace(/^0/, ""), // "05" -> "5" (makes labels shorter)
-        admissions: d.admissions,
-      }));
-    } else {
-      return dashboardData.admissionsMonthly.map((d) => ({
-        label: d.month,
-        admissions: d.admissions,
-      }));
-    }
-  }, [admissionsView, dashboardData]);
-
-  const visibleAdmissionsData = useMemo(() => {
-    if (admissionsView === "daily") {
-      return admissionsChartData.slice(
-        admissionsStartIndex,
-        admissionsStartIndex + 10,
-      );
-    }
-    return admissionsChartData;
-  }, [admissionsChartData, admissionsView, admissionsStartIndex]);
-
-  const renewalsChartData = useMemo(() => {
-    if (renewalsView === "daily") {
-      return dashboardData.renewalsDaily.map((d) => ({
-        label: d.day.replace(/^0/, ""), // "05" -> "5" (makes labels shorter)
-        renewals: d.renewals,
-      }));
-    } else {
-      return dashboardData.renewalsMonthly.map((d) => ({
-        label: d.month,
-        renewals: d.renewals,
-      }));
-    }
-  }, [renewalsView, dashboardData]);
-
-  const visibleRenewalsData = useMemo(() => {
-    if (renewalsView === "daily") {
-      return renewalsChartData.slice(
-        renewalsStartIndex,
-        renewalsStartIndex + 10,
-      );
-    }
-    return renewalsChartData;
-  }, [renewalsChartData, renewalsView, renewalsStartIndex]);
-
-  // We use revenueData state directly
-
   const chartMargin = isMobile
     ? { top: 8, right: 4, left: -16, bottom: 0 }
     : { top: 8, right: 8, left: -8, bottom: 0 };
@@ -284,8 +128,6 @@ export default function DashboardOverview({
   const [qrOpen, setQrOpen] = useState(false);
   const [feeOpen, setFeeOpen] = useState(false);
   const [addEnquiryOpen, setAddEnquiryOpen] = useState(false);
-
-  const router = useRouter();
 
   // Print Notification states
   const [attendanceNotification, setAttendanceNotification] = useState<{
@@ -304,9 +146,9 @@ export default function DashboardOverview({
       const data = await getPaymentByIdAction(paymentId);
       if (data) {
         const student = data.student;
-        const firstName =
+        const firstNameClean =
           student.name.trim().split(/\s+/)[0]?.toLowerCase() || "student";
-        const newTitle = `TAG${student.studentNumber}-${firstName}-fee-reciept`;
+        const newTitle = `TAG${student.studentNumber}-${firstNameClean}-fee-reciept`;
         document.title = newTitle;
         const titleEl = document.querySelector("title");
         if (titleEl) {
@@ -345,17 +187,14 @@ export default function DashboardOverview({
     }
   }, [printData]);
 
-  const [graceSortOrder, setGraceSortOrder] = useState<"latest" | "oldest">("latest");
-  const [inactiveSortOrder, setInactiveSortOrder] = useState<"latest" | "oldest">("latest");
-  const [copiedStudentId, setCopiedStudentId] = useState<string | null>(null);
-
-  // Inactive Whatsapp Message Modal State
+  // WhatsApp Message Modal State
   const [whatsappModalOpen, setWhatsappModalOpen] = useState(false);
   const [selectedStudentForWhatsapp, setSelectedStudentForWhatsapp] = useState<any | null>(null);
   const [whatsappMessageText, setWhatsappMessageText] = useState("");
+  const [whatsappModalTitle, setWhatsappModalTitle] = useState("Send WhatsApp Message");
 
   const resolveLocalTemplate = (template: string, student: any) => {
-    const portalBaseUrl = getPortalBaseUrl(academyProfile.parentPortalUrl, academyProfile.website);
+    const portalBaseUrl = getPortalBaseUrl((academyProfile as any).parentPortalUrl, academyProfile.website);
     const remainingSessions = Math.max(0, student.totalSessions - student.sessionsCompleted);
 
     // Calculate days left and deadline formatting for grace templates
@@ -394,11 +233,12 @@ export default function DashboardOverview({
     e.stopPropagation();
     e.preventDefault();
     setSelectedStudentForWhatsapp(student);
+    setWhatsappModalTitle(isGrace ? "Grace Period Message" : "Inactive Student Message");
 
     const templateRaw = isGrace
       ? (academyProfile.templateGrace || DEFAULT_TEMPLATES.templateGrace)
       : (student.sessionsCompleted >= student.totalSessions
-          ? (academyProfile.templateInactiveSessionComplete || DEFAULT_TEMPLATES.templateInactiveSessionComplete)
+          ? ((academyProfile as any).templateInactiveSessionComplete || DEFAULT_TEMPLATES.templateInactiveSessionComplete)
           : (academyProfile.templateInactive || DEFAULT_TEMPLATES.templateInactive));
 
     const resolved = resolveLocalTemplate(templateRaw, student);
@@ -406,59 +246,13 @@ export default function DashboardOverview({
     setWhatsappModalOpen(true);
   };
 
-  const formatWaPhone = (phone: string) => {
-    const clean = phone.replace(/\D/g, "");
-    if (clean.length === 10) {
-      return "91" + clean;
-    }
-    return clean;
-  };
-
-  const handleSendWhatsapp = () => {
-    if (!selectedStudentForWhatsapp) return;
-    const formattedPhone = formatWaPhone(selectedStudentForWhatsapp.contactNumber);
-    const encodedText = encodeURIComponent(whatsappMessageText);
-    const url = `https://wa.me/${formattedPhone}?text=${encodedText}`;
-    window.open(url, "_blank");
-    setWhatsappModalOpen(false);
-    setSelectedStudentForWhatsapp(null);
-  };
-
-  const handleCopy = async (id: string, contactNumber: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    try {
-      await navigator.clipboard.writeText(contactNumber);
-      setCopiedStudentId(id);
-      setTimeout(() => setCopiedStudentId(null), 2000);
-    } catch (err) {
-      console.error("Failed to copy text: ", err);
-    }
-  };
-
-  const sortedGraceStudents = useMemo(() => {
-    const list = [...(dashboardData.graceStudents || [])];
-    return list.sort((a, b) => {
-      const dateA = new Date(a.statusEntryDate).getTime();
-      const dateB = new Date(b.statusEntryDate).getTime();
-      return graceSortOrder === "latest" ? dateB - dateA : dateA - dateB;
-    });
-  }, [dashboardData.graceStudents, graceSortOrder]);
-
-  const sortedInactiveStudents = useMemo(() => {
-    const list = [...(dashboardData.inactiveStudents || [])];
-    return list.sort((a, b) => {
-      const dateA = new Date(a.statusEntryDate).getTime();
-      const dateB = new Date(b.statusEntryDate).getTime();
-      return inactiveSortOrder === "latest" ? dateB - dateA : dateA - dateB;
-    });
-  }, [dashboardData.inactiveStudents, inactiveSortOrder]);
-
   const activeCount = dashboardData.kpis.activeStudents;
   const graceCount = dashboardData.kpis.gracePeriodStudents;
   const freezeCount = dashboardData.kpis.freezeStudents;
   const inactiveCount = dashboardData.kpis.inactiveStudents;
-  const totalStudents = activeCount + graceCount + freezeCount + inactiveCount;  const activePercent =
+  const totalStudents = activeCount + graceCount + freezeCount + inactiveCount;
+  
+  const activePercent =
     totalStudents > 0 ? Math.round((activeCount / totalStudents) * 100) : 0;
   const gracePercent =
     totalStudents > 0 ? Math.round((graceCount / totalStudents) * 100) : 0;
@@ -500,7 +294,7 @@ export default function DashboardOverview({
           {/* Left Part: Premium standalone pills side-by-side with extra gap, scaled proportionally */}
           <div className="flex xs-hide flex-col gap-2.5 w-full max-w-sm lg:max-w-[220px] xl:max-w-sm pt-2 shrink-0">
             {totalStudents === 0 ? (
-              <div className="h-[30px] sm:h-10 w-full bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 flex items-center justify-center text-[10px] sm:text-xs font-semibold rounded-full">
+              <div className="h-[30px] sm:h-10 w-full bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-505 flex items-center justify-center text-[10px] sm:text-xs font-semibold rounded-full">
                 No active students
               </div>
             ) : (
@@ -580,7 +374,7 @@ export default function DashboardOverview({
             )}
 
             {/* Labels Row */}
-            <div className="flex flex-wrap items-center justify-start gap-x-5 gap-y-1.5 px-1 text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+            <div className="flex flex-wrap items-center justify-start gap-x-5 gap-y-1.5 px-1 text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wider">
               <div className="group relative flex items-center gap-1.5 cursor-help">
                 <span className="w-2 h-2 rounded-full bg-zinc-850 dark:bg-white" />
                 <span>active ({activeCount})</span>
@@ -637,7 +431,7 @@ export default function DashboardOverview({
 
           {/* Mobile Pie Chart view (xs-only-flex) */}
           {totalStudents === 0 ? (
-            <div className="hidden xs-only-flex h-[30px] sm:h-10 w-full bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 items-center justify-center text-[10px] sm:text-xs font-semibold rounded-full">
+            <div className="hidden xs-only-flex h-[30px] sm:h-10 w-full bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-550 items-center justify-center text-[10px] sm:text-xs font-semibold rounded-full">
               No active students
             </div>
           ) : (
@@ -662,7 +456,7 @@ export default function DashboardOverview({
               </div>
 
               {/* Labels list on the right (Single column) */}
-              <div className="flex flex-col justify-center gap-2 text-[9px] font-bold uppercase tracking-wider text-zinc-450 dark:text-zinc-500">
+              <div className="flex flex-col justify-center gap-2 text-[9px] font-bold uppercase tracking-wider text-zinc-450 dark:text-zinc-550">
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: activeColor }} />
                   <span>active ({activeCount})</span>
@@ -695,7 +489,7 @@ export default function DashboardOverview({
                   {dashboardData.kpis.admissionsThisMonth}
                 </span>
               </div>
-              <p className="text-[9px] sm:text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-center sm:text-left sm:pl-7 mt-0.5">
+              <p className="text-[9px] sm:text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wider text-center sm:text-left sm:pl-7 mt-0.5">
                 Joined This Mo.
               </p>
             </div>
@@ -710,7 +504,7 @@ export default function DashboardOverview({
                   {dashboardData.kpis.todayAttendanceCount}
                 </span>
               </div>
-              <p className="text-[9px] sm:text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-center sm:text-left sm:pl-7 mt-0.5">
+              <p className="text-[9px] sm:text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wider text-center sm:text-left sm:pl-7 mt-0.5">
                 Attended Today
               </p>
             </div>
@@ -725,7 +519,7 @@ export default function DashboardOverview({
                   {formatShortRevenue(dashboardData.kpis.monthlyRevenue)}
                 </span>
               </div>
-              <p className="text-[9px] sm:text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider text-center sm:text-left sm:pl-7 mt-0.5">
+              <p className="text-[9px] sm:text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wider text-center sm:text-left sm:pl-7 mt-0.5">
                 Revenue This Mo.
               </p>
             </div>
@@ -848,634 +642,52 @@ export default function DashboardOverview({
       </div>
 
       {/* Grace Period & Inactive Period Student Lists */}
-      <div className="grid gap-3 lg:grid-cols-2 min-w-0">
-        {/* Grace Period Students Card */}
-        <div className="rounded-3xl border border-zinc-100/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 pt-5 px-5 pb-0 shadow-xs flex flex-col h-[380px] transition-all duration-300">
-          <div className="flex items-center justify-between mb-4 shrink-0">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-zinc-955 dark:text-zinc-50 uppercase tracking-wider">
-                Grace Period
-              </h3>
-              <span className="bg-purple-100 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 text-xs font-bold px-2 py-0.5 rounded-full">
-                {sortedGraceStudents.length}
-              </span>
-            </div>
-            
-            <button
-              onClick={() => setGraceSortOrder(prev => prev === "latest" ? "oldest" : "latest")}
-              className="flex items-center gap-1.5 text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 px-2.5 py-1.5 rounded-xl transition-all duration-200 cursor-pointer"
-            >
-              {graceSortOrder === "latest" ? (
-                <>
-                  <span>Latest</span>
-                  <ChevronDown className="h-3.5 w-3.5" strokeWidth={2.5} />
-                </>
-              ) : (
-                <>
-                  <span>Oldest</span>
-                  <ChevronUp className="h-3.5 w-3.5" strokeWidth={2.5} />
-                </>
-              )}
-            </button>
-          </div>
+      <StudentLists
+        graceStudents={dashboardData.graceStudents || []}
+        inactiveStudents={dashboardData.inactiveStudents || []}
+        openWhatsappModal={openWhatsappModal}
+      />
 
-          <div className="flex-1 overflow-y-auto pr-1 space-y-0 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800">
-            {sortedGraceStudents.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-xs text-zinc-400 dark:text-zinc-500">
-                No students in grace period
-              </div>
-            ) : (
-              sortedGraceStudents.map((student) => {
-                return (
-                  <div
-                    key={student.id}
-                    onClick={() => router.push(`/admin/students/${student.id}`)}
-                    className="flex items-center justify-between p-3 rounded-2xl bg-transparent hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-all duration-200 cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <StudentAvatar student={student} size={40} />
-                      <div className="min-w-0">
-                        <h4 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate group-hover:text-brand-orange-500 dark:group-hover:text-brand-orange-500 transition-colors">
-                          {student.name}
-                        </h4>
-                        <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5 truncate">
-                          <span>TAG{String(student.studentNumber).padStart(3, "0")}</span>
-                          <span>·</span>
-                          <span className="flex items-center gap-1 font-semibold">
-                            <Calendar className="h-3.5 w-3.5 shrink-0 text-zinc-400 dark:text-zinc-500" />
-                            <span>{student.sessionsCompleted}/{student.totalSessions}</span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      {/* Clickable Phone Number + Copy Container */}
-                      <div
-                        onClick={(e) => handleCopy(student.id, student.contactNumber, e)}
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-550 hover:text-zinc-855 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
-                        title="Click to copy phone number"
-                      >
-                        <span className="text-xs font-semibold">
-                          {student.contactNumber}
-                        </span>
-                        {copiedStudentId === student.id ? (
-                          <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" strokeWidth={3} />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5 shrink-0" />
-                        )}
-                      </div>
-
-                      {/* WhatsApp Button */}
-                      <button
-                        type="button"
-                        onClick={(e) => openWhatsappModal(student, e, true)}
-                        className="h-8 w-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-450 transition-colors cursor-pointer border-0 shrink-0 active:scale-95"
-                        title="Send WhatsApp message"
-                      >
-                        <svg
-                          className="w-4.5 h-4.5 shrink-0"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M12.016 2a10 10 0 0 0-8.77 14.77l-1.45 5.31 5.43-1.42A10 10 0 1 0 12.016 2zm0 18.18a8.18 8.18 0 0 1-4.23-1.16l-.3-.18-3.1.81.82-3.01-.19-.31a8.18 8.18 0 1 1 7 3.85zm4.49-5.96c-.25-.12-1.46-.72-1.69-.8-.22-.08-.39-.12-.55.12-.16.24-.62.8-.76.96-.14.16-.28.18-.53.06-.25-.12-1.07-.39-2.03-1.25-.75-.67-1.25-1.5-1.4-1.74-.15-.24-.01-.37.11-.49.11-.11.25-.28.37-.42.12-.14.16-.24.24-.4.08-.16.04-.31-.02-.44-.06-.13-.55-1.32-.75-1.81-.2-.48-.4-.41-.55-.42-.14-.01-.3-.01-.46-.01s-.42.06-.64.29c-.22.23-.85.83-.85 2.03s.87 2.35 1 2.51c.12.16 1.7 2.6 4.12 3.64.57.24 1.02.39 1.37.5.58.18 1.11.16 1.53.1.47-.07 1.45-.59 1.65-1.16.2-.57.2-1.06.14-1.16-.06-.1-.23-.16-.48-.28z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-
-        {/* Inactive Students Card */}
-        <div className="rounded-3xl border border-zinc-100/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 pt-5 px-5 pb-0 shadow-xs flex flex-col h-[380px] transition-all duration-300">
-          <div className="flex items-center justify-between mb-4 shrink-0">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-bold text-zinc-955 dark:text-zinc-50 uppercase tracking-wider">
-                Inactive Students
-              </h3>
-              <span className="bg-orange-100 dark:bg-orange-950/40 text-orange-700 dark:text-orange-400 text-xs font-bold px-2 py-0.5 rounded-full">
-                {sortedInactiveStudents.length}
-              </span>
-            </div>
-            
-            <button
-              onClick={() => setInactiveSortOrder(prev => prev === "latest" ? "oldest" : "latest")}
-              className="flex items-center gap-1.5 text-xs font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700 px-2.5 py-1.5 rounded-xl transition-all duration-200 cursor-pointer"
-            >
-              {inactiveSortOrder === "latest" ? (
-                <>
-                  <span>Latest</span>
-                  <ChevronDown className="h-3.5 w-3.5" strokeWidth={2.5} />
-                </>
-              ) : (
-                <>
-                  <span>Oldest</span>
-                  <ChevronUp className="h-3.5 w-3.5" strokeWidth={2.5} />
-                </>
-              )}
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto pr-1 space-y-0 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800">
-            {sortedInactiveStudents.length === 0 ? (
-              <div className="h-full flex items-center justify-center text-xs text-zinc-400 dark:text-zinc-500">
-                No inactive students
-              </div>
-            ) : (
-              sortedInactiveStudents.map((student) => {
-                return (
-                  <div
-                    key={student.id}
-                    onClick={() => router.push(`/admin/students/${student.id}`)}
-                    className="flex items-center justify-between p-3 rounded-2xl bg-transparent hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-all duration-200 cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <StudentAvatar student={student} size={40} />
-                      <div className="min-w-0">
-                        <h4 className="text-sm font-bold text-zinc-800 dark:text-zinc-200 truncate group-hover:text-brand-orange-500 dark:group-hover:text-brand-orange-500 transition-colors">
-                          {student.name}
-                        </h4>
-                        <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5 truncate">
-                          <span>TAG{String(student.studentNumber).padStart(3, "0")}</span>
-                          <span>·</span>
-                          <span className="flex items-center gap-1 font-semibold">
-                            <Calendar className="h-3.5 w-3.5 shrink-0 text-zinc-400 dark:text-zinc-500" />
-                            <span>{student.sessionsCompleted}/{student.totalSessions}</span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 shrink-0">
-                      {/* Clickable Phone Number + Copy Container */}
-                      <div
-                        onClick={(e) => handleCopy(student.id, student.contactNumber, e)}
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-555 hover:text-zinc-855 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors cursor-pointer"
-                        title="Click to copy phone number"
-                      >
-                        <span className="text-xs font-semibold">
-                          {student.contactNumber}
-                        </span>
-                        {copiedStudentId === student.id ? (
-                          <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0" strokeWidth={3} />
-                        ) : (
-                          <Copy className="h-3.5 w-3.5 shrink-0" />
-                        )}
-                      </div>
-
-                      {/* WhatsApp Button */}
-                      <button
-                        type="button"
-                        onClick={(e) => openWhatsappModal(student, e)}
-                        className="h-8 w-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-450 transition-colors cursor-pointer border-0 shrink-0 active:scale-95"
-                        title="Send WhatsApp message"
-                      >
-                        <svg
-                          className="w-4.5 h-4.5 shrink-0"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M12.016 2a10 10 0 0 0-8.77 14.77l-1.45 5.31 5.43-1.42A10 10 0 1 0 12.016 2zm0 18.18a8.18 8.18 0 0 1-4.23-1.16l-.3-.18-3.1.81.82-3.01-.19-.31a8.18 8.18 0 1 1 7 3.85zm4.49-5.96c-.25-.12-1.46-.72-1.69-.8-.22-.08-.39-.12-.55.12-.16.24-.62.8-.76.96-.14.16-.28.18-.53.06-.25-.12-1.07-.39-2.03-1.25-.75-.67-1.25-1.5-1.4-1.74-.15-.24-.01-.37.11-.49.11-.11.25-.28.37-.42.12-.14.16-.24.24-.4.08-.16.04-.31-.02-.44-.06-.13-.55-1.32-.75-1.81-.2-.48-.4-.41-.55-.42-.14-.01-.3-.01-.46-.01s-.42.06-.64.29c-.22.23-.85.83-.85 2.03s.87 2.35 1 2.51c.12.16 1.7 2.6 4.12 3.64.57.24 1.02.39 1.37.5.58.18 1.11.16 1.53.1.47-.07 1.45-.59 1.65-1.16.2-.57.2-1.06.14-1.16-.06-.1-.23-.16-.48-.28z" />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Modern Two-Column Charts Grid (Clean, side-by-side, same gap-3.5 and rounded-2xl border-0 shadow-xs as before) */}
+      {/* Modern Two-Column Charts Grid */}
       <div className="grid gap-2.5 lg:grid-cols-2 min-w-0">
-        {/* Chart 3: Admissions (Line Chart) */}
-        <div className="rounded-3xl border-0 bg-white dark:bg-zinc-900 p-5 shadow-xs min-w-0 overflow-hidden transition-all duration-300">
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-bold text-zinc-955 dark:text-zinc-50 uppercase tracking-wider truncate">
-                {admissionsView === "daily"
-                  ? `Admissions ${currentMonthLabel}`
-                  : `Admissions ${currentYear}`}
-              </h3>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-0.5">
-                <button
-                  onClick={() =>
-                    setAdmissionsStartIndex(
-                      Math.max(0, admissionsStartIndex - 10),
-                    )
-                  }
-                  disabled={
-                    admissionsView === "monthly" || admissionsStartIndex === 0
-                  }
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer"
-                >
-                  <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
-                </button>
-                <button
-                  onClick={() =>
-                    setAdmissionsStartIndex(
-                      Math.min(20, admissionsStartIndex + 10),
-                    )
-                  }
-                  disabled={
-                    admissionsView === "monthly" || admissionsStartIndex === 20
-                  }
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer"
-                >
-                  <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
-                </button>
-              </div>
-              <select
-                value={admissionsView}
-                onChange={(e) => {
-                  const val = e.target.value as "daily" | "monthly";
-                  setAdmissionsView(val);
-                  if (val === "daily") {
-                    setAdmissionsStartIndex(20);
-                  }
-                }}
-                className="shrink-0 text-xs bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 font-bold tracking-tight cursor-pointer transition-colors"
-              >
-                <option value="daily">Daily View</option>
-                <option value="monthly">Monthly View</option>
-              </select>
-            </div>
-          </div>
-          <div className="mt-4">
-            <ChartBox height={chartH}>
-              <LineChart data={visibleAdmissionsData} margin={chartMargin}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="var(--chart-grid)"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="label"
-                  tick={{
-                    fontSize: isMobile ? 10 : 11,
-                    fill: "var(--tick-color)",
-                    fontWeight: 500,
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  width={isMobile ? 36 : 48}
-                  tick={{
-                    fontSize: isMobile ? 10 : 11,
-                    fill: "var(--tick-color)",
-                    fontWeight: 500,
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => `${v}`}
-                />
-                <Tooltip
-                  contentStyle={chartTooltipStyle}
-                  separator=""
-                  formatter={(value) => [`${value} admissions`, ""]}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="admissions"
-                  stroke="#f16d28"
-                  strokeWidth={3}
-                  dot={false}
-                  activeDot={{
-                    fill: "#f16d28",
-                    r: 6,
-                    stroke: "var(--background)",
-                    strokeWidth: 2,
-                  }}
-                />
-              </LineChart>
-            </ChartBox>
-          </div>
-        </div>
+        <AdmissionsChart
+          dashboardData={dashboardData}
+          chartH={chartH}
+          chartMargin={chartMargin}
+          chartTooltipStyle={chartTooltipStyle}
+          currentMonthLabel={currentMonthLabel}
+          currentYear={currentYear}
+          isMobile={isMobile}
+        />
 
-        {/* Chart 4: Renewals (Line Chart) */}
-        <div className="rounded-3xl border-0 bg-white dark:bg-zinc-900 p-5 shadow-xs min-w-0 overflow-hidden transition-all duration-300">
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-bold text-zinc-955 dark:text-zinc-50 uppercase tracking-wider truncate">
-                {renewalsView === "daily"
-                  ? `Renewals ${currentMonthLabel}`
-                  : `Renewals ${currentYear}`}
-              </h3>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-0.5">
-                <button
-                  onClick={() =>
-                    setRenewalsStartIndex(Math.max(0, renewalsStartIndex - 10))
-                  }
-                  disabled={
-                    renewalsView === "monthly" || renewalsStartIndex === 0
-                  }
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer"
-                >
-                  <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
-                </button>
-                <button
-                  onClick={() =>
-                    setRenewalsStartIndex(Math.min(20, renewalsStartIndex + 10))
-                  }
-                  disabled={
-                    renewalsView === "monthly" || renewalsStartIndex === 20
-                  }
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer"
-                >
-                  <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
-                </button>
-              </div>
-              <select
-                value={renewalsView}
-                onChange={(e) => {
-                  const val = e.target.value as "daily" | "monthly";
-                  setRenewalsView(val);
-                  if (val === "daily") {
-                    setRenewalsStartIndex(20);
-                  }
-                }}
-                className="shrink-0 text-xs bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 font-bold tracking-tight cursor-pointer transition-colors"
-              >
-                <option value="daily">Daily View</option>
-                <option value="monthly">Monthly View</option>
-              </select>
-            </div>
-          </div>
-          <div className="mt-4">
-            <ChartBox height={chartH}>
-              <LineChart data={visibleRenewalsData} margin={chartMargin}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="var(--chart-grid)"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="label"
-                  tick={{
-                    fontSize: isMobile ? 10 : 11,
-                    fill: "var(--tick-color)",
-                    fontWeight: 500,
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  width={isMobile ? 36 : 48}
-                  tick={{
-                    fontSize: isMobile ? 10 : 11,
-                    fill: "var(--tick-color)",
-                    fontWeight: 500,
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => `${v}`}
-                />
-                <Tooltip
-                  contentStyle={chartTooltipStyle}
-                  separator=""
-                  formatter={(value) => [`${value} renewals`, ""]}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="renewals"
-                  stroke="#f16d28"
-                  strokeWidth={3}
-                  dot={false}
-                  activeDot={{
-                    fill: "#f16d28",
-                    r: 6,
-                    stroke: "var(--background)",
-                    strokeWidth: 2,
-                  }}
-                />
-              </LineChart>
-            </ChartBox>
-          </div>
-        </div>
+        <RenewalsChart
+          dashboardData={dashboardData}
+          chartH={chartH}
+          chartMargin={chartMargin}
+          chartTooltipStyle={chartTooltipStyle}
+          currentMonthLabel={currentMonthLabel}
+          currentYear={currentYear}
+          isMobile={isMobile}
+        />
 
-        {/* Chart 1: Revenue (Line Chart with Daily/Monthly toggles and Chevrons) */}
-        <div className="rounded-3xl border-0 bg-white dark:bg-zinc-900 p-5 shadow-xs min-w-0 overflow-hidden transition-all duration-300">
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-bold text-zinc-955 dark:text-zinc-50 uppercase tracking-wider truncate">
-                {revenueChartTitle}
-              </h3>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-0.5">
-                <button
-                  onClick={() => {
-                    setRevenueDate((prev) => {
-                      const next = new Date(prev);
-                      if (revenueView === "daily") {
-                        next.setMonth(next.getMonth() - 1);
-                      } else {
-                        next.setFullYear(next.getFullYear() - 1);
-                      }
-                      return next;
-                    });
-                  }}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                >
-                  <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
-                </button>
-                <button
-                  onClick={() => {
-                    setRevenueDate((prev) => {
-                      const next = new Date(prev);
-                      if (revenueView === "daily") {
-                        next.setMonth(next.getMonth() + 1);
-                      } else {
-                        next.setFullYear(next.getFullYear() + 1);
-                      }
-                      return next;
-                    });
-                  }}
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                >
-                  <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
-                </button>
-              </div>
-              <select
-                value={revenueView}
-                onChange={(e) => {
-                  const val = e.target.value as "daily" | "monthly";
-                  setRevenueView(val);
-                }}
-                className="shrink-0 text-xs bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 font-bold tracking-tight cursor-pointer transition-colors"
-              >
-                <option value="daily">Daily View</option>
-                <option value="monthly">Monthly View</option>
-              </select>
-            </div>
-          </div>
-          <div className="mt-4">
-            <ChartBox height={chartH}>
-              <LineChart data={revenueData} margin={chartMargin}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="var(--chart-grid)"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="label"
-                  tick={{
-                    fontSize: isMobile ? 10 : 11,
-                    fill: "var(--tick-color)",
-                    fontWeight: 500,
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  width={isMobile ? 36 : 48}
-                  tick={{
-                    fontSize: isMobile ? 10 : 11,
-                    fill: "var(--tick-color)",
-                    fontWeight: 500,
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => `₹${formatShortRevenue(v)}`}
-                />
-                <Tooltip
-                  contentStyle={chartTooltipStyle}
-                  formatter={(value) => [
-                    `₹${Number(value).toLocaleString("en-IN")}`,
-                    "Revenue",
-                  ]}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#f16d28"
-                  strokeWidth={3}
-                  dot={false}
-                  activeDot={{
-                    fill: "#f16d28",
-                    r: 6,
-                    stroke: "var(--background)",
-                    strokeWidth: 2,
-                  }}
-                />
-              </LineChart>
-            </ChartBox>
-          </div>
-        </div>
+        <RevenueChart
+          dashboardData={dashboardData}
+          chartH={chartH}
+          chartMargin={chartMargin}
+          chartTooltipStyle={chartTooltipStyle}
+          isMobile={isMobile}
+          formatShortRevenue={formatShortRevenue}
+        />
 
-        {/* Chart 2: Attendance (Bar Chart) */}
-        <div className="rounded-3xl border-0 bg-white dark:bg-zinc-900 p-5 shadow-xs min-w-0 overflow-hidden transition-all duration-300">
-          <div className="flex items-center justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-bold text-zinc-955 dark:text-zinc-50 uppercase tracking-wider truncate">
-                {attendanceView === "daily"
-                  ? `Attendance ${currentMonthLabel}`
-                  : `Attendance ${currentYear}`}
-              </h3>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-0.5">
-                <button
-                  onClick={() =>
-                    setAttendanceStartIndex(
-                      Math.max(0, attendanceStartIndex - 10),
-                    )
-                  }
-                  disabled={
-                    attendanceView === "monthly" || attendanceStartIndex === 0
-                  }
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer"
-                >
-                  <ChevronLeft className="h-5 w-5" strokeWidth={2.5} />
-                </button>
-                <button
-                  onClick={() =>
-                    setAttendanceStartIndex(
-                      Math.min(20, attendanceStartIndex + 10),
-                    )
-                  }
-                  disabled={
-                    attendanceView === "monthly" || attendanceStartIndex === 20
-                  }
-                  className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-25 disabled:cursor-not-allowed disabled:hover:bg-transparent cursor-pointer"
-                >
-                  <ChevronRight className="h-5 w-5" strokeWidth={2.5} />
-                </button>
-              </div>
-              <select
-                value={attendanceView}
-                onChange={(e) => {
-                  const val = e.target.value as "daily" | "monthly";
-                  setAttendanceView(val);
-                  if (val === "daily") {
-                    setAttendanceStartIndex(20);
-                  }
-                }}
-                className="shrink-0 text-xs bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 font-bold tracking-tight cursor-pointer transition-colors"
-              >
-                <option value="daily">Daily View</option>
-                <option value="monthly">Monthly View</option>
-              </select>
-            </div>
-          </div>
-          <div className="mt-4">
-            <ChartBox height={chartH}>
-              <BarChart
-                data={visibleAttendanceData}
-                margin={chartMargin}
-                barCategoryGap={6}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="var(--chart-grid)"
-                  vertical={false}
-                />
-                <XAxis
-                  dataKey="label"
-                  tick={{
-                    fontSize: isMobile ? 10 : 11,
-                    fill: "var(--tick-color)",
-                    fontWeight: 500,
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  width={isMobile ? 36 : 48}
-                  domain={["auto", "auto"]}
-                  tick={{
-                    fontSize: isMobile ? 10 : 11,
-                    fill: "var(--tick-color)",
-                    fontWeight: 500,
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => `${v}`}
-                />
-                <Tooltip
-                  contentStyle={chartTooltipStyle}
-                  cursor={{ fill: "var(--chart-cursor-bg)" }}
-                  separator=""
-                  formatter={(value) => [`${value} present`, ""]}
-                />
-                <Bar
-                  dataKey="present"
-                  fill="#f16d28"
-                  radius={[9999, 9999, 8, 8]}
-                  maxBarSize={isMobile ? 28 : 42}
-                />
-              </BarChart>
-            </ChartBox>
-          </div>
-        </div>
+        <AttendanceChart
+          dashboardData={dashboardData}
+          chartH={chartH}
+          chartMargin={chartMargin}
+          chartTooltipStyle={chartTooltipStyle}
+          currentMonthLabel={currentMonthLabel}
+          currentYear={currentYear}
+          isMobile={isMobile}
+        />
       </div>
 
       {/* Recent Activity Section */}
@@ -1495,7 +707,7 @@ export default function DashboardOverview({
               <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                 {item.text}
               </span>
-              <span className="text-xs text-zinc-400 dark:text-zinc-500 font-semibold shrink-0 sm:pl-4">
+              <span className="text-xs text-zinc-400 dark:text-zinc-505 font-semibold shrink-0 sm:pl-4">
                 {mounted ? formatRelativeTime(item.timestamp) : "—"}
               </span>
             </li>
@@ -1507,6 +719,7 @@ export default function DashboardOverview({
           )}
         </ul>
       </div>
+
       {/* Attendance Scanner Modal */}
       {qrOpen && (
         <AttendanceModal
@@ -1538,63 +751,18 @@ export default function DashboardOverview({
       )}
 
       {/* WhatsApp Message Preview Modal */}
-      {whatsappModalOpen && selectedStudentForWhatsapp && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0" onClick={() => setWhatsappModalOpen(false)} />
-          <div className="relative bg-white dark:bg-zinc-900 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl border border-zinc-100 dark:border-zinc-800/80 flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 pb-3">
-              <div>
-                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-2">
-                  <MessageCircle className="w-5 h-5 text-emerald-500" />
-                  Send WhatsApp Message
-                </h3>
-                <p className="text-xs text-zinc-500 mt-1">
-                  Preview and customize message for {selectedStudentForWhatsapp.name}'s parent ({selectedStudentForWhatsapp.parentName})
-                </p>
-              </div>
-              <button
-                onClick={() => setWhatsappModalOpen(false)}
-                className="rounded-full p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/60 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      <WhatsAppModal
+        isOpen={whatsappModalOpen}
+        onClose={() => {
+          setWhatsappModalOpen(false);
+          setSelectedStudentForWhatsapp(null);
+        }}
+        contactNumber={selectedStudentForWhatsapp?.contactNumber || ""}
+        defaultMessageText={whatsappMessageText}
+        title={whatsappModalTitle}
+      />
 
-            {/* Body */}
-            <div className="px-6 pb-5 flex-1 flex flex-col min-h-0">
-              <textarea
-                value={whatsappMessageText}
-                onChange={(e) => setWhatsappMessageText(e.target.value)}
-                rows={10}
-                className="w-full flex-1 text-sm rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950/60 text-zinc-850 dark:text-zinc-150 px-4 py-3.5 resize-none focus:outline-none focus:ring-2 focus:ring-brand-orange-500/30 focus:border-brand-orange-400 transition-colors leading-relaxed min-h-[220px]"
-                placeholder="Type your WhatsApp message..."
-              />
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 bg-zinc-50 dark:bg-zinc-900/50">
-              <button
-                type="button"
-                onClick={() => setWhatsappModalOpen(false)}
-                className="px-4.5 py-2 rounded-xl text-sm font-semibold text-zinc-500 hover:text-zinc-750 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSendWhatsapp}
-                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all cursor-pointer shadow-sm shadow-emerald-600/20"
-              >
-                <MessageCircle className="w-4 h-4" />
-                Send via WhatsApp
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 8. Bottom-Right Toast Notification */}
+      {/* Bottom-Right Toast Notification */}
       {attendanceNotification && (
         <div
           className="fixed bottom-6 right-6 z-[200] max-w-[280px] w-full bg-emerald-50/95 dark:bg-emerald-950/90 backdrop-blur-md border border-emerald-200/50 dark:border-emerald-800/30 p-3.5 rounded-2xl shadow-xl flex items-center gap-3"
@@ -1635,7 +803,7 @@ export default function DashboardOverview({
           </div>
           <button
             onClick={() => setAttendanceNotification(null)}
-            className="text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 cursor-pointer self-start -mt-1 -mr-1"
+            className="text-zinc-400 hover:text-zinc-655 dark:hover:text-zinc-200 cursor-pointer self-start -mt-1 -mr-1"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -1651,7 +819,7 @@ export default function DashboardOverview({
             @page {
               size: A4;
               margin: 0 !important;
-            }
+              }
             @media print {
               html, body {
                 margin: 0 !important;
