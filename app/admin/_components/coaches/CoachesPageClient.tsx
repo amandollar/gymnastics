@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useCallback, useEffect } from "react";
+import { useState, useTransition, useCallback, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -19,16 +19,25 @@ import {
   User,
   Edit2,
   Briefcase,
+  MoreVertical,
+  Award,
+  Users,
+  Loader2,
+  Check,
 } from "lucide-react";
 import {
   createCoachAction,
   updateCoachAction,
   markCoachAttendanceAction,
+  deleteCoachAttendanceAction,
   getCoachEarningsAction,
+  toggleCoachSalaryPaymentAction,
+  toggleCoachStatusAction,
 } from "@/lib/actions/coaches";
 import type { CoachWithStats } from "@/lib/services/coaches";
 import type { CoachAttendanceStatus, CoachRole } from "@prisma/client";
 import StudentAvatarPicker from "@/app/admin/_components/students/StudentAvatarPicker";
+import { getMonthSalaryMultiplier } from "@/lib/utils/salary";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -76,18 +85,20 @@ const TIME_SLOTS = [
 
 function CoachFormModal({
   existing,
+  initialRole = "COACH",
   onClose,
   onSaved,
 }: {
   existing?: CoachWithStats | null;
+  initialRole?: CoachRole;
   onClose: () => void;
   onSaved: (msg: string) => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const isEdit = !!existing;
-  const [role, setRole] = useState<CoachRole>(existing?.role ?? "COACH");
-  const [step, setStep] = useState<"CHOOSE_ROLE" | "FORM">(isEdit ? "FORM" : "CHOOSE_ROLE");
+  const [role, setRole] = useState<CoachRole>(existing?.role ?? initialRole);
+  const [bioText, setBioText] = useState(existing?.bio ?? "");
 
   const [startTime, setStartTime] = useState(() => {
     if (existing?.timing) {
@@ -131,90 +142,19 @@ function CoachFormModal({
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col animate-scale-in">
-        {step === "CHOOSE_ROLE" ? (
-          <>
-            <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0 border-b border-zinc-100 dark:border-zinc-800">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-orange-100 dark:bg-brand-orange-950/40 text-brand-orange-600 dark:text-brand-orange-400">
-                  <Dumbbell className="h-4 w-4" />
-                </div>
-                <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                  Add Employee
-                </h2>
-              </div>
-              <button type="button" onClick={onClose} className="h-8 w-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
-                <X className="h-4 w-4" />
-              </button>
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0 border-b border-zinc-100 dark:border-zinc-800">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-orange-100 dark:bg-brand-orange-950/40 text-brand-orange-600 dark:text-brand-orange-400">
+              <Dumbbell className="h-4 w-4" />
             </div>
-
-            <div className="px-6 py-8 space-y-6 flex-1 overflow-y-auto">
-              <div className="text-center space-y-1.5">
-                <h3 className="text-lg font-bold text-zinc-800 dark:text-zinc-200">Select Employee Type</h3>
-                <p className="text-xs text-zinc-400 dark:text-zinc-500">Choose the role of the employee you want to add to customize the form.</p>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRole("COACH");
-                    setStep("FORM");
-                  }}
-                  className="flex flex-col items-center text-center p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:border-brand-orange-500 dark:hover:border-brand-orange-500/50 bg-zinc-50/50 dark:bg-zinc-800/30 hover:bg-white dark:hover:bg-zinc-900 transition-all cursor-pointer group shadow-sm text-left"
-                >
-                  <div className="h-12 w-12 rounded-xl bg-brand-orange-100 dark:bg-brand-orange-950/40 text-brand-orange-600 dark:text-brand-orange-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Dumbbell className="h-6 w-6" />
-                  </div>
-                  <h4 className="font-bold text-zinc-800 dark:text-zinc-100 text-sm">Coach / Trainer</h4>
-                  <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2 leading-relaxed text-center">
-                    Athletic or personal trainers. Calculates session share and manages client plans.
-                  </p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRole("STAFF");
-                    setStep("FORM");
-                  }}
-                  className="flex flex-col items-center text-center p-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:border-brand-orange-500 dark:hover:border-brand-orange-500/50 bg-zinc-50/50 dark:bg-zinc-800/30 hover:bg-white dark:hover:bg-zinc-900 transition-all cursor-pointer group shadow-sm text-left"
-                >
-                  <div className="h-12 w-12 rounded-xl bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Briefcase className="h-6 w-6" />
-                  </div>
-                  <h4 className="font-bold text-zinc-800 dark:text-zinc-100 text-sm">Staff Employee</h4>
-                  <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-2 leading-relaxed text-center">
-                    Front desk, admin or facility staff. Fixed monthly salary with simple absent deductions.
-                  </p>
-                </button>
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="flex items-center justify-between px-6 pt-6 pb-4 shrink-0 border-b border-zinc-100 dark:border-zinc-800">
-              <div className="flex items-center gap-3">
-                {!isEdit && (
-                  <button
-                    type="button"
-                    onClick={() => setStep("CHOOSE_ROLE")}
-                    className="h-8 w-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer mr-1"
-                    title="Go back to role selection"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </button>
-                )}
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-orange-100 dark:bg-brand-orange-950/40 text-brand-orange-600 dark:text-brand-orange-400">
-                  <Dumbbell className="h-4 w-4" />
-                </div>
-                <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-                  {isEdit ? "Edit Employee Details" : `Add ${role === "COACH" ? "Coach" : "Staff Employee"}`}
-                </h2>
-              </div>
-              <button type="button" onClick={onClose} className="h-8 w-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+            <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+              {isEdit ? "Edit Employee Details" : `Add ${role === "COACH" ? "Coach" : "Staff Employee"}`}
+            </h2>
+          </div>
+          <button type="button" onClick={onClose} className="h-8 w-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-zinc-650 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
               <input type="hidden" name="role" value={role} />
@@ -357,6 +297,34 @@ function CoachFormModal({
                         </div>
                       )}
                     </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className={labelCls}>Experience (Years)</label>
+                        <input name="experience" type="number" min={0} defaultValue={existing?.experience ?? ""} placeholder="e.g. 5" className={inputCls} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>Certifications</label>
+                        <input name="certifications" defaultValue={existing?.certifications ?? ""} placeholder="e.g. FIG Level 1" className={inputCls} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <label className={labelCls}>Biography / Philosophy *</label>
+                        <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500">
+                          {bioText.length}/160 characters
+                        </span>
+                      </div>
+                      <textarea
+                        name="bio"
+                        rows={2}
+                        maxLength={160}
+                        required
+                        value={bioText}
+                        onChange={(e) => setBioText(e.target.value)}
+                        placeholder="Short coaching bio or philosophy..."
+                        className={`${inputCls} resize-none`}
+                      />
+                    </div>
                   </div>
                 )}
                 <div>
@@ -375,139 +343,284 @@ function CoachFormModal({
                 </button>
               </div>
             </form>
-          </>
-        )}
       </div>
     </div>
   );
 }
 // ─── Coach Card ────────────────────────────────────────────────────────────────
 
+// ─── Coach Card ────────────────────────────────────────────────────────────────
+
 function CoachCard({
   coach,
-  todayStatus,
-  onMark,
   onClick,
   onEdit,
+  onToggleStatus,
+  onTogglePayment,
+  todayStatus,
+  onMarkToday,
 }: {
   coach: CoachWithStats;
-  todayStatus: CoachAttendanceStatus | null;
-  onMark: (e: React.MouseEvent, status: CoachAttendanceStatus) => void;
   onClick: () => void;
   onEdit: (e: React.MouseEvent) => void;
+  onToggleStatus: (e: React.MouseEvent) => void;
+  onTogglePayment: (year: number, month: number, paid: boolean, amount: number) => void;
+  todayStatus: CoachAttendanceStatus | null;
+  onMarkToday: (status: CoachAttendanceStatus) => void;
 }) {
   const isWorking = coach.status === "WORKING";
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [payMenuOpen, setPayMenuOpen] = useState(false);
+
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1; // 1-indexed
+
+  // 1. Calculate Current Month Pay (This Mo Pay)
+  let thisMonthCommission = 0;
+  if (coach.role === "COACH" && coach.studentPlans) {
+    for (const plan of coach.studentPlans) {
+      const start = new Date(plan.startDate);
+      const end = new Date(plan.endDate);
+      const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
+      const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
+      const currentMonthDate = new Date(currentYear, currentMonth - 1, 1);
+      if (currentMonthDate >= startMonth && currentMonthDate <= endMonth) {
+        const commissionPercent = plan.commissionPercent ?? 50;
+        const coachShare = Math.round(plan.fee * (commissionPercent / 100));
+        const planMonths = plan.planMonths ?? 1;
+        const monthlyAmount = planMonths > 0 ? Math.round(coachShare / planMonths) : coachShare;
+        thisMonthCommission += monthlyAmount;
+      }
+    }
+  }
+  const thisMonthMultiplier = getMonthSalaryMultiplier(
+    coach.joinDate,
+    coach.leftDate ? new Date(coach.leftDate) : null,
+    currentYear,
+    currentMonth
+  );
+  const thisMonthPay = Math.round((coach.fixedSalary + thisMonthCommission) * thisMonthMultiplier);
+
+  // 2. Calculate Last Month Date, Name, and Pay
+  const lastMonthDate = new Date(currentYear, currentMonth - 2, 1);
+  const lastMonthYear = lastMonthDate.getFullYear();
+  const lastMonthMonth = lastMonthDate.getMonth() + 1;
+  const lastMonthName = lastMonthDate.toLocaleString("en-US", { month: "short" });
+
+  let lastMonthCommission = 0;
+  if (coach.role === "COACH" && coach.studentPlans) {
+    for (const plan of coach.studentPlans) {
+      const start = new Date(plan.startDate);
+      const end = new Date(plan.endDate);
+      const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
+      const endMonth = new Date(end.getFullYear(), end.getMonth(), 1);
+      const lastMonthDateObj = new Date(lastMonthYear, lastMonthMonth - 1, 1);
+      if (lastMonthDateObj >= startMonth && lastMonthDateObj <= endMonth) {
+        const commissionPercent = plan.commissionPercent ?? 50;
+        const coachShare = Math.round(plan.fee * (commissionPercent / 100));
+        const planMonths = plan.planMonths ?? 1;
+        const monthlyAmount = planMonths > 0 ? Math.round(coachShare / planMonths) : coachShare;
+        lastMonthCommission += monthlyAmount;
+      }
+    }
+  }
+  const lastMonthMultiplier = getMonthSalaryMultiplier(
+    coach.joinDate,
+    coach.leftDate ? new Date(coach.leftDate) : null,
+    lastMonthYear,
+    lastMonthMonth
+  );
+  const lastMonthPay = Math.round((coach.fixedSalary + lastMonthCommission) * lastMonthMultiplier);
+
+  // 3. Find Last Month's Payment Status
+  const lastMonthPayment = coach.salaryPayments?.find(
+    (p) => p.year === lastMonthYear && p.month === lastMonthMonth
+  );
+  const isPaid = lastMonthPayment?.paid ?? false;
+
   return (
     <div
       onClick={onClick}
-      className={`relative rounded-2xl border bg-white dark:bg-zinc-900 p-5 cursor-pointer hover:shadow-md transition-all ${isWorking
+      className={`relative rounded-2xl border bg-white dark:bg-zinc-900 p-4 cursor-pointer hover:shadow-md transition-all ${isWorking
           ? "border-zinc-200 dark:border-zinc-800 hover:border-brand-orange-200 dark:hover:border-brand-orange-800/50"
           : "border-zinc-200/60 dark:border-zinc-800/60 opacity-70 hover:opacity-90"
         }`}
     >
-      <div className="absolute top-4 right-4">
-        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${isWorking ? "bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"}`}>
-          <span className={`h-1.5 w-1.5 rounded-full ${isWorking ? "bg-emerald-500" : "bg-zinc-400"}`} />
-          {isWorking ? "Working" : "Left"}
-        </span>
+      {/* Three-dot dropdown */}
+      <div className="absolute top-3.5 right-3.5" onClick={(e) => e.stopPropagation()}>
+        <button
+          type="button"
+          onClick={() => setMenuOpen(!menuOpen)}
+          className="h-7 w-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+        >
+          <MoreVertical className="h-3.5 w-3.5" />
+        </button>
+
+        {menuOpen && (
+          <>
+            <div className="fixed inset-0 z-20" onClick={() => setMenuOpen(false)} />
+            <nav className="absolute right-0 mt-1 w-44 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 py-1 shadow-2xl z-30 animate-menu-show">
+              <button
+                type="button"
+                onClick={(e) => {
+                  setMenuOpen(false);
+                  onEdit(e);
+                }}
+                className="w-full text-left px-3.5 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:text-brand-orange-500 transition-colors cursor-pointer"
+              >
+                Edit Profile
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  setMenuOpen(false);
+                  onToggleStatus(e);
+                }}
+                className="w-full text-left px-3.5 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:text-brand-orange-500 transition-colors cursor-pointer"
+              >
+                Mark as {isWorking ? "Left" : "Working"}
+              </button>
+            </nav>
+          </>
+        )}
       </div>
 
-      <div className="flex items-start gap-4 mb-4">
+      {/* Header: Avatar + Identity */}
+      <div className="flex items-start gap-3.5 pr-6">
         <img
-          src={coach.avatarUrl || "/coach-profile-placeholder.webp"}
+          src={coach.avatarUrl || (coach.role === "STAFF" ? "/staff-profile-placeholder.webp" : "/coach-profile-placeholder.webp")}
           alt={coach.name}
-          className="h-12 w-12 shrink-0 rounded-2xl object-cover bg-zinc-100 dark:bg-zinc-800"
+          className="h-20 w-20 shrink-0 rounded-2xl object-cover bg-zinc-100 dark:bg-zinc-800"
         />
-        <div className="min-w-0 flex-1 pr-16">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-bold text-zinc-900 dark:text-zinc-100 truncate">{coach.name}</h3>
-            {coach.role === "COACH" ? (
-              <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-sky-100 dark:bg-sky-900/30 px-2 py-0.5 text-[10px] font-bold text-sky-700 dark:text-sky-400 uppercase tracking-wide">
-                <Dumbbell className="h-2.5 w-2.5" />
-                Coach
-              </span>
-            ) : (
-              <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-violet-100 dark:bg-violet-900/30 px-2 py-0.5 text-[10px] font-bold text-violet-700 dark:text-violet-400 uppercase tracking-wide">
-                <Briefcase className="h-2.5 w-2.5" />
-                Staff
-              </span>
-            )}
-          </div>
+        <div className="min-w-0 flex-1 pt-0.5">
+          <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100 truncate">{coach.name}</h3>
+          <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-0.5 truncate">
+            {coach.role === "COACH" ? "Coach" : "Staff"}
+            {coach.timing && ` · ${coach.timing}`}
+          </p>
           {coach.specialization && (
-            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">{coach.specialization}</p>
+            <p className="text-xs font-semibold text-brand-orange-500 dark:text-brand-orange-400 mt-0.5 truncate">
+              {coach.specialization}
+            </p>
           )}
         </div>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-          <Phone className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
-          <span className="truncate">{coach.contactNumber}</span>
-        </div>
-        {coach.timing && (
-          <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-            <Clock className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
-            <span className="truncate">{coach.timing}</span>
-          </div>
-        )}
-        <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-          <Calendar className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
-          <span>Joined {fmtDate(coach.joinDate)}</span>
-        </div>
-        <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
-          <IndianRupee className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
-          <span>{INR(coach.fixedSalary)} / month fixed</span>
-        </div>
-      </div>
-
-      {/* Footer: coach-only stats + attendance + edit */}
-      <div className="mt-4 pt-3.5 border-t border-zinc-100 dark:border-zinc-800 space-y-2.5">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs text-zinc-400 dark:text-zinc-500">
+      {/* Info rows: left-aligned label + value */}
+      <div className="mt-3.5 space-y-2">
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <span className="text-zinc-400 dark:text-zinc-500">Phone: </span>
+          <span className="font-semibold text-zinc-800 dark:text-zinc-200">{coach.contactNumber}</span>
+        </p>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <span className="text-zinc-400 dark:text-zinc-500">Students: </span>
+          <span className="font-semibold text-zinc-800 dark:text-zinc-200">
             {coach.role === "COACH"
-              ? `${coach.activeStudentCount} active student${coach.activeStudentCount !== 1 ? "s" : ""}`
-              : "Non-training staff"}
+              ? `${coach.activeStudentCount} active`
+              : "Non-training"}
           </span>
-          <button
-            onClick={onEdit}
-            className="inline-flex items-center gap-1 text-xs font-medium text-zinc-400 hover:text-brand-orange-500 transition-colors cursor-pointer"
-          >
-            <Edit2 className="h-3 w-3" />
-            Edit
-          </button>
+        </p>
+        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <span className="text-zinc-400 dark:text-zinc-500">This Mo Pay: </span>
+          <span className="font-bold text-zinc-900 dark:text-zinc-100">{INR(thisMonthPay)}</span>
+        </p>
+      </div>
+
+      {/* Combined actions card: Pay + Attendance */}
+      <div
+        className="mt-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Last Month Pay row */}
+        <div className="flex items-center justify-between gap-2 px-3 py-2.5">
+          <div className="min-w-0 flex items-baseline gap-1.5">
+            <span className="text-xs text-zinc-400 dark:text-zinc-500 font-medium shrink-0">{lastMonthName} Pay</span>
+            <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">{INR(lastMonthPay)}</span>
+          </div>
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setPayMenuOpen(!payMenuOpen)}
+              className={`inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold cursor-pointer transition-all hover:opacity-75 ${
+                isPaid
+                  ? "bg-zinc-200 dark:bg-zinc-700 text-zinc-500 dark:text-zinc-400"
+                  : "bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400"
+              }`}
+            >
+              {isPaid && (
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+              {isPaid ? "Paid" : "Unpaid"}
+              <svg className="w-3 h-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {payMenuOpen && (
+              <>
+                <div className="fixed inset-0 z-20" onClick={() => setPayMenuOpen(false)} />
+                <nav className="absolute right-0 bottom-10 w-32 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 py-1 shadow-2xl z-30 animate-menu-show-up">
+                  {isPaid ? (
+                    <button
+                      type="button"
+                      onClick={() => { setPayMenuOpen(false); onTogglePayment(lastMonthYear, lastMonthMonth, false, lastMonthPay); }}
+                      className="w-full text-left px-3.5 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:text-brand-orange-500 transition-colors cursor-pointer"
+                    >
+                      Mark Unpaid
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => { setPayMenuOpen(false); onTogglePayment(lastMonthYear, lastMonthMonth, true, lastMonthPay); }}
+                      className="w-full text-left px-3.5 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 hover:text-brand-orange-500 transition-colors cursor-pointer"
+                    >
+                      Mark Paid
+                    </button>
+                  )}
+                </nav>
+              </>
+            )}
+          </div>
         </div>
 
-        {/* Today's attendance — only for working coaches */}
-        {coach.role === "COACH" && isWorking && (
-          <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 shrink-0">Today</span>
-            <div className="flex items-center gap-1 ml-auto">
-              <button
-                type="button"
-                onClick={(e) => onMark(e, "PRESENT")}
-                className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer ${todayStatus === "PRESENT"
-                    ? "bg-emerald-500 text-white shadow-sm"
-                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:text-emerald-600 dark:hover:text-emerald-400"
-                  }`}
-              >
-                <CheckCircle2 className="h-3 w-3" />
-                Present
-              </button>
-              <button
-                type="button"
-                onClick={(e) => onMark(e, "ABSENT")}
-                className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer ${todayStatus === "ABSENT"
-                    ? "bg-rose-500 text-white shadow-sm"
-                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-600 dark:hover:text-rose-400"
-                  }`}
-              >
-                <XCircle className="h-3 w-3" />
-                Absent
-              </button>
-            </div>
+        {/* Divider */}
+        <div className="border-t border-zinc-200/80 dark:border-zinc-700/50 mx-3" />
+
+        {/* Attendance row */}
+        <div className="flex items-center justify-between gap-2 px-3 py-2">
+          <span className="text-[11px] text-zinc-400 dark:text-zinc-500 font-medium">Today</span>
+          <div className={`flex items-center rounded-xl p-0.5 gap-0.5 bg-zinc-200/70 dark:bg-zinc-700/60 ${!isWorking ? "opacity-40 pointer-events-none" : ""}`}>
+            <button
+              type="button"
+              disabled={!isWorking}
+              onClick={() => onMarkToday("PRESENT")}
+              className={`rounded-[10px] px-3 py-1 text-xs font-semibold transition-all cursor-pointer ${
+                todayStatus === "PRESENT"
+                  ? "bg-emerald-500 text-white shadow-sm"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
+              }`}
+            >
+              Present
+            </button>
+            <button
+              type="button"
+              disabled={!isWorking}
+              onClick={() => onMarkToday("ABSENT")}
+              className={`rounded-[10px] px-3 py-1 text-xs font-semibold transition-all cursor-pointer ${
+                todayStatus === "ABSENT"
+                  ? "bg-rose-500 text-white shadow-sm"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
+              }`}
+            >
+              Absent
+            </button>
           </div>
-        )}
+        </div>
       </div>
+
     </div>
   );
 }
@@ -777,6 +890,24 @@ export default function CoachesPageClient({ coaches: initialCoaches, todayStr }:
   const [editCoach, setEditCoach] = useState<CoachWithStats | null>(null);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [statusFilter, setStatusFilter] = useState<"ALL" | "WORKING" | "LEFT">("WORKING");
+  const [addDropdownOpen, setAddDropdownOpen] = useState(false);
+  const [chosenRole, setChosenRole] = useState<CoachRole>("COACH");
+  const [leftModalCoach, setLeftModalCoach] = useState<CoachWithStats | null>(null);
+  const [leftModalStatus, setLeftModalStatus] = useState<"loading" | "success" | null>(null);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const headerMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close header mobile menu on outside click
+  useEffect(() => {
+    if (!headerMenuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (headerMenuRef.current && !headerMenuRef.current.contains(e.target as Node)) {
+        setHeaderMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [headerMenuOpen]);
 
   // Shared today attendance state — initialised from server data, updated optimistically
   const [todayAttendance, setTodayAttendance] = useState<Record<string, CoachAttendanceStatus | null>>(() => {
@@ -794,6 +925,8 @@ export default function CoachesPageClient({ coaches: initialCoaches, todayStr }:
     setTodayAttendance((prev) => ({ ...prev, [coachId]: next }));
     if (next !== null) {
       await markCoachAttendanceAction(coachId, todayStr, next);
+    } else {
+      await deleteCoachAttendanceAction(coachId, todayStr);
     }
   };
 
@@ -802,7 +935,58 @@ export default function CoachesPageClient({ coaches: initialCoaches, todayStr }:
     setTimeout(() => setToast(null), 4000);
   };
 
-  const filtered = coaches.filter((c) => statusFilter === "ALL" || c.status === statusFilter);
+  const toggleCoachStatus = async (coach: CoachWithStats) => {
+    const nextStatus = coach.status === "WORKING" ? "LEFT" : "WORKING";
+
+    if (nextStatus === "LEFT") {
+      setLeftModalCoach(coach);
+      setLeftModalStatus("loading");
+
+      const startTime = Date.now();
+      const result = await toggleCoachStatusAction(coach.id, "LEFT");
+
+      // Ensure spinner is visible for at least 800ms for smooth UX
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 800 - elapsed);
+      await new Promise((resolve) => setTimeout(resolve, remaining));
+
+      if (result.success) {
+        setLeftModalStatus("success");
+      } else {
+        setLeftModalCoach(null);
+        setLeftModalStatus(null);
+        showToast("error", result.message ?? "Failed to update status");
+      }
+    } else {
+      const result = await toggleCoachStatusAction(coach.id, "WORKING");
+      if (result.success) {
+        showToast("success", `Marked ${coach.name} as Working`);
+        window.location.reload();
+      } else {
+        showToast("error", result.message ?? "Failed to update status");
+      }
+    }
+  };
+
+  const handleTogglePayment = async (coachId: string, year: number, month: number, paid: boolean, amount: number) => {
+    try {
+      const result = await toggleCoachSalaryPaymentAction(coachId, year, month, paid, amount);
+      if (result.success) {
+        showToast("success", `Payment marked as ${paid ? "Paid" : "Unpaid"}`);
+        window.location.reload();
+      } else {
+        showToast("error", result.message ?? "Failed to update payment status");
+      }
+    } catch (err) {
+      showToast("error", "An error occurred");
+    }
+  };
+
+  const filtered = useMemo(() => {
+    return [...coaches]
+      .filter((c) => statusFilter === "ALL" || c.status === statusFilter)
+      .sort((a, b) => new Date(b.joinDate).getTime() - new Date(a.joinDate).getTime());
+  }, [coaches, statusFilter]);
 
   return (
     <div className="space-y-6 min-w-0 w-full relative">
@@ -816,27 +1000,115 @@ export default function CoachesPageClient({ coaches: initialCoaches, todayStr }:
       {/* Header */}
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl sm:text-5xl font-light tracking-tight text-zinc-900 dark:text-zinc-50">Employees</h1>
-          <p className="mt-1 text-sm text-zinc-400 dark:text-zinc-500">
-            {coaches.filter((c) => c.status === "WORKING").length} active employee{coaches.filter((c) => c.status === "WORKING").length !== 1 ? "s" : ""}
-          </p>
+          <h1 className="text-3xl sm:text-5xl font-light tracking-tight text-zinc-900 dark:text-zinc-50">Coach &amp; Staff</h1>
         </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/admin/coaches/attendance"
-            className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer shadow-sm"
-          >
-            <Calendar className="h-4 w-4 text-brand-orange-500" />
-            View Attendance
-          </Link>
-          <button
-            type="button"
-            onClick={() => setAddModalOpen(true)}
-            className="inline-flex items-center gap-2 rounded-2xl bg-brand-orange-500 hover:bg-brand-orange-600 text-white px-4 py-2.5 text-sm font-semibold transition-colors cursor-pointer shadow-sm"
-          >
-            <Plus className="h-4 w-4" />
-            Add Employee
-          </button>
+
+        <div className="relative" ref={headerMenuRef}>
+          {/* Desktop buttons — hidden on mobile */}
+          <div className="hidden sm:flex items-center gap-3">
+            <Link
+              href="/admin/coaches/attendance"
+              className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 px-4 py-2.5 text-sm font-semibold transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800 cursor-pointer shadow-sm"
+            >
+              <Calendar className="h-4 w-4 text-brand-orange-500" />
+              Attendance
+            </Link>
+
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setAddDropdownOpen(!addDropdownOpen)}
+                className="inline-flex items-center gap-2 rounded-2xl bg-brand-orange-500 hover:bg-brand-orange-600 text-white px-4 py-2.5 text-sm font-semibold transition-colors cursor-pointer shadow-sm"
+              >
+                <Plus className="h-4 w-4" />
+                Add Employee
+              </button>
+
+              {addDropdownOpen && (
+                <>
+                  <div className="fixed inset-0 z-30" onClick={() => setAddDropdownOpen(false)} />
+                  <nav className="absolute right-0 mt-2 w-48 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 py-1.5 shadow-2xl z-40 animate-menu-show">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setChosenRole("COACH");
+                        setAddModalOpen(true);
+                        setAddDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-brand-orange-500 dark:hover:text-brand-orange-400 font-semibold transition-colors cursor-pointer flex items-center gap-2.5"
+                    >
+                      <Dumbbell className="h-4 w-4 text-brand-orange-500" />
+                      Add Coach
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setChosenRole("STAFF");
+                        setAddModalOpen(true);
+                        setAddDropdownOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-brand-orange-500 dark:hover:text-brand-orange-400 font-semibold transition-colors cursor-pointer flex items-center gap-2.5"
+                    >
+                      <Briefcase className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+                      Add Staff
+                    </button>
+                  </nav>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile three-dot menu */}
+          <div className="sm:hidden">
+            <button
+              type="button"
+              onClick={() => setHeaderMenuOpen(!headerMenuOpen)}
+              className="inline-flex items-center justify-center h-10 w-10 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 cursor-pointer transition-colors"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="5" r="1.5" />
+                <circle cx="12" cy="12" r="1.5" />
+                <circle cx="12" cy="19" r="1.5" />
+              </svg>
+            </button>
+            {headerMenuOpen && (
+              <nav className="absolute right-0 mt-2 w-52 rounded-2xl border border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-2xl py-1.5 overflow-hidden z-50 animate-menu-show">
+                <Link
+                  href="/admin/coaches/attendance"
+                  onClick={() => setHeaderMenuOpen(false)}
+                  className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <Calendar className="h-4 w-4 text-brand-orange-500" />
+                  View Attendance
+                </Link>
+                <div className="my-1 border-t border-zinc-100 dark:border-zinc-800" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setChosenRole("COACH");
+                    setAddModalOpen(true);
+                    setHeaderMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-brand-orange-500 transition-colors cursor-pointer"
+                >
+                  <Dumbbell className="h-4 w-4 text-brand-orange-500" />
+                  Add Coach
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setChosenRole("STAFF");
+                    setAddModalOpen(true);
+                    setHeaderMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 hover:text-brand-orange-500 transition-colors cursor-pointer"
+                >
+                  <Briefcase className="h-4 w-4 text-zinc-400 dark:text-zinc-500" />
+                  Add Staff
+                </button>
+              </nav>
+            )}
+          </div>
         </div>
       </div>
 
@@ -883,15 +1155,17 @@ export default function CoachesPageClient({ coaches: initialCoaches, todayStr }:
             )}
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((coach) => (
               <CoachCard
                 key={coach.id}
                 coach={coach}
                 todayStatus={todayAttendance[coach.id] ?? null}
-                onMark={(e, status) => { e.stopPropagation(); markToday(coach.id, status); }}
+                onMarkToday={(status) => markToday(coach.id, status)}
                 onClick={() => router.push(`/admin/coaches/${coach.id}`)}
                 onEdit={(e) => { e.stopPropagation(); setEditCoach(coach); }}
+                onToggleStatus={(e) => { e.stopPropagation(); toggleCoachStatus(coach); }}
+                onTogglePayment={(year, month, paid, amount) => handleTogglePayment(coach.id, year, month, paid, amount)}
               />
             ))}
           </div>
@@ -901,6 +1175,7 @@ export default function CoachesPageClient({ coaches: initialCoaches, todayStr }:
       {/* Add Coach Modal */}
       {addModalOpen && (
         <CoachFormModal
+          initialRole={chosenRole}
           onClose={() => setAddModalOpen(false)}
           onSaved={(msg) => { showToast("success", msg); window.location.reload(); }}
         />
@@ -913,6 +1188,52 @@ export default function CoachesPageClient({ coaches: initialCoaches, todayStr }:
           onClose={() => setEditCoach(null)}
           onSaved={(msg) => { showToast("success", msg); setEditCoach(null); window.location.reload(); }}
         />
+      )}
+
+      {/* Mark As Left Modal (Loading & Success popup) */}
+      {leftModalCoach && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div 
+            className="relative w-full max-w-sm rounded-[28px] bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-700/60 p-8 shadow-2xl flex flex-col items-center text-center animate-scale-in"
+            style={{ boxShadow: "0 32px 64px -12px rgba(0,0,0,0.25)" }}
+          >
+            {leftModalStatus === "loading" ? (
+              <div className="flex flex-col items-center space-y-4 py-4">
+                <Loader2 className="w-12 h-12 text-brand-orange-500 animate-spin" />
+                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  Marking as Left
+                </h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-xs leading-relaxed">
+                  Please wait while we update {leftModalCoach.name}&apos;s status and calculate salary...
+                </p>
+              </div>
+            ) : leftModalStatus === "success" ? (
+              <div className="flex flex-col items-center py-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 mb-5 animate-scale-in">
+                  <Check className="h-8 w-8 stroke-[3]" />
+                </div>
+                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  Success
+                </h3>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-2 font-medium">
+                  This person is marked as left.
+                </p>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLeftModalCoach(null);
+                    setLeftModalStatus(null);
+                    window.location.reload();
+                  }}
+                  className="mt-6 w-full inline-flex items-center justify-center rounded-2xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-sm font-semibold text-white dark:text-zinc-900 px-5 py-3 transition-colors cursor-pointer"
+                >
+                  Done
+                </button>
+              </div>
+            ) : null}
+          </div>
+        </div>
       )}
     </div>
   );

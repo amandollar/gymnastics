@@ -138,7 +138,7 @@ function RowMenu({
       </button>
 
       {open && (
-        <div
+        <nav
           ref={menuRef}
           role="menu"
           style={{
@@ -147,7 +147,7 @@ function RowMenu({
             right: coords.right,
             zIndex: 9999,
           }}
-          className="w-56 rounded-2xl border border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-2xl py-1 overflow-hidden"
+          className="w-56 rounded-2xl border border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-2xl py-1 overflow-hidden animate-menu-show"
         >
           {/* Edit */}
           {canManage && (
@@ -301,7 +301,7 @@ function RowMenu({
               </button>
             </>
           )}
-        </div>
+        </nav>
       )}
     </>
   );

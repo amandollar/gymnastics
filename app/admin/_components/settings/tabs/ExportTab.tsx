@@ -138,7 +138,7 @@ export default function ExportTab() {
                 <Dumbbell className="h-5 w-5" strokeWidth={2} />
               </div>
               <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                Coaches & Staff
+                Coach & Staff
               </h3>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
                 Export employees and coaches details including specialization, status, timings, fixed salaries, and contact info.

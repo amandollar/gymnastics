@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { Aclonica } from "next/font/google";
+import { formatPhoneNumber } from "@/lib/utils/phone";
+import ParallaxFoam from "./ParallaxFoam";
 
 const aclonica = Aclonica({ subsets: ["latin"], weight: ["400"] });
 
@@ -59,10 +61,26 @@ const blogPosts = [
   },
 ];
 
-export default function FaqBlogSection() {
+export default function FaqBlogSection({ phone, phone2 }: { phone?: string; phone2?: string }) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [animate, setAnimate] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  const formattedPhone = phone ? formatPhoneNumber(phone) : "+91 79771 77463";
+  const formattedPhone2 = phone2 ? formatPhoneNumber(phone2) : "";
+  const phoneText = formattedPhone2 ? `${formattedPhone} / ${formattedPhone2}` : formattedPhone;
+
+  const dynamicFaqs = useMemo(() => {
+    return faqs.map((faq) => {
+      if (faq.a.includes("+91 79771 77463")) {
+        return {
+          ...faq,
+          a: faq.a.replace("+91 79771 77463", phoneText),
+        };
+      }
+      return faq;
+    });
+  }, [phoneText]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -81,8 +99,35 @@ export default function FaqBlogSection() {
   return (
     <section
       ref={sectionRef}
-      className="relative w-full bg-zinc-50 text-zinc-950 pt-24 pb-24 px-4 sm:px-6 md:px-8 border-b border-zinc-100"
+      className="relative w-full bg-white text-zinc-950 pt-24 pb-24 px-4 sm:px-6 md:px-8 border-b border-zinc-100 overflow-hidden"
     >
+      {/* Background Foam Shapes */}
+      <ParallaxFoam
+        src="/landing-page-foams/orange-pyramid-2.webp"
+        top="15%"
+        left="4%"
+        size={40}
+        rotate={12}
+        speed={0.1}
+      />
+      <ParallaxFoam
+        src="/landing-page-foams/white-cube-2.webp"
+        top="45%"
+        right="6%"
+        size={70}
+        blur="sm"
+        rotate={-25}
+        speed={0.15}
+      />
+      <ParallaxFoam
+        src="/landing-page-foams/white-donut-1.webp"
+        top="75%"
+        left="5%"
+        size={80}
+        blur="md"
+        rotate={20}
+        speed={0.08}
+      />
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -126,7 +171,7 @@ export default function FaqBlogSection() {
           </div>
 
           <div className="flex flex-col divide-y divide-zinc-200 fb-item" style={{ animationDelay: "0.1s" }}>
-            {faqs.map((faq, i) => (
+            {dynamicFaqs.map((faq, i) => (
               <div key={i} className="py-4">
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}

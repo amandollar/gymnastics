@@ -2,7 +2,7 @@ import { SkeletonBlock } from "@/app/_components/Skeleton";
 
 export default function SettingsLoading() {
   return (
-    <div className="mx-auto max-w-6xl relative min-w-0 w-full px-2 sm:px-0 animate-pulse">
+    <div className="mx-auto max-w-7xl relative min-w-0 w-full px-2 sm:px-0 animate-pulse">
       <div className="flex flex-col md:flex-row gap-6 items-stretch">
         
         {/* Desktop Sidebar Settings Navigation Skeleton (visible on md and up) */}

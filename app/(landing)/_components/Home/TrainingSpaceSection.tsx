@@ -3,6 +3,8 @@
 import React from "react";
 import { Aclonica } from "next/font/google";
 
+import ParallaxFoam from "./ParallaxFoam";
+
 const aclonica = Aclonica({
   subsets: ["latin"],
   weight: ["400"],
@@ -19,7 +21,34 @@ export default function TrainingSpaceSection() {
   ];
 
   return (
-    <section className="relative w-full bg-white text-zinc-950 pt-24 pb-20 md:pt-[10vw] md:pb-[8vw] px-4 sm:px-6 md:px-[4vw] border-b border-zinc-200/80">
+    <section className="relative w-full bg-white text-zinc-950 pt-24 pb-20 md:pt-[10vw] md:pb-[8vw] px-4 sm:px-6 md:px-[4vw] border-b border-zinc-200/80 overflow-hidden">
+      {/* Background Foam Shapes */}
+      <ParallaxFoam
+        src="/landing-page-foams/orange-donut-1.webp"
+        top="15%"
+        left="5%"
+        size={80}
+        blur="sm"
+        rotate={-15}
+        speed={0.12}
+      />
+      <ParallaxFoam
+        src="/landing-page-foams/white-pyramid-3.webp"
+        top="45%"
+        right="4%"
+        size={55}
+        rotate={45}
+        speed={0.15}
+      />
+      <ParallaxFoam
+        src="/landing-page-foams/white-cube-1.webp"
+        top="75%"
+        left="8%"
+        size={50}
+        blur="md"
+        rotate={-10}
+        speed={0.08}
+      />
       <style
         dangerouslySetInnerHTML={{
           __html: `

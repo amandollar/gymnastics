@@ -4,6 +4,7 @@ import { getCoachById, getCoachEarnings } from "@/lib/services/coaches";
 import { getAcademyProfile } from "@/lib/services/academy";
 import { prisma } from "@/lib/prisma";
 import { SalarySlip, type SalarySlipData } from "@/app/admin/_components/coaches/SalarySlip";
+import { getMonthSalaryMultiplier } from "@/lib/utils/salary";
 
 interface PageProps {
   params: Promise<{ id: string; year: string; month: string }>;
@@ -62,7 +63,15 @@ export default async function CoachSalarySlipPage({ params }: PageProps) {
   });
   const absentDays = attendances.filter((a: any) => a.status === "ABSENT").length;
 
-  const deduction = workingDays > 0 ? Math.round((coach.fixedSalary / workingDays) * absentDays) : 0;
+  const multiplier = getMonthSalaryMultiplier(
+    coach.joinDate,
+    coach.leftDate ?? null,
+    year,
+    month
+  );
+  const proRatedFixedSalary = Math.round(coach.fixedSalary * multiplier);
+
+  const deduction = workingDays > 0 ? Math.round((proRatedFixedSalary / workingDays) * absentDays) : 0;
 
   // Personal Training breakdown for this month
   const filteredEarningsForMonth = earningsRows.filter((r) =>
@@ -72,6 +81,7 @@ export default async function CoachSalarySlipPage({ params }: PageProps) {
   const ptStudentsBreakdown = filteredEarningsForMonth.map((row) => {
     const mData = row.months.find((m) => m.year === year && m.month === month);
     const monthlyAmount = mData?.amount ?? 0;
+    const proRatedAmount = Math.round(monthlyAmount * multiplier);
     return {
       studentName: row.studentName,
       studentNumber: row.studentNumber,
@@ -79,12 +89,12 @@ export default async function CoachSalarySlipPage({ params }: PageProps) {
       totalFee: row.totalFee,
       commissionPercent: row.commissionPercent,
       coachShare: row.coachShare,
-      monthlyAmount,
+      monthlyAmount: proRatedAmount,
     };
   }).filter((s) => s.monthlyAmount > 0);
 
   const ptEarnings = ptStudentsBreakdown.reduce((sum, s) => sum + s.monthlyAmount, 0);
-  const netPayout = Math.max(0, coach.fixedSalary - deduction) + ptEarnings;
+  const netPayout = Math.max(0, proRatedFixedSalary - deduction) + ptEarnings;
 
   const data: SalarySlipData = {
     coach: {
@@ -94,7 +104,7 @@ export default async function CoachSalarySlipPage({ params }: PageProps) {
       joinDate: coach.joinDate,
       timing: coach.timing,
       specialization: coach.specialization,
-      fixedSalary: coach.fixedSalary,
+      fixedSalary: proRatedFixedSalary,
       role: coach.role as "COACH" | "STAFF",
     },
     academyProfile: {

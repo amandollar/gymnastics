@@ -4,10 +4,13 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Aclonica } from "next/font/google";
 import { UserPlus, Phone } from "lucide-react";
+import { formatPhoneNumber, getTelLink } from "@/lib/utils/phone";
+
+import ParallaxFoam from "./ParallaxFoam";
 
 const aclonica = Aclonica({ subsets: ["latin"], weight: ["400"] });
 
-export default function CtaSection() {
+export default function CtaSection({ phone }: { phone?: string }) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [animate, setAnimate] = useState(false);
 
@@ -30,6 +33,33 @@ export default function CtaSection() {
       ref={sectionRef}
       className="relative w-full bg-[#0a0a0b] text-white overflow-hidden pt-28 pb-28 px-4 sm:px-6 md:px-8"
     >
+      {/* Background Foam Shapes */}
+      <ParallaxFoam
+        src="/landing-page-foams/orange-pyramid-3.webp"
+        top="15%"
+        left="5%"
+        size={50}
+        rotate={-15}
+        speed={0.15}
+      />
+      <ParallaxFoam
+        src="/landing-page-foams/white-cube-1.webp"
+        top="45%"
+        right="8%"
+        size={65}
+        blur="sm"
+        rotate={22}
+        speed={0.1}
+      />
+      <ParallaxFoam
+        src="/landing-page-foams/white-donut-1.webp"
+        top="75%"
+        left="7%"
+        size={80}
+        blur="md"
+        rotate={45}
+        speed={0.08}
+      />
       {/* Decorative orange curved lines (same style as PotentialSection) */}
       <svg
         className="absolute inset-0 w-full h-full pointer-events-none opacity-20 z-0"
@@ -112,12 +142,12 @@ export default function CtaSection() {
             Register Now
           </Link>
           <a
-            href="tel:+917977177463"
+            href={phone ? getTelLink(phone) : "tel:+917977177463"}
             id="cta-call-btn"
             className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-full border border-white/20 hover:border-white/50 text-white text-sm font-bold uppercase tracking-wider transition-colors duration-300 w-full sm:w-auto"
           >
             <Phone className="w-4 h-4" />
-            Call Us — +91 79771 77463
+            Call Us — {phone ? formatPhoneNumber(phone) : "+91 79771 77463"}
           </a>
         </div>
       </div>

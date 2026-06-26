@@ -28,7 +28,7 @@ export default function BatchPicker({
                 type="button"
                 onClick={() => onChange(b.id)}
                 className={`
-                  relative flex flex-col gap-1.5 rounded-2xl border px-4 py-3.5 text-left transition-all cursor-pointer
+                  relative flex flex-col gap-1.5 rounded-3xl border px-4 py-3.5 text-left transition-all cursor-pointer
                   ${
                     selected
                       ? "border-brand-orange-500 bg-brand-orange-50/60 dark:bg-brand-orange-950/20"

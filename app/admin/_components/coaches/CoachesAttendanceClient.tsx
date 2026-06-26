@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useTransition, useMemo, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -57,6 +57,24 @@ export default function CoachesAttendanceClient({
   const [attendance, setAttendance] = useState<Record<string, Record<string, CoachAttendanceStatus>>>(initialAttendance);
   const [updatingCells, setUpdatingCells] = useState<Record<string, boolean>>({});
 
+  // Ref for the scrollable container
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Scroll to today's date column if it exists in the current month/year
+    const timer = setTimeout(() => {
+      const todayEl = document.getElementById("today-col");
+      const container = scrollContainerRef.current;
+      if (todayEl && container) {
+        const offsetLeft = todayEl.offsetLeft;
+        const containerWidth = container.clientWidth;
+        const cellWidth = todayEl.clientWidth;
+        container.scrollLeft = offsetLeft - containerWidth / 2 + cellWidth / 2;
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [year, month, todayStr]);
+
   // Sync state if initialAttendance props change from server
   const [lastInitial, setLastInitial] = useState(initialAttendance);
   if (JSON.stringify(lastInitial) !== JSON.stringify(initialAttendance)) {
@@ -112,13 +130,19 @@ export default function CoachesAttendanceClient({
   }, [year, month]);
 
   // Handle cell click (cycle: Unmarked -> PRESENT -> ABSENT -> Unmarked)
-  const handleCellClick = async (coachId: string, day: number) => {
+  const handleCellClick = async (coachId: string, day: number, leftDateStr?: string | null) => {
     const dayStr = String(day).padStart(2, "0");
     const monthStr = String(month).padStart(2, "0");
     const cellDateStr = `${year}-${monthStr}-${dayStr}`;
 
     // Block future dates
     if (cellDateStr > todayStr) return;
+
+    // Block dates on/after leftDate
+    if (leftDateStr) {
+      const leftMidnight = leftDateStr.split("T")[0]; // Normalize to YYYY-MM-DD
+      if (cellDateStr >= leftMidnight) return;
+    }
 
     const cellKey = `${coachId}-${cellDateStr}`;
     if (updatingCells[cellKey]) return;
@@ -186,19 +210,16 @@ export default function CoachesAttendanceClient({
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-500 dark:text-zinc-400 hover:text-brand-orange-500 dark:hover:text-brand-orange-400 transition-colors"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
-          Back to Employees
+          Back to Coach & Staff
         </Link>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl sm:text-5xl font-light tracking-tight text-zinc-900 dark:text-zinc-50">
-              Employee{" "}
+              Coach & Staff{" "}
               <span className="font-semibold text-brand-orange-500">
                 Attendance
               </span>
             </h1>
-            <p className="text-xs text-zinc-400 dark:text-zinc-500 mt-1">
-              Click on a cell to toggle/cycle: Unmarked → Present → Absent → Unmarked. Future dates cannot be marked.
-            </p>
           </div>
 
           {/* Month Navigator */}
@@ -234,13 +255,13 @@ export default function CoachesAttendanceClient({
 
       {/* Grid Container */}
       <div className="overflow-hidden rounded-3xl border border-zinc-200/65 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 shadow-sm">
-        <div className="overflow-x-auto">
+        <div ref={scrollContainerRef} className="overflow-x-auto">
           <table className="w-full border-collapse text-left">
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-900/40 text-zinc-400 dark:text-zinc-500">
                 {/* Sticky Left Header for Employee Column */}
                 <th className="sticky left-0 z-20 bg-zinc-50 dark:bg-zinc-900 px-6 py-4 text-xs font-bold uppercase tracking-wider min-w-[200px] border-r border-zinc-100 dark:border-zinc-800">
-                  Employee Name
+                  Coach / Staff Name
                 </th>
                 {/* Day Columns */}
                 {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -256,8 +277,13 @@ export default function CoachesAttendanceClient({
                   if (isSunday) {
                     return (
                       <th
+                        id={isToday ? "today-col" : undefined}
                         key={day}
-                        className="px-1 py-4 text-center text-xs font-black w-8 min-w-[32px] bg-rose-50/50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border-r border-zinc-200 dark:border-zinc-800"
+                        className={`px-1 py-4 text-center text-xs font-black w-8 min-w-[32px] border-r border-zinc-200 dark:border-zinc-800 ${
+                          isToday
+                            ? "bg-brand-orange-100/50 dark:bg-brand-orange-950/30 text-brand-orange-600 dark:text-brand-orange-400 border-x-2 border-x-brand-orange-500/30"
+                            : "bg-rose-50/50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400"
+                        }`}
                       >
                         {day}
                       </th>
@@ -266,10 +292,11 @@ export default function CoachesAttendanceClient({
 
                   return (
                     <th
+                      id={isToday ? "today-col" : undefined}
                       key={day}
                       className={`px-2.5 py-4 text-center text-xs font-bold min-w-[36px] border-r border-zinc-100 dark:border-zinc-800 ${
                         isToday
-                          ? "text-brand-orange-500 font-extrabold bg-brand-orange-50/30 dark:bg-brand-orange-950/10"
+                          ? "text-brand-orange-600 dark:text-brand-orange-400 font-extrabold bg-brand-orange-100/50 dark:bg-brand-orange-950/30 border-x-2 border-x-brand-orange-500/30"
                           : isFuture
                           ? "opacity-45"
                           : ""
@@ -287,7 +314,7 @@ export default function CoachesAttendanceClient({
                 // Alternate row backgrounds (needs to be explicitly set so sticky column background matches)
                 const rowBgCls = isEven
                   ? "bg-white dark:bg-zinc-900"
-                  : "bg-zinc-50/50 dark:bg-zinc-800/20";
+                  : "bg-zinc-50 dark:bg-zinc-950";
                 const isWorking = coach.status === "WORKING";
 
                 return (
@@ -299,10 +326,14 @@ export default function CoachesAttendanceClient({
                   >
                     {/* Sticky Coach Profiling Cell */}
                     <td
-                      className={`sticky left-0 z-10 px-6 py-3.5 border-r border-zinc-100 dark:border-zinc-800 flex items-center gap-3 transition-colors ${rowBgCls} group-hover:bg-zinc-50/40 dark:group-hover:bg-zinc-800/10`}
+                      className={`sticky left-0 z-10 px-6 py-3.5 border-r border-zinc-100 dark:border-zinc-800 flex items-center gap-3 transition-colors ${
+                        isEven
+                          ? "bg-white dark:bg-zinc-900 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-800"
+                          : "bg-zinc-50 dark:bg-zinc-950 group-hover:bg-zinc-100 dark:group-hover:bg-zinc-800"
+                      }`}
                     >
                       <img
-                        src={coach.avatarUrl || "/coach-profile-placeholder.webp"}
+                        src={coach.avatarUrl || (coach.role === "STAFF" ? "/staff-profile-placeholder.webp" : "/coach-profile-placeholder.webp")}
                         alt={coach.name}
                         className="h-8 w-8 rounded-xl object-cover bg-zinc-100 dark:bg-zinc-800"
                       />
@@ -324,15 +355,31 @@ export default function CoachesAttendanceClient({
                       const dayDate = new Date(year, month - 1, day);
                       const isSunday = dayDate.getDay() === 0;
 
+                      const dayStr = String(day).padStart(2, "0");
+                      const monthStr = String(month).padStart(2, "0");
+                      const cellDateStr = `${year}-${monthStr}-${dayStr}`;
+                      const isFuture = cellDateStr > todayStr;
+                      const isToday = cellDateStr === todayStr;
+
+                      // Compute leftDate block — normalize to YYYY-MM-DD
+                      const leftMidnight = coach.leftDate
+                        ? (coach.leftDate as string).split("T")[0]
+                        : null;
+                      const isBlockedByLeftDate = !!(leftMidnight && cellDateStr >= leftMidnight);
+
                       if (isSunday) {
                         if (rowIndex === 0) {
                           return (
                             <td
                               key={day}
                               rowSpan={sortedCoaches.length}
-                              className="bg-rose-50/25 dark:bg-rose-950/5 text-rose-500/70 dark:text-rose-400/60 border-r border-zinc-200 dark:border-zinc-800 text-center font-bold text-[9px] tracking-[0.25em] uppercase select-none w-8 min-w-[32px] p-0 align-middle"
+                              className={`text-center font-bold text-[9px] tracking-[0.25em] uppercase select-none w-8 min-w-[32px] p-0 align-middle ${
+                                isToday
+                                  ? "bg-brand-orange-100/20 dark:bg-brand-orange-950/15 text-brand-orange-600 dark:text-brand-orange-400 border-x-2 border-x-brand-orange-500/30 border-r border-zinc-200 dark:border-zinc-800"
+                                  : "bg-rose-50/25 dark:bg-rose-950/5 text-rose-500/70 dark:text-rose-400/60 border-r border-zinc-200 dark:border-zinc-800"
+                              }`}
                             >
-                              <div className="flex h-full w-full items-center justify-center [writing-mode:vertical-lr] rotate-180 py-4 mx-auto select-none font-bold text-center leading-none">
+                              <div className="inline-block [writing-mode:vertical-lr] rotate-180 py-4 select-none font-bold text-center leading-none">
                                 Sunday
                               </div>
                             </td>
@@ -342,12 +389,6 @@ export default function CoachesAttendanceClient({
                         }
                       }
 
-                      const dayStr = String(day).padStart(2, "0");
-                      const monthStr = String(month).padStart(2, "0");
-                      const cellDateStr = `${year}-${monthStr}-${dayStr}`;
-                      const isFuture = cellDateStr > todayStr;
-                      const isToday = cellDateStr === todayStr;
-
                       const status = attendance[coach.id]?.[cellDateStr] || null;
                       const cellKey = `${coach.id}-${cellDateStr}`;
                       const isUpdating = updatingCells[cellKey];
@@ -356,7 +397,11 @@ export default function CoachesAttendanceClient({
                       let cellContent = null;
                       let cellCls = "text-zinc-300 dark:text-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer";
 
-                      if (isUpdating) {
+                      if (isBlockedByLeftDate) {
+                        // Show a diagonal-line pattern for cells blocked after leftDate
+                        cellContent = null;
+                        cellCls = "cursor-not-allowed select-none bg-zinc-100/80 dark:bg-zinc-800/50";
+                      } else if (isUpdating) {
                         cellContent = <Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-400" />;
                         cellCls = "cursor-wait bg-zinc-50 dark:bg-zinc-800/40";
                       } else if (status === "PRESENT") {
@@ -376,12 +421,16 @@ export default function CoachesAttendanceClient({
                       return (
                         <td
                           key={day}
-                          onClick={() => !isFuture && handleCellClick(coach.id, day)}
+                          onClick={() => !isFuture && !isBlockedByLeftDate && handleCellClick(coach.id, day, coach.leftDate as string | null)}
                           className={`p-1.5 text-center transition-all border-r border-zinc-100/60 dark:border-zinc-800/40 select-none ${cellCls} ${
-                            isToday && !isFuture && !status ? "bg-brand-orange-50/20 dark:bg-brand-orange-950/5" : ""
+                            isToday ? "border-x-2 border-x-brand-orange-500/30" : ""
+                          } ${
+                            isToday && !status && !isUpdating && !isBlockedByLeftDate ? "bg-brand-orange-100/10 dark:bg-brand-orange-950/10" : ""
                           }`}
                           title={
-                            isFuture
+                            isBlockedByLeftDate
+                              ? `${coach.name} left on ${leftMidnight}. Attendance cannot be marked after this date.`
+                              : isFuture
                               ? "Future Date"
                               : `${coach.name} - ${MONTH_NAMES[month - 1]} ${day}: ${
                                   status ? status : "Unmarked"
@@ -389,7 +438,11 @@ export default function CoachesAttendanceClient({
                           }
                         >
                           <div className="flex h-7 w-7 items-center justify-center rounded-lg mx-auto font-bold transition-transform active:scale-90">
-                            {cellContent}
+                            {isBlockedByLeftDate ? (
+                              <svg viewBox="0 0 28 28" className="h-7 w-7" aria-hidden="true">
+                                <line x1="0" y1="0" x2="28" y2="28" stroke="currentColor" strokeWidth="1.5" className="text-zinc-300 dark:text-zinc-600" />
+                              </svg>
+                            ) : cellContent}
                           </div>
                         </td>
                       );

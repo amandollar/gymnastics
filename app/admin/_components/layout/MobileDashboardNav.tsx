@@ -86,6 +86,10 @@ export function MobileBottomNav({
   signOutAction: () => Promise<void>;
 }) {
   const pathname = usePathname();
+  
+  const activePathname = pathname.startsWith("/admin")
+    ? pathname
+    : `/admin${pathname === "/" ? "/dashboard" : pathname}`;
 
   return (
     <nav
@@ -98,7 +102,7 @@ export function MobileBottomNav({
         <Link
           href="/admin/dashboard"
           className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
-            pathname === "/admin/dashboard" ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
+            activePathname === "/admin/dashboard" ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
           }`}
         >
           <HomeIcon className="h-4.5 w-4.5 shrink-0" />
@@ -107,7 +111,7 @@ export function MobileBottomNav({
         <Link
           href="/admin/enquiries"
           className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
-            pathname.startsWith("/admin/enquiries")
+            activePathname.startsWith("/admin/enquiries")
               ? "text-brand-orange-500"
               : "text-zinc-500 dark:text-zinc-400"
           }`}
@@ -118,7 +122,7 @@ export function MobileBottomNav({
         <Link
           href="/admin/students"
           className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
-            pathname.startsWith("/admin/students")
+            activePathname.startsWith("/admin/students")
               ? "text-brand-orange-500"
               : "text-zinc-500 dark:text-zinc-400"
           }`}
@@ -129,18 +133,18 @@ export function MobileBottomNav({
         <Link
           href="/admin/coaches"
           className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
-            pathname.startsWith("/admin/coaches")
+            activePathname.startsWith("/admin/coaches")
               ? "text-brand-orange-500"
               : "text-zinc-500 dark:text-zinc-400"
           }`}
         >
           <GymIcon className="h-4.5 w-4.5 shrink-0" />
-          Employees
+          Coach & Staff
         </Link>
         <Link
           href="/admin/attendance"
           className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
-            pathname.startsWith("/admin/attendance")
+            activePathname.startsWith("/admin/attendance")
               ? "text-brand-orange-500"
               : "text-zinc-500 dark:text-zinc-400"
           }`}
@@ -151,7 +155,7 @@ export function MobileBottomNav({
         <Link
           href="/admin/plans"
           className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
-            pathname === "/admin/plans" ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
+            activePathname === "/admin/plans" ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
           }`}
         >
           <DocIcon className="h-4.5 w-4.5 shrink-0" />
@@ -162,7 +166,7 @@ export function MobileBottomNav({
             <Link
               href="/admin/finance"
               className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
-                pathname.startsWith("/admin/finance") ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
+                activePathname.startsWith("/admin/finance") ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
               }`}
             >
               <FinanceIcon className="h-4.5 w-4.5 shrink-0" />
@@ -171,7 +175,7 @@ export function MobileBottomNav({
             <Link
               href="/admin/settings"
               className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-medium flex-1 min-w-[68px] shrink-0 ${
-                pathname === "/admin/settings" ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
+                activePathname === "/admin/settings" ? "text-brand-orange-500" : "text-zinc-500 dark:text-zinc-400"
               }`}
             >
               <SettingsIcon className="h-4.5 w-4.5 shrink-0" />

@@ -52,21 +52,21 @@ export default function ThemeSelector({ isCollapsed = false }: { isCollapsed?: b
   }
 
   return (
-    <div className="px-4 py-3.5 bg-zinc-50/50 dark:bg-zinc-900/30">
+    <div className="px-3 py-3.5">
       <p className="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2 px-1">
         Theme Mode
       </p>
-      <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-800/80 p-0.5 rounded-lg border border-zinc-200/50 dark:border-zinc-700/30">
+      <div className="flex gap-1 bg-zinc-100 dark:bg-zinc-800/80 p-1 rounded-2xl border border-zinc-200/50 dark:border-zinc-700/30 overflow-hidden">
         {options.map((opt) => {
           const isActive = theme === opt.value;
           return (
             <button
               key={opt.value}
               onClick={() => setTheme(opt.value)}
-              className={`flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer h-8 rounded-md ${
+              className={`flex items-center justify-center gap-1.5 transition-all duration-200 cursor-pointer h-8 rounded-xl ${
                 isActive
-                  ? "flex-1 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-xs text-xs font-semibold"
-                  : "w-12 flex-none text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-white/40 dark:hover:bg-zinc-700/20"
+                  ? "flex-1 bg-white dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 shadow-sm text-xs font-semibold"
+                  : "w-10 flex-none text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-white/40 dark:hover:bg-zinc-700/20"
               }`}
               title={`${opt.label} Theme`}
             >

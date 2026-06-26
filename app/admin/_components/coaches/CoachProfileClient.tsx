@@ -28,6 +28,7 @@ import {
 } from "@/lib/actions/coaches";
 import type { CoachAttendanceStatus, CoachRole } from "@prisma/client";
 import StudentAvatarPicker from "@/app/admin/_components/students/StudentAvatarPicker";
+import { getMonthSalaryMultiplier } from "@/lib/utils/salary";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -37,6 +38,7 @@ interface CoachData {
   contactNumber: string;
   email: string | null;
   joinDate: string;
+  leftDate?: string | null;
   timing: string | null;
   specialization: string | null;
   fixedSalary: number;
@@ -45,6 +47,9 @@ interface CoachData {
   notes: string | null;
   address: string | null;
   avatarUrl: string | null;
+  bio?: string | null;
+  experience?: number | null;
+  certifications?: string | null;
   createdAt: string;
   updatedAt: string;
   attendances: {
@@ -147,6 +152,7 @@ function CoachFormModal({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [role, setRole] = useState<CoachRole>(existing.role);
+  const [bioText, setBioText] = useState(existing.bio ?? "");
 
   const [startTime, setStartTime] = useState(() => {
     if (existing.timing) {
@@ -287,6 +293,34 @@ function CoachFormModal({
                     <label className={labelCls}>Fixed Salary (₹)</label>
                     <input name="fixedSalary" type="number" min={0} defaultValue={existing.fixedSalary} className={inputCls} />
                   </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className={labelCls}>Experience (Years)</label>
+                    <input name="experience" type="number" min={0} defaultValue={existing.experience ?? ""} placeholder="e.g. 5" className={inputCls} />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Certifications</label>
+                    <input name="certifications" defaultValue={existing.certifications ?? ""} placeholder="e.g. FIG Level 1" className={inputCls} />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label className={labelCls}>Biography / Philosophy *</label>
+                    <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500">
+                      {bioText.length}/160 characters
+                    </span>
+                  </div>
+                  <textarea
+                    name="bio"
+                    rows={2}
+                    maxLength={160}
+                    required
+                    value={bioText}
+                    onChange={(e) => setBioText(e.target.value)}
+                    placeholder="Short coaching bio or philosophy..."
+                    className={`${inputCls} resize-none`}
+                  />
                 </div>
               </>
             ) : (
@@ -651,7 +685,7 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
           {/* Avatar and Coach name card */}
           <div className="flex flex-col items-center text-center gap-4 py-4">
             <img
-              src={coach.avatarUrl || "/coach-profile-placeholder.webp"}
+              src={coach.avatarUrl || (coach.role === "STAFF" ? "/staff-profile-placeholder.webp" : "/coach-profile-placeholder.webp")}
               alt={coach.name}
               className="h-48 w-48 shrink-0 rounded-3xl object-cover bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 shadow-xs"
             />
@@ -968,9 +1002,19 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
                 r.months.some((m) => m.year === monthVal.year && m.month === monthVal.month + 1)
               );
 
-              const totalRevenueThisMonth = filteredEarningsForMonth.reduce((sum, r) => {
+              const multiplier = getMonthSalaryMultiplier(
+                coach.joinDate,
+                coach.leftDate ?? null,
+                monthVal.year,
+                monthVal.month + 1
+              );
+
+              const proRatedFixedSalary = Math.round(coach.fixedSalary * multiplier);
+
+              const proRatedRevenue = filteredEarningsForMonth.reduce((sum, r) => {
                 const mData = r.months.find((m) => m.year === monthVal.year && m.month === monthVal.month + 1);
-                return sum + (mData?.amount ?? 0);
+                const personalCoachFee = mData?.amount ?? 0;
+                return sum + Math.round(personalCoachFee * multiplier);
               }, 0);
 
               const daysInMonth = new Date(monthVal.year, monthVal.month + 1, 0).getDate();
@@ -987,8 +1031,8 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
                 return y === monthVal.year && m === monthVal.month + 1;
               }).length;
 
-              const deduction = workingDays > 0 ? Math.round((coach.fixedSalary / workingDays) * absentDays) : 0;
-              const totalPay = Math.max(0, coach.fixedSalary - deduction) + totalRevenueThisMonth;
+              const deduction = workingDays > 0 ? Math.round((proRatedFixedSalary / workingDays) * absentDays) : 0;
+              const totalPay = Math.max(0, proRatedFixedSalary - deduction) + proRatedRevenue;
 
               const paymentKey = `${monthVal.year}-${monthVal.month + 1}`;
               const currentPayment = paymentsState[paymentKey] || { paid: false, loading: false };
@@ -1044,9 +1088,11 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
                   <div className="px-4 py-3 space-y-3 text-sm">
                     {/* Fixed Pay */}
                     <div className="flex justify-between items-center text-zinc-500 dark:text-zinc-400">
-                      <span className="font-medium text-zinc-700 dark:text-zinc-300">Fixed Pay</span>
+                      <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                        Fixed Pay {multiplier < 1 && <span className="text-[10px] text-zinc-450 dark:text-zinc-450 font-normal italic">(pro-rated)</span>}
+                      </span>
                       <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                        {INR(coach.fixedSalary)}
+                        {INR(proRatedFixedSalary)}
                       </span>
                     </div>
 
@@ -1070,6 +1116,7 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
                           const mData = row.months.find((m) => m.year === monthVal.year && m.month === monthVal.month + 1);
                           const studentMonthlyFee = Math.round(row.totalFee / row.planMonths);
                           const personalCoachFee = mData?.amount ?? 0;
+                          const proRatedPersonalCoachFee = Math.round(personalCoachFee * multiplier);
 
                           return (
                             <div key={row.studentPlanId} className="space-y-2">
@@ -1085,7 +1132,7 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
                                   <span className="text-[10px] text-zinc-400 dark:text-zinc-500 font-normal">TAG {row.studentNumber}</span>
                                 </div>
                                 <span className="font-semibold text-zinc-800 dark:text-zinc-250">
-                                  {INR(personalCoachFee)}
+                                  {INR(proRatedPersonalCoachFee)}
                                 </span>
                               </div>
 
@@ -1101,7 +1148,10 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
                                 </div>
                                 <div className="flex justify-between font-medium text-zinc-500 dark:text-zinc-400">
                                   <span>Personal coach fee ({row.commissionPercent || 50}% split)</span>
-                                  <span>{row.commissionPercent || 50}% of {INR(studentMonthlyFee)} = {INR(personalCoachFee)}</span>
+                                  <span>
+                                    {row.commissionPercent || 50}% of {INR(studentMonthlyFee)} = {INR(personalCoachFee)}
+                                    {multiplier < 1 && <span className="text-[10px] text-zinc-400 font-normal italic"> (pro-rated to {INR(proRatedPersonalCoachFee)})</span>}
+                                  </span>
                                 </div>
                               </div>
                             </div>

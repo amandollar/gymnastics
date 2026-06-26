@@ -277,6 +277,7 @@ model Coach {
   contactNumber  String
   email          String?
   joinDate       DateTime
+  leftDate       DateTime?
   /// Human-readable timing string, e.g. "7:00 AM – 9:00 AM"
   timing         String?
   specialization String?
@@ -287,6 +288,9 @@ model Coach {
   notes          String?
   address        String?
   avatarUrl      String?
+  bio            String?
+  experience     Int?
+  certifications String?
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
   attendances    CoachAttendance[]

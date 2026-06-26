@@ -10,6 +10,7 @@ export interface CoachWithStats {
   contactNumber: string;
   email: string | null;
   joinDate: Date;
+  leftDate?: Date | null | string;
   timing: string | null;
   specialization: string | null;
   fixedSalary: number;
@@ -18,6 +19,9 @@ export interface CoachWithStats {
   notes: string | null;
   address: string | null;
   avatarUrl?: string | null;
+  bio?: string | null;
+  experience?: number | null;
+  certifications?: string | null;
   createdAt: Date;
   updatedAt: Date;
   commissionPercent: number;
@@ -25,6 +29,24 @@ export interface CoachWithStats {
   todayAttendance?: { status: CoachAttendanceStatus } | null;
   /** Count of active ONE_TO_ONE plans assigned to this coach */
   activeStudentCount: number;
+  studentPlans: {
+    id: string;
+    fee: number;
+    commissionPercent: number | null;
+    planMonths: number | null;
+    startDate: Date | string;
+    endDate: Date | string;
+  }[];
+  attendances: {
+    date: Date | string;
+    status: CoachAttendanceStatus;
+  }[];
+  salaryPayments: {
+    year: number;
+    month: number;
+    paid: boolean;
+    amount: number;
+  }[];
 }
 
 export interface CoachMonthlyEarningRow {
@@ -127,6 +149,9 @@ export async function createCoach(data: {
   notes?: string;
   address?: string;
   avatarFile?: File | null;
+  bio?: string | null;
+  experience?: number | null;
+  certifications?: string | null;
 }) {
   const coach = await (prisma as any).coach.create({
     data: {
@@ -142,6 +167,9 @@ export async function createCoach(data: {
       avatarUrl: null,
       status: "WORKING",
       role: data.role ?? "COACH",
+      bio: data.bio || null,
+      experience: data.experience ?? null,
+      certifications: data.certifications || null,
     },
   });
 
@@ -165,6 +193,7 @@ export async function updateCoach(
     contactNumber?: string;
     email?: string | null;
     joinDate?: Date;
+    leftDate?: Date | null;
     timing?: string | null;
     specialization?: string | null;
     fixedSalary?: number;
@@ -173,9 +202,19 @@ export async function updateCoach(
     notes?: string | null;
     address?: string | null;
     avatarFile?: File | null;
+    bio?: string | null;
+    experience?: number | null;
+    certifications?: string | null;
   }
 ) {
   const { avatarFile, ...rest } = data;
+
+  // Set or clear leftDate based on status transitions
+  if (data.status === "LEFT") {
+    (rest as any).leftDate = data.leftDate || new Date();
+  } else if (data.status === "WORKING") {
+    (rest as any).leftDate = null;
+  }
 
   let uploadedUrl: string | null = null;
   if (avatarFile && avatarFile.size > 0) {
@@ -195,7 +234,7 @@ export async function updateCoach(
 
 /**
  * Upsert a coach attendance record for a given date.
- * If a record already exists for that coach+date, it is updated.
+ * If the coach has a leftDate and the target date is >= leftDate, throws an error.
  */
 export async function markCoachAttendance(
   coachId: string,
@@ -203,6 +242,24 @@ export async function markCoachAttendance(
   status: CoachAttendanceStatus
 ) {
   const date = new Date(dateStr + "T00:00:00.000Z");
+
+  // Check if the coach has left and the attendance date is on or after leftDate
+  const coach = await (prisma as any).coach.findUnique({
+    where: { id: coachId },
+    select: { leftDate: true, name: true },
+  });
+
+  if (coach?.leftDate) {
+    const leftDate = new Date(coach.leftDate);
+    // Normalize leftDate to UTC midnight for comparison
+    const leftDateMidnight = new Date(Date.UTC(leftDate.getUTCFullYear(), leftDate.getUTCMonth(), leftDate.getUTCDate()));
+    if (date >= leftDateMidnight) {
+      throw new Error(
+        `Attendance cannot be marked on or after the date this employee left (${leftDateMidnight.toISOString().split("T")[0]}).`
+      );
+    }
+  }
+
   return (prisma as any).coachAttendance.upsert({
     where: {
       coachId_date: { coachId, date },

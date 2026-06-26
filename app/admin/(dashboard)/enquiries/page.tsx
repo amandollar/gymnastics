@@ -17,7 +17,7 @@ export default async function EnquiriesPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-6xl min-w-0 w-full">
+    <div className="mx-auto max-w-7xl min-w-0 w-full">
       <EnquiryListClient
         canManage={canManage}
         enquiries={JSON.parse(JSON.stringify(enquiries))}

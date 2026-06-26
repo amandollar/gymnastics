@@ -6,7 +6,7 @@ import {
 
 export default function StudentsLoading() {
   return (
-    <div className="mx-auto max-w-6xl min-w-0 w-full space-y-5">
+    <div className="mx-auto max-w-7xl min-w-0 w-full space-y-5">
       {/* Page header */}
       <SkeletonPageHeader hasButton />
 

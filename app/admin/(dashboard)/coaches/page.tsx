@@ -18,11 +18,52 @@ export default async function CoachesPage() {
   const d = String(now.getDate()).padStart(2, "0");
   const todayStr = `${y}-${m}-${d}`;
 
-  // Load all coaches with today's attendance pre-populated
-  const coaches = await listCoaches({ status: "ALL" });
-
-  // Also fetch today's attendance records for each coach
   const { prisma } = await import("@/lib/prisma");
+
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1;
+  const startOfMonth = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
+  const endOfMonth = new Date(Date.UTC(currentYear, currentMonth, 1));
+
+  // Load all coaches with all details needed for card computations
+  const dbCoaches = await (prisma as any).coach.findMany({
+    include: {
+      studentPlans: {
+        where: { isActive: true, planType: "ONE_TO_ONE" },
+        select: {
+          id: true,
+          fee: true,
+          commissionPercent: true,
+          planMonths: true,
+          startDate: true,
+          endDate: true,
+        },
+      },
+      attendances: {
+        where: {
+          date: {
+            gte: startOfMonth,
+            lt: endOfMonth,
+          },
+        },
+        select: {
+          date: true,
+          status: true,
+        },
+      },
+      salaryPayments: {
+        select: {
+          year: true,
+          month: true,
+          paid: true,
+          amount: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
   const todayUTC = new Date(`${todayStr}T00:00:00.000Z`);
   const tomorrowUTC = new Date(todayUTC);
   tomorrowUTC.setUTCDate(tomorrowUTC.getUTCDate() + 1);
@@ -39,17 +80,28 @@ export default async function CoachesPage() {
     attendanceMap[a.coachId] = a.status;
   }
 
-  // Merge today's attendance into each coach
-  const coachesWithAttendance = (coaches as any[]).map((c) => ({
+  // Merge today's attendance into each coach and serialize dates
+  const coachesWithAttendance = dbCoaches.map((c: any) => ({
     ...c,
     todayAttendance: attendanceMap[c.id] ? { status: attendanceMap[c.id] } : null,
-    joinDate: new Date(c.joinDate),
-    createdAt: new Date(c.createdAt),
-    updatedAt: new Date(c.updatedAt),
+    activeStudentCount: c.studentPlans.length,
+    joinDate: c.joinDate.toISOString(),
+    leftDate: c.leftDate ? c.leftDate.toISOString() : null,
+    createdAt: c.createdAt.toISOString(),
+    updatedAt: c.updatedAt.toISOString(),
+    studentPlans: c.studentPlans.map((p: any) => ({
+      ...p,
+      startDate: p.startDate.toISOString(),
+      endDate: p.endDate.toISOString(),
+    })),
+    attendances: c.attendances.map((a: any) => ({
+      ...a,
+      date: a.date.toISOString(),
+    })),
   }));
 
   return (
-    <div className="mx-auto max-w-6xl min-w-0 w-full">
+    <div className="mx-auto max-w-7xl min-w-0 w-full">
       <CoachesPageClient
         coaches={JSON.parse(JSON.stringify(coachesWithAttendance))}
         todayStr={todayStr}

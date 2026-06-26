@@ -11,6 +11,7 @@ export interface CoachOption {
   status: "WORKING" | "LEFT";
   avatarUrl?: string | null;
   activeStudentCount?: number;
+  role?: "COACH" | "STAFF" | null;
 }
 
 interface Props {
@@ -67,7 +68,7 @@ export default function CoachPicker({ coaches, value, onChange, error }: Props) 
         {selected ? (
           <span className="flex items-center gap-2 min-w-0">
             <img
-              src={selected.avatarUrl || "/coach-profile-placeholder.webp"}
+              src={selected.avatarUrl || (selected.role === "STAFF" ? "/staff-profile-placeholder.webp" : "/coach-profile-placeholder.webp")}
               alt={selected.name}
               className="h-7 w-7 shrink-0 rounded-full object-cover bg-zinc-100 dark:bg-zinc-800"
             />
@@ -162,7 +163,7 @@ export default function CoachPicker({ coaches, value, onChange, error }: Props) 
                   >
                     {/* Avatar */}
                     <img
-                      src={c.avatarUrl || "/coach-profile-placeholder.webp"}
+                      src={c.avatarUrl || (c.role === "STAFF" ? "/staff-profile-placeholder.webp" : "/coach-profile-placeholder.webp")}
                       alt={c.name}
                       className="h-10 w-10 shrink-0 rounded-full object-cover bg-zinc-100 dark:bg-zinc-800"
                     />

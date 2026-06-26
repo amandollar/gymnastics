@@ -3,6 +3,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Aclonica } from "next/font/google";
 
+import ParallaxFoam from "./ParallaxFoam";
+
 const aclonica = Aclonica({ subsets: ["latin"], weight: ["400"] });
 
 const awards = [
@@ -58,8 +60,34 @@ export default function AwardsTestimonialsSection() {
   return (
     <section
       ref={sectionRef}
-      className="relative w-full bg-white text-zinc-950 pt-24 pb-24 px-4 sm:px-6 md:px-8 border-b border-zinc-100"
+      className="relative w-full bg-white text-zinc-950 pt-24 pb-24 px-4 sm:px-6 md:px-8 border-b border-zinc-100 overflow-hidden"
     >
+      {/* Background Foam Shapes */}
+      <ParallaxFoam
+        src="/landing-page-foams/orange-pyramid-1.webp"
+        top="15%"
+        left="5%"
+        size={45}
+        rotate={-20}
+        speed={0.16}
+      />
+      <ParallaxFoam
+        src="/landing-page-foams/white-donut-1.webp"
+        top="45%"
+        right="6%"
+        size={85}
+        blur="sm"
+        rotate={10}
+        speed={0.1}
+      />
+      <ParallaxFoam
+        src="/landing-page-foams/white-cube-1.webp"
+        top="75%"
+        right="8%"
+        size={50}
+        rotate={30}
+        speed={0.14}
+      />
       <style
         dangerouslySetInnerHTML={{
           __html: `

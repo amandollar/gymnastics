@@ -3,6 +3,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Phone, UserPlus, ChevronRight } from "lucide-react";
+import { formatPhoneNumber, getTelLink } from "@/lib/utils/phone";
+
+import ParallaxFoam from "./ParallaxFoam";
 
 interface TeaserTextProps {
   text: string;
@@ -29,7 +32,7 @@ function TeaserText({ text, startDelay, animate }: TeaserTextProps) {
   );
 }
 
-export default function AboutTeaserSection() {
+export default function AboutTeaserSection({ phone }: { phone?: string }) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [animate, setAnimate] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
@@ -74,6 +77,41 @@ export default function AboutTeaserSection() {
         animate ? "animate-in" : ""
       }`}
     >
+      {/* Background Foam Shapes */}
+      <ParallaxFoam
+        src="/landing-page-foams/orange-pyramid-2.webp"
+        top="10%"
+        left="6%"
+        size={50}
+        rotate={12}
+        speed={0.1}
+      />
+      <ParallaxFoam
+        src="/landing-page-foams/white-cube-2.webp"
+        top="35%"
+        right="8%"
+        size={70}
+        blur="sm"
+        rotate={-30}
+        speed={0.16}
+      />
+      <ParallaxFoam
+        src="/landing-page-foams/white-donut-1.webp"
+        top="60%"
+        left="4%"
+        size={90}
+        blur="md"
+        rotate={15}
+        speed={0.07}
+      />
+      <ParallaxFoam
+        src="/landing-page-foams/orange-cube-1.webp"
+        top="80%"
+        right="6%"
+        size={45}
+        rotate={25}
+        speed={0.12}
+      />
       <style
         dangerouslySetInnerHTML={{
           __html: `
@@ -148,7 +186,7 @@ export default function AboutTeaserSection() {
 
       {/* Floating Action Bar overlapping the boundary line — Slanted Diagonal Split Card */}
       <div
-        className="absolute top-0 left-1/2 z-20 w-[92%] max-w-4xl bg-white shadow-2xl flex flex-col md:flex-row items-stretch rounded-2xl overflow-hidden p-[1px] border border-zinc-200/40"
+        className="absolute top-0 left-1/2 z-20 w-[92%] max-w-4xl bg-white shadow-2xl flex flex-col md:flex-row items-stretch rounded-2xl overflow-hidden p-[1px]"
         style={{
           transform: `translate(-50%, ${hasScrolled ? "-40%" : "calc(-40% + 12px)"})`,
           opacity: hasScrolled ? 1 : 0,
@@ -158,6 +196,9 @@ export default function AboutTeaserSection() {
           willChange: "transform, opacity",
         }}
       >
+        {/* Border overlay to prevent clipping on some browsers/corners */}
+        <div className="absolute inset-0 rounded-2xl border border-white/25 pointer-events-none z-30" />
+
         {/* Left: Register Block */}
         <Link
           href="/register"
@@ -184,7 +225,7 @@ export default function AboutTeaserSection() {
 
         {/* Right: Call Us Block */}
         <a
-          href="tel:+917977177463"
+          href={phone ? getTelLink(phone) : "tel:+917977177463"}
           className="clip-slant-right relative overflow-hidden flex-1 flex items-center justify-center gap-4 sm:gap-5 py-6 pl-8 sm:pl-12 pr-6 sm:pr-10 bg-[#121214] hover:bg-[#18181b] transition-colors duration-300 group text-white cursor-pointer select-none border-t border-zinc-800 md:border-t-0 md:-ml-[22px]"
         >
           {/* Subtle Hover Glow */}
@@ -200,7 +241,7 @@ export default function AboutTeaserSection() {
               Call Us
             </span>
             <span className="text-base sm:text-lg md:text-xl font-bold tracking-wide mt-0.5 text-white">
-              +91 79771 77463
+              {phone ? formatPhoneNumber(phone) : "+91 79771 77463"}
             </span>
           </div>
         </a>

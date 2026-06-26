@@ -6,7 +6,7 @@ import {
 
 export default function EnquiriesLoading() {
   return (
-    <div className="mx-auto max-w-6xl min-w-0 w-full space-y-4">
+    <div className="mx-auto max-w-7xl min-w-0 w-full space-y-4">
       {/* Header */}
       <SkeletonPageHeader hasButton={true} />
 

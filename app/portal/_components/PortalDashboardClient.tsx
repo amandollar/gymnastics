@@ -514,7 +514,7 @@ export default function PortalDashboardClient({
                 isCollapsed ? "py-3.5" : "py-2.5"
               } text-sm font-medium transition-all cursor-pointer ${
                 activeTab === "overview"
-                  ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 font-semibold"
+                  ? "bg-brand-orange-500/15 dark:bg-brand-orange-500/25 text-brand-orange-600 dark:text-brand-orange-400 font-semibold"
                   : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:text-zinc-900 dark:hover:text-zinc-50"
               }`}
               title={isCollapsed ? "Overview" : undefined}
@@ -529,7 +529,7 @@ export default function PortalDashboardClient({
                 isCollapsed ? "py-3.5" : "py-2.5"
               } text-sm font-medium transition-all cursor-pointer ${
                 activeTab === "attendance"
-                  ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 font-semibold"
+                  ? "bg-brand-orange-500/15 dark:bg-brand-orange-500/25 text-brand-orange-600 dark:text-brand-orange-400 font-semibold"
                   : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:text-zinc-900 dark:hover:text-zinc-50"
               }`}
               title={isCollapsed ? "Attendance" : undefined}
@@ -544,7 +544,7 @@ export default function PortalDashboardClient({
                 isCollapsed ? "py-3.5" : "py-2.5"
               } text-sm font-medium transition-all cursor-pointer ${
                 activeTab === "billing"
-                  ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 font-semibold"
+                  ? "bg-brand-orange-500/15 dark:bg-brand-orange-500/25 text-brand-orange-600 dark:text-brand-orange-400 font-semibold"
                   : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:text-zinc-900 dark:hover:text-zinc-50"
               }`}
               title={isCollapsed ? "Billing" : undefined}

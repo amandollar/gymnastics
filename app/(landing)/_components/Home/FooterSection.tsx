@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Aclonica } from "next/font/google";
+import { formatPhoneNumber, getTelLink } from "@/lib/utils/phone";
 
 const aclonica = Aclonica({ subsets: ["latin"], weight: ["400"] });
 
@@ -35,7 +36,7 @@ const socialLinks = [
   },
 ];
 
-export default function FooterSection() {
+export default function FooterSection({ phone, phone2 }: { phone?: string; phone2?: string }) {
   return (
     <footer className="relative w-full bg-[#0a0a0b] text-white border-t border-zinc-800/60">
       {/* Main Footer Body */}
@@ -94,12 +95,31 @@ export default function FooterSection() {
               Contact
             </h3>
             <div className="flex flex-col gap-3">
-              <a
-                href="tel:+917977177463"
-                className="text-zinc-400 text-sm font-light hover:text-white transition-colors duration-200"
-              >
-                +91 79771 77463
-              </a>
+              {phone ? (
+                <>
+                  <a
+                    href={getTelLink(phone)}
+                    className="text-zinc-400 text-sm font-light hover:text-white transition-colors duration-200"
+                  >
+                    {formatPhoneNumber(phone)}
+                  </a>
+                  {phone2 && (
+                    <a
+                      href={getTelLink(phone2)}
+                      className="text-zinc-400 text-sm font-light hover:text-white transition-colors duration-200"
+                    >
+                      {formatPhoneNumber(phone2)}
+                    </a>
+                  )}
+                </>
+              ) : (
+                <a
+                  href="tel:+917977177463"
+                  className="text-zinc-400 text-sm font-light hover:text-white transition-colors duration-200"
+                >
+                  +91 79771 77463
+                </a>
+              )}
               <a
                 href="mailto:info@theacademyofgymnastics.com"
                 className="text-zinc-400 text-sm font-light hover:text-white transition-colors duration-200 break-all"

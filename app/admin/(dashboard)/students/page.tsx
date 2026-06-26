@@ -16,7 +16,7 @@ export default async function StudentsPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-6xl min-w-0 w-full">
+    <div className="mx-auto max-w-7xl min-w-0 w-full">
       <StudentsListClient
         canManage={canManage}
         students={JSON.parse(JSON.stringify(students))}

@@ -1,146 +1,271 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useMemo, useRef } from "react";
 import { Aclonica } from "next/font/google";
+import { Dumbbell, Award, Users, Star } from "lucide-react";
+
+import ParallaxFoam from "./ParallaxFoam";
 
 const aclonica = Aclonica({ subsets: ["latin"], weight: ["400"] });
 
-const coaches = [
+interface CoachesSectionProps {
+  initialCoaches?: {
+    id: string;
+    name: string;
+    specialization?: string | null;
+    avatarUrl?: string | null;
+    bio?: string | null;
+    experience?: number | null;
+    certifications?: string | null;
+  }[];
+}
+
+const defaultStaticCoaches = [
   {
-    name: "Coach Saif",
+    name: "Saif",
     title: "Head Coach & Founder",
     image: "/images/gymnast_potential.png",
-    instagram: "https://www.instagram.com/theacademyofgymnastics__/",
-    youtube: "https://www.youtube.com/@saifgymnast",
+    bio: "Head Coach and founder of The Academy of Gymnastics, specializing in MAG/WAG elite training with over 10 years of experience shaping champions.",
+    experience: "10+ Years",
+    certifications: "FIG Level 1 Certified",
   },
   {
-    name: "Coach Priya",
+    name: "Priya",
     title: "Recreational & Junior Coach",
     image: "/images/gymnast_strength.png",
-    instagram: "https://www.instagram.com/theacademyofgymnastics__/",
-    youtube: null,
+    bio: "Dedicated junior instructor passionate about teaching the fundamentals of gymnastics to recreational age groups and building physical confidence.",
+    experience: "5+ Years",
+    certifications: "USAG Safety Certified",
   },
   {
-    name: "Coach Arjun",
+    name: "Arjun",
     title: "Strength & Conditioning",
     image: "/images/boy-doing-bar-move.webp",
-    instagram: null,
-    youtube: null,
+    bio: "Specializes in physical conditioning, flexibility training, and strength development for competitive and developmental gymnasts.",
+    experience: "4+ Years",
+    certifications: "B.P.Ed, First Aid Certified",
   },
 ];
 
-export default function CoachesSection() {
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const [animate, setAnimate] = useState(false);
+export default function CoachesSection({
+  initialCoaches,
+}: CoachesSectionProps) {
+  const trackRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setAnimate(true);
-          observer.unobserve(entry.target);
-        }
-      },
-      { threshold: 0.15 }
-    );
-    if (sectionRef.current) observer.observe(sectionRef.current);
-    return () => observer.disconnect();
-  }, []);
+  const displayCoaches = useMemo(() => {
+    if (initialCoaches && initialCoaches.length > 0) {
+      return initialCoaches.map((c) => ({
+        name: c.name.replace(/^Coach\s+/i, ""),
+        title: c.specialization || "Gymnastics Coach",
+        image: c.avatarUrl || "/coach-profile-placeholder.webp",
+        bio: c.bio || null,
+        experience: c.experience ? `${c.experience}+ Years` : null,
+        certifications: c.certifications || null,
+      }));
+    }
+    return defaultStaticCoaches;
+  }, [initialCoaches]);
+
+  const loopCoaches =
+    displayCoaches.length < 4
+      ? [...displayCoaches, ...displayCoaches, ...displayCoaches]
+      : [...displayCoaches, ...displayCoaches];
 
   return (
-    <section
-      ref={sectionRef}
-      className="relative w-full bg-zinc-50 text-zinc-950 py-24 px-4 sm:px-6 md:px-8 border-b border-zinc-200/80"
-    >
+    <section className="relative w-full bg-white text-zinc-950 py-20 overflow-hidden">
+      {/* Background Foam Shapes */}
+      <ParallaxFoam
+        src="/landing-page-foams/orange-pyramid-4.webp"
+        top="10%"
+        left="5%"
+        size={60}
+        rotate={18}
+        speed={0.14}
+      />
+      <ParallaxFoam
+        src="/landing-page-foams/white-donut-1.webp"
+        top="45%"
+        right="6%"
+        size={90}
+        blur="lg"
+        rotate={-30}
+        speed={0.1}
+      />
+      <ParallaxFoam
+        src="/landing-page-foams/white-cube-2.webp"
+        top="75%"
+        left="8%"
+        size={70}
+        rotate={12}
+        speed={0.16}
+      />
       <style
         dangerouslySetInnerHTML={{
           __html: `
-            @keyframes coach-fade-up {
-              from { opacity: 0; transform: translateY(24px); }
-              to   { opacity: 1; transform: translateY(0); }
-            }
-            .coach-item {
-              opacity: 0;
-              will-change: transform, opacity;
-            }
-            .coach-animate .coach-item {
-              animation: coach-fade-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            }
-          `,
+        @keyframes marquee-left {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .coaches-track {
+          display: flex;
+          width: max-content;
+          animation: marquee-left 36s linear infinite;
+          will-change: transform;
+        }
+        .coaches-track:hover {
+          animation-play-state: paused;
+        }
+        .coach-card {
+          width: 270px;
+          background: #ffffff;
+        }
+        @media (min-width: 768px) {
+          .coach-card { width: 310px; }
+        }
+        @media (min-width: 1024px) {
+          .coach-card { width: 350px; }
+        }
+      `,
         }}
       />
 
-      <div className={`max-w-7xl mx-auto w-full ${animate ? "coach-animate" : ""}`}>
-        {/* Simplified Header */}
-        <div className="text-center mb-16 max-w-2xl mx-auto coach-item" style={{ animationDelay: "0s" }}>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-brand-orange-500 mb-3">
-            The Team
-          </p>
-          <h2 className={`${aclonica.className} text-4xl sm:text-5xl md:text-6xl font-normal tracking-tight text-zinc-900 uppercase mb-4`}>
-            Meet Our Coaches
-          </h2>
-          <p className="text-zinc-500 text-sm sm:text-base font-light leading-relaxed">
-            Our certified coaching staff brings competitive and instructional experience, committed to drawing out the best in every athlete.
-          </p>
-        </div>
+      {/* Fade edges */}
+      <div
+        className="pointer-events-none absolute inset-y-0 left-0 w-24 z-10"
+        style={{
+          background: "linear-gradient(to right, #ffffff 0%, transparent 100%)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-y-0 right-0 w-24 z-10"
+        style={{
+          background: "linear-gradient(to left, #ffffff 0%, transparent 100%)",
+        }}
+      />
 
-        {/* Simplified Circle Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 justify-center w-full">
-          {coaches.map((coach, i) => (
+      {/* Header */}
+      <div className="relative z-10 text-center mb-12 px-4">
+        <h2
+          className={`${aclonica.className} text-4xl sm:text-5xl md:text-6xl font-normal tracking-tight text-zinc-900 uppercase`}
+        >
+          Meet Our Coaches
+        </h2>
+      </div>
+
+      {/* Marquee */}
+      <div className="relative overflow-hidden">
+        <div ref={trackRef} className="coaches-track py-24">
+          {loopCoaches.map((coach, i) => (
             <div
-              key={coach.name}
-              className="coach-item group flex flex-col items-center text-center"
-              style={{ animationDelay: `${0.2 + i * 0.12}s` }}
+              key={`${coach.name}-${i}`}
+              className="coach-card flex-shrink-0 mx-3 rounded-[32px] cursor-default overflow-hidden flex flex-col relative"
+              style={{ background: "#fdefe2ff" }}
             >
-              {/* Circle Image Wrapper with Hover Effect */}
-              <div className="relative w-44 h-44 sm:w-48 sm:h-48 rounded-full overflow-hidden bg-zinc-200 border-4 border-white shadow-md transition-all duration-500 group-hover:scale-105 group-hover:shadow-lg group-hover:border-brand-orange-500/20 group-hover:ring-4 group-hover:ring-brand-orange-500/30">
-                <img
-                  src={coach.image}
-                  alt={coach.name}
-                  className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-110"
-                />
+              {/* Blurred background image */}
+              <div
+                className="absolute inset-0 z-0 bg-cover bg-center pointer-events-none opacity-15 blur-lg scale-110"
+                style={{ backgroundImage: `url(${coach.image})` }}
+              />
+
+              {/* ── Top row: avatar  +  experience badge ── */}
+              <div className="flex items-start justify-between relative z-10">
+                {/* Avatar touching top-left */}
+                <div
+                  className="coach-avatar w-40 h-40 md:w-48 md:h-48 lg:w-56 lg:h-56 overflow-hidden bg-zinc-300 flex-shrink-0"
+                  style={{ borderRadius: "0 15% 75% 60% / 0 60% 75% 15%" }}
+                >
+                  <img
+                    src={coach.image}
+                    alt={coach.name}
+                    className="w-full h-full object-cover object-top"
+                  />
+                </div>
+
+                {/* Experience */}
+                {coach.experience &&
+                  (() => {
+                    const numMatch = coach.experience.match(/^(\d+\+?)/);
+                    const num = numMatch ? numMatch[0] : coach.experience;
+                    return (
+                      <div className="flex flex-col items-end pt-5 pr-5 md:pt-6 md:pr-6">
+                        {/* First line: Number (Large and Thin) */}
+                        <span className="text-zinc-950 text-[32px] md:text-[40px] lg:text-[48px] font-light leading-none">
+                          {num}
+                        </span>
+                        {/* Second line: YEARS OF */}
+                        <span className="text-zinc-950 text-[10px] md:text-[11px] font-bold uppercase tracking-wider mt-1 leading-none">
+                          Years of
+                        </span>
+                        {/* Third line: EXPERIENCE */}
+                        <span className="text-zinc-950 text-[10px] md:text-[11px] font-bold uppercase tracking-widest mt-0.5 leading-none">
+                          Experience
+                        </span>
+                      </div>
+                    );
+                  })()}
               </div>
 
-              {/* Coach Details */}
-              <div className="mt-6 flex flex-col items-center">
-                <h3 className={`${aclonica.className} text-lg sm:text-xl font-normal text-zinc-900 uppercase tracking-tight`}>
+              {/* ── Content wrapper (padded inside the card) ── */}
+              <div className="px-5 pb-5 md:px-6 md:pb-6 flex-1 flex flex-col relative z-10">
+                {/* Name */}
+                <h3 className="text-zinc-900 text-[20px] md:text-[24px] lg:text-[26px] font-bold tracking-tight leading-snug mt-4">
                   {coach.name}
                 </h3>
-                <p className="text-brand-orange-500 text-xs font-bold uppercase tracking-wider mt-1">
+                <p className="text-zinc-600 text-[10px] md:text-[11px] font-bold uppercase tracking-wider mt-0">
                   {coach.title}
                 </p>
 
-                {/* Social Links */}
-                {(coach.instagram || coach.youtube) && (
-                  <div className="mt-4 flex items-center gap-3">
-                    {coach.instagram && (
-                      <a
-                        href={coach.instagram}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label="Instagram"
-                        className="flex items-center justify-center w-7 h-7 rounded-full bg-zinc-200/60 text-zinc-600 transition-colors duration-300 hover:bg-brand-orange-500 hover:text-white"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-                        </svg>
-                      </a>
-                    )}
-                    {coach.youtube && (
-                      <a
-                        href={coach.youtube}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label="YouTube"
-                        className="flex items-center justify-center w-7 h-7 rounded-full bg-zinc-200/60 text-zinc-600 transition-colors duration-300 hover:bg-brand-orange-500 hover:text-white"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
-                        </svg>
-                      </a>
-                    )}
-                  </div>
-                )}
+                {/* ── Details ── */}
+                {(() => {
+                  const details = [
+                    coach.certifications && {
+                      key: "certifications",
+                      label: "Certifications",
+                      value: coach.certifications,
+                      icon: Award,
+                      iconClass: "text-brand-orange-500",
+                    },
+                    coach.bio && {
+                      key: "bio",
+                      label: "About",
+                      value: coach.bio,
+                      icon: Users,
+                      iconClass: "text-brand-orange-500",
+                    },
+                  ].filter(Boolean) as {
+                    key: string;
+                    label: string;
+                    value: string;
+                    icon: React.ComponentType<{ className?: string }>;
+                    iconClass: string;
+                  }[];
+
+                  return (
+                    <div className="mt-5 flex flex-col gap-4">
+                      {details.map((detail) => {
+                        const Icon = detail.icon;
+                        return (
+                          <div
+                            key={detail.key}
+                            className="flex items-start justify-start gap-3.5 md:gap-4 text-left"
+                          >
+                            <Icon
+                              className={`w-6 h-6 stroke-[1.75] flex-shrink-0 mt-0.5 ${detail.iconClass}`}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-zinc-600 uppercase tracking-widest text-[9px] md:text-[10px] font-semibold leading-none">
+                                {detail.label}
+                              </p>
+                              <p className="text-zinc-800 text-[13px] md:text-[14px] font-normal mt-1 leading-snug break-words">
+                                {detail.value}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           ))}

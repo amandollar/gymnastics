@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Home, Users, FileText, CheckCircle, Settings, Dumbbell, ClipboardList, IndianRupee } from "lucide-react";
+import { Home, Users, FileText, CheckCircle, Settings, Dumbbell, ClipboardList, IndianRupee, Calendar } from "lucide-react";
 
 export const navLinkClass = (active: boolean, isCollapsed = false) =>
   `flex items-center ${isCollapsed ? "justify-center" : "gap-2.5"} rounded-lg ${isCollapsed ? "px-2" : "px-3"} ${
     isCollapsed ? "py-3.5" : "py-2.5"
   } text-sm font-medium transition-all ${
     active
-      ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50"
+      ? "bg-brand-orange-500/15 dark:bg-brand-orange-500/25 text-brand-orange-600 dark:text-brand-orange-400 font-semibold"
       : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:text-zinc-900 dark:hover:text-zinc-50"
   }`;
 
@@ -25,13 +25,17 @@ export default function DashboardNav({
 }) {
   const close = onNavigate ?? (() => {});
   const iconClass = `shrink-0 transition-all ${isCollapsed ? "h-5 w-5" : "h-4 w-4"}`;
+  
+  const activePathname = pathname.startsWith("/admin")
+    ? pathname
+    : `/admin${pathname === "/" ? "/dashboard" : pathname}`;
 
   return (
     <nav className={`transition-all ${isCollapsed ? "space-y-2 p-1.5" : "space-y-0.5 p-3"}`}>
       <Link
         href="/admin/dashboard"
         onClick={close}
-        className={navLinkClass(pathname === "/admin/dashboard", isCollapsed)}
+        className={navLinkClass(activePathname === "/admin/dashboard", isCollapsed)}
         title={isCollapsed ? "Dashboard" : undefined}
       >
         <HomeIcon className={iconClass} />
@@ -40,7 +44,7 @@ export default function DashboardNav({
       <Link
         href="/admin/enquiries"
         onClick={close}
-        className={navLinkClass(pathname.startsWith("/admin/enquiries"), isCollapsed)}
+        className={navLinkClass(activePathname.startsWith("/admin/enquiries"), isCollapsed)}
         title={isCollapsed ? "Enquiries" : undefined}
       >
         <EnquiryIcon className={iconClass} />
@@ -49,7 +53,7 @@ export default function DashboardNav({
       <Link
         href="/admin/students"
         onClick={close}
-        className={navLinkClass(pathname.startsWith("/admin/students"), isCollapsed)}
+        className={navLinkClass(activePathname.startsWith("/admin/students"), isCollapsed)}
         title={isCollapsed ? "Students" : undefined}
       >
         <UsersIcon className={iconClass} />
@@ -58,16 +62,16 @@ export default function DashboardNav({
       <Link
         href="/admin/coaches"
         onClick={close}
-        className={navLinkClass(pathname.startsWith("/admin/coaches"), isCollapsed)}
-        title={isCollapsed ? "Employees" : undefined}
+        className={navLinkClass(activePathname.startsWith("/admin/coaches"), isCollapsed)}
+        title={isCollapsed ? "Coach & Staff" : undefined}
       >
         <GymIcon className={iconClass} />
-        {!isCollapsed && "Employees"}
+        {!isCollapsed && "Coach & Staff"}
       </Link>
       <Link
         href="/admin/attendance"
         onClick={close}
-        className={navLinkClass(pathname.startsWith("/admin/attendance"), isCollapsed)}
+        className={navLinkClass(activePathname.startsWith("/admin/attendance"), isCollapsed)}
         title={isCollapsed ? "Attendance" : undefined}
       >
         <CheckIcon className={iconClass} />
@@ -76,7 +80,7 @@ export default function DashboardNav({
       <Link
         href="/admin/plans"
         onClick={close}
-        className={navLinkClass(pathname === "/admin/plans", isCollapsed)}
+        className={navLinkClass(activePathname === "/admin/plans", isCollapsed)}
         title={isCollapsed ? "Plans" : undefined}
       >
         <DocIcon className={iconClass} />
@@ -87,7 +91,7 @@ export default function DashboardNav({
           <Link
             href="/admin/finance"
             onClick={close}
-            className={navLinkClass(pathname.startsWith("/admin/finance"), isCollapsed)}
+            className={navLinkClass(activePathname.startsWith("/admin/finance"), isCollapsed)}
             title={isCollapsed ? "Finance" : undefined}
           >
             <FinanceIcon className={iconClass} />
@@ -96,7 +100,7 @@ export default function DashboardNav({
           <Link
             href="/admin/settings"
             onClick={close}
-            className={navLinkClass(pathname === "/admin/settings", isCollapsed)}
+            className={navLinkClass(activePathname === "/admin/settings", isCollapsed)}
             title={isCollapsed ? "Settings" : undefined}
           >
             <SettingsIcon className={iconClass} />
@@ -121,7 +125,7 @@ export function GymIcon({ className = "h-4 w-4 shrink-0" }: { className?: string
 }
 
 export function DocIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {}) {
-  return <FileText className={className} strokeWidth={2} />;
+  return <Calendar className={className} strokeWidth={2} />;
 }
 
 export function CheckIcon({ className = "h-4 w-4 shrink-0 opacity-60" }: { className?: string } = {}) {

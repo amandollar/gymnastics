@@ -204,7 +204,7 @@ function RowMenu({
           ref={menuRef}
           role="menu"
           style={{ position: "fixed", top: coords.top, right: coords.right, zIndex: 9999 }}
-          className="w-52 rounded-2xl border border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-2xl py-1 overflow-hidden z-50 animate-scale-in origin-top-right"
+          className="w-52 rounded-2xl border border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-2xl py-1 overflow-hidden z-50 animate-menu-show"
         >
           {/* Edit details */}
           {canManage && (
@@ -879,32 +879,32 @@ export default function StudentsListClient({
                   </svg>
                 </button>
                 {headerMenuOpen && (
-                  <div
-                    ref={headerMenuRef}
-                    className="absolute right-0 mt-2 w-48 rounded-2xl border border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-2xl py-1.5 overflow-hidden z-50 animate-scale-in"
+                <nav
+                  ref={headerMenuRef}
+                  className="absolute right-0 mt-2 w-48 rounded-2xl border border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-2xl py-1.5 overflow-hidden z-50 animate-menu-show"
+                >
+                  <Link
+                    href="/admin/students/bulk-upload"
+                    onClick={() => setHeaderMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-705 dark:text-zinc-295 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                   >
-                    <Link
-                      href="/admin/students/bulk-upload"
-                      onClick={() => setHeaderMenuOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-705 dark:text-zinc-295 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-                    >
-                      Bulk upload
-                    </Link>
-                    <Link
-                      href="/admin/students/print-ids"
-                      onClick={() => setHeaderMenuOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-                    >
-                      Print IDs
-                    </Link>
-                    <Link
-                      href="/admin/students/new"
-                      onClick={() => setHeaderMenuOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-                    >
-                      Add student
-                    </Link>
-                  </div>
+                    Bulk upload
+                  </Link>
+                  <Link
+                    href="/admin/students/print-ids"
+                    onClick={() => setHeaderMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    Print IDs
+                  </Link>
+                  <Link
+                    href="/admin/students/new"
+                    onClick={() => setHeaderMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    Add student
+                  </Link>
+                </nav>
                 )}
               </div>
             </div>
@@ -952,9 +952,9 @@ export default function StudentsListClient({
 
           {/* Filter Popup/Popover */}
           {filterOpen && (
-            <div
+            <nav
               ref={filterRef}
-              className="absolute right-0 mt-2 w-72 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-2xl p-5 z-40 space-y-4 animate-scale-in"
+              className="absolute right-0 mt-2 w-72 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-2xl p-5 z-40 space-y-4 animate-menu-show"
             >
               <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800 pb-2.5">
                 <h4 className="text-sm font-bold text-zinc-950 dark:text-zinc-50">Filter &amp; Sort</h4>
@@ -1072,7 +1072,7 @@ export default function StudentsListClient({
                   )}
                 </div>
               </div>
-            </div>
+            </nav>
           )}
         </div>
 

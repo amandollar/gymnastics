@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/auth";
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { updateAcademyProfile, getAcademyProfile } from "@/lib/services/academy";
 import { prisma } from "@/lib/prisma";
 
@@ -34,7 +34,7 @@ export async function updateAcademyProfileAction(
 
     await updateAcademyProfile({ email, phone, phone2, address, website, parentPortalUrl });
     revalidatePath("/admin/settings");
-    revalidateTag("academy");
+    updateTag("academy");
     return { success: true, message: "Academy profile updated successfully" };
   } catch (e) {
     return {
@@ -67,7 +67,7 @@ export async function saveMessageTemplatesAction(data: {
       },
     });
     revalidatePath("/admin/settings");
-    revalidateTag("academy");
+    updateTag("academy");
     return { success: true, message: "Templates saved successfully" };
   } catch (e) {
     return {

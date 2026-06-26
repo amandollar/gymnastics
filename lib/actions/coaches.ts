@@ -38,6 +38,11 @@ export async function createCoachAction(
     const notes = (formData.get("notes") as string) || undefined;
     const address = (formData.get("address") as string) || undefined;
     const avatarFile = formData.get("avatar");
+    const bioRaw = formData.get("bio") as string;
+    const bio = bioRaw ? bioRaw.trim().slice(0, 160) : undefined;
+    const experienceVal = formData.get("experience") as string;
+    const experience = experienceVal ? parseInt(experienceVal) : undefined;
+    const certifications = (formData.get("certifications") as string) || undefined;
 
     if (!name?.trim()) return { success: false, message: "Name is required" };
     if (!contactNumber?.trim()) return { success: false, message: "Contact number is required" };
@@ -45,6 +50,9 @@ export async function createCoachAction(
     if (!joinDate) return { success: false, message: "Join date is required" };
     if (role === "STAFF" && !email?.trim()) {
       return { success: false, message: "Email is required for staff employees" };
+    }
+    if (role === "COACH" && !bio?.trim()) {
+      return { success: false, message: "Biography / Philosophy is required for coaches" };
     }
 
     await createCoach({
@@ -59,6 +67,9 @@ export async function createCoachAction(
       notes: notes?.trim() || undefined,
       address: address.trim(),
       avatarFile: avatarFile instanceof File && avatarFile.size > 0 ? avatarFile : null,
+      bio: bio?.trim() || undefined,
+      experience: experience !== undefined && !isNaN(experience) ? experience : undefined,
+      certifications: certifications?.trim() || undefined,
     });
 
     revalidatePath("/admin/coaches");
@@ -95,12 +106,20 @@ export async function updateCoachAction(
     const notes = (formData.get("notes") as string) || null;
     const address = (formData.get("address") as string) || null;
     const avatarFile = formData.get("avatar");
+    const bioRaw = formData.get("bio") as string;
+    const bio = bioRaw ? bioRaw.trim().slice(0, 160) : null;
+    const experienceVal = formData.get("experience") as string;
+    const experience = experienceVal ? parseInt(experienceVal) : null;
+    const certifications = (formData.get("certifications") as string) || null;
 
     if (!name?.trim()) return { success: false, message: "Name is required" };
     if (!contactNumber?.trim()) return { success: false, message: "Contact number is required" };
     if (!address?.trim()) return { success: false, message: "Address is required" };
     if (role === "STAFF" && !email?.trim()) {
       return { success: false, message: "Email is required for staff employees" };
+    }
+    if (role === "COACH" && !bio?.trim()) {
+      return { success: false, message: "Biography / Philosophy is required for coaches" };
     }
 
     await updateCoach(coachId, {
@@ -116,6 +135,9 @@ export async function updateCoachAction(
       notes: notes?.trim() || null,
       address: address.trim(),
       avatarFile: avatarFile instanceof File && avatarFile.size > 0 ? avatarFile : null,
+      bio: bio?.trim() || null,
+      experience: experience !== null && !isNaN(experience) ? experience : null,
+      certifications: certifications?.trim() || null,
     });
 
     revalidatePath("/admin/coaches");
@@ -126,6 +148,31 @@ export async function updateCoachAction(
     return {
       success: false,
       message: e instanceof Error ? e.message : "Failed to update coach",
+    };
+  }
+}
+
+// ─── Toggle Coach Status (Left / Working) ─────────────────────────────────────
+
+/**
+ * Dedicated action for toggling a coach's status between LEFT and WORKING.
+ * Bypasses full form validation since only the status field is being changed.
+ */
+export async function toggleCoachStatusAction(
+  coachId: string,
+  status: "LEFT" | "WORKING"
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    await assertCanManage();
+    await updateCoach(coachId, { status });
+    revalidatePath("/admin/coaches");
+    revalidatePath(`/admin/coaches/${coachId}`);
+    updateTag("coaches");
+    return { success: true, message: `Status updated to ${status}` };
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Failed to update status",
     };
   }
 }

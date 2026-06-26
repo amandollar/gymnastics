@@ -140,7 +140,7 @@ export default function SettingsShell({
   };
 
   return (
-    <div className="mx-auto max-w-6xl relative min-w-0 w-full px-2 sm:px-0">
+    <div className="mx-auto max-w-7xl relative min-w-0 w-full px-2 sm:px-0">
       <div className="flex flex-col md:flex-row gap-6 items-stretch">
         {/* Desktop Sidebar Settings Navigation (visible on md and up) */}
         <aside className="hidden md:flex flex-col md:w-40 lg:w-48 shrink-0 border-0 gap-5 md:sticky md:top-8 md:h-[calc(100vh-7rem)] overflow-y-auto self-start pb-2">

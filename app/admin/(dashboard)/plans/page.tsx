@@ -44,10 +44,12 @@ export default async function PlansPage() {
     specialization: c.specialization,
     timing: c.timing,
     status: c.status,
+    avatarUrl: c.avatarUrl,
+    role: c.role,
   }));
 
   return (
-    <div className="mx-auto max-w-5xl min-w-0 w-full">
+    <div className="mx-auto max-w-7xl min-w-0 w-full">
       <PlansPageClient
         isAdmin={role === "ADMIN"}
         canManage={canManage}
