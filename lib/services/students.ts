@@ -436,6 +436,32 @@ export async function assignPlanToStudent(
     getGracePeriodMap(),
   ]);
 
+  let customBatchPricing: Record<number, number | null> | null = null;
+  if (input.planType === "REGULAR" && input.batchId) {
+    const batch = await prisma.batch.findUnique({
+      where: { id: input.batchId },
+      select: {
+        useDefaultPricing: true,
+        price1d: true,
+        price2d: true,
+        price3d: true,
+        price4d: true,
+        price5d: true,
+        price6d: true,
+      },
+    });
+    if (batch && batch.useDefaultPricing === false) {
+      customBatchPricing = {
+        1: batch.price1d,
+        2: batch.price2d,
+        3: batch.price3d,
+        4: batch.price4d,
+        5: batch.price5d,
+        6: batch.price6d,
+      };
+    }
+  }
+
   const computed = computePlanFields({
     planType: input.planType,
     startDate: input.startDate,
@@ -444,6 +470,7 @@ export async function assignPlanToStudent(
     discountPercent: input.discountPercent,
     pricingMaps,
     gracePeriodMap,
+    customBatchPricing,
   });
 
   if (computed.totalSessions === 0) {
@@ -599,6 +626,32 @@ export async function updateStudentActivePlan(
     gracePeriodMap: any;
   }
 ) {
+  let customBatchPricing: Record<number, number | null> | null = null;
+  if (data.planType === "REGULAR" && data.batchId) {
+    const batch = await prisma.batch.findUnique({
+      where: { id: data.batchId },
+      select: {
+        useDefaultPricing: true,
+        price1d: true,
+        price2d: true,
+        price3d: true,
+        price4d: true,
+        price5d: true,
+        price6d: true,
+      },
+    });
+    if (batch && batch.useDefaultPricing === false) {
+      customBatchPricing = {
+        1: batch.price1d,
+        2: batch.price2d,
+        3: batch.price3d,
+        4: batch.price4d,
+        5: batch.price5d,
+        6: batch.price6d,
+      };
+    }
+  }
+
   const computed = computePlanFields({
     planType: data.planType,
     startDate: data.startDate,
@@ -607,6 +660,7 @@ export async function updateStudentActivePlan(
     discountPercent: data.discountPercent,
     pricingMaps: data.pricingMaps,
     gracePeriodMap: data.gracePeriodMap,
+    customBatchPricing,
   });
 
   return prisma.studentPlan.update({

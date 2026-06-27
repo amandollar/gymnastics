@@ -26,7 +26,7 @@ import type { EnquiryStatus, CoachStatus, CoachRole } from "@prisma/client";
 export const listStudents = unstable_cache(
   async (filters?: { search?: string; status?: StudentStatus | "ALL" }) =>
     dbListStudents(filters),
-  ["students-list-v2"],
+  ["students-list-v3"],
   { tags: ["students"] }
 );
 
@@ -44,7 +44,7 @@ export const getStudentById = (id: string) => unstable_cache(
 
 export const listBatches = unstable_cache(
   async () => dbListBatches(),
-  ["batches-list"],
+  ["batches-list-v4"],
   { tags: ["batches"] }
 );
 

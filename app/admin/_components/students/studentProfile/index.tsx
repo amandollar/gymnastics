@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { MoreVertical, Key, Bell } from "lucide-react";
+import { MoreVertical, Key, Bell, Check } from "lucide-react";
 import { MedicalNotesCard } from "./MedicalNotesCard";
 import PushNotificationModal from "./PushNotificationModal";
 import StudentAvatar from "../StudentAvatar";
@@ -50,6 +50,8 @@ type StudentData = {
   password?: string | null;
   isTempPassword?: boolean;
   registrationFee?: number | null;
+  shirtProvided?: boolean;
+  idCardProvided?: boolean;
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -434,6 +436,53 @@ export default function StudentDetailClient({
                   {formatTenure(new Date(student.admissionDate))}
                 </dd>
               </div>
+              <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
+              <div className="flex justify-between gap-2">
+                <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">
+                  ID Card
+                </dt>
+                <dd className="font-medium text-right">
+                  {student.idCardProvided ? (
+                    <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-450 font-semibold">
+                      <Check className="w-3.5 h-3.5" /> Provided
+                    </span>
+                  ) : (
+                    <span className="text-zinc-400 dark:text-zinc-500">Not Provided</span>
+                  )}
+                </dd>
+              </div>
+              <div className="flex justify-between gap-2">
+                <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">
+                  T-Shirt
+                </dt>
+                <dd className="font-medium text-right">
+                  {student.shirtProvided ? (
+                    <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-450 font-semibold">
+                      <Check className="w-3.5 h-3.5" /> Provided
+                    </span>
+                  ) : (
+                    <span className="text-zinc-400 dark:text-zinc-500">Not Provided</span>
+                  )}
+                </dd>
+              </div>
+              {student.activePlan?.planType === "ONE_TO_ONE" && student.activePlan.coach && (
+                <>
+                  <div className="h-px bg-zinc-100 dark:bg-zinc-800" />
+                  <div className="flex justify-between gap-2">
+                    <dt className="text-zinc-400 dark:text-zinc-500 shrink-0">
+                      PT Coach
+                    </dt>
+                    <dd className="font-medium text-right">
+                      <Link
+                        href={`/admin/coaches/${student.activePlan.coach.id}`}
+                        className="text-brand-orange-500 hover:underline font-semibold"
+                      >
+                        {student.activePlan.coach.name}
+                      </Link>
+                    </dd>
+                  </div>
+                </>
+              )}
             </dl>
           </div>
 

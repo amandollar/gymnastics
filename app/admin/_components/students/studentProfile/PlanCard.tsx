@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useActionState } from "react";
+import Link from "next/link";
 import { formatINR } from "@/lib/utils/student";
 import { computeDaysLeft } from "@/lib/plan/calculations";
 import type { StudentStatus } from "@/lib/utils/student";
@@ -496,6 +497,24 @@ export function PlanCard({
                     </span>
                     <p className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
                       {plan.batch.timing}
+                    </p>
+                  </div>
+                </>
+              )}
+
+              {plan.planType === "ONE_TO_ONE" && plan.coach && (
+                <>
+                  <div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block mb-1.5">
+                      Coach
+                    </span>
+                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                      <Link
+                        href={`/admin/coaches/${plan.coach.id}`}
+                        className="text-brand-orange-500 hover:underline"
+                      >
+                        {plan.coach.name}
+                      </Link>
                     </p>
                   </div>
                 </>

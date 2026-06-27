@@ -78,7 +78,7 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
         </div>
       )}
 
-      <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800/60 bg-white dark:bg-zinc-950 p-4 lg:p-6 shadow-xs">
+      <div className="rounded-2xl border-0 bg-transparent p-0 shadow-none">
         {/* Header inside card */}
         <div className="mb-5">
           <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">

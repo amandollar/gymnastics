@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { computeStudentStatus } from "@/lib/utils/student";
+import type { WeekdayName } from "@/lib/plan/calculations";
 
 export type BatchWithCount = {
   id: string;
@@ -9,6 +10,16 @@ export type BatchWithCount = {
   activeCount: number;
   graceCount: number;
   inactiveCount: number;
+  dayCounts: Record<WeekdayName, number>;
+  startAge: number;
+  endAge: number;
+  useDefaultPricing: boolean;
+  price1d: number | null;
+  price2d: number | null;
+  price3d: number | null;
+  price4d: number | null;
+  price5d: number | null;
+  price6d: number | null;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -21,6 +32,7 @@ export async function listBatches(): Promise<BatchWithCount[]> {
       studentPlans: {
         where: { isActive: true },
         select: {
+          selectedDays: true,
           sessionsCompleted: true,
           totalSessions: true,
           endDate: true,
@@ -49,6 +61,16 @@ export async function listBatches(): Promise<BatchWithCount[]> {
     let graceCount = 0;
     let inactiveCount = 0;
 
+    const dayCounts: Record<WeekdayName, number> = {
+      Sunday: 0,
+      Monday: 0,
+      Tuesday: 0,
+      Wednesday: 0,
+      Thursday: 0,
+      Friday: 0,
+      Saturday: 0,
+    };
+
     b.studentPlans.forEach((plan: any) => {
       const status = computeStudentStatus({
         ...plan,
@@ -61,6 +83,17 @@ export async function listBatches(): Promise<BatchWithCount[]> {
       } else if (status === "INACTIVE") {
         inactiveCount++;
       }
+
+      if (status === "ACTIVE" || status === "FREEZE" || status === "GRACE") {
+        const days = plan.selectedDays;
+        if (Array.isArray(days)) {
+          days.forEach((day: string) => {
+            if (day in dayCounts) {
+              dayCounts[day as WeekdayName]++;
+            }
+          });
+        }
+      }
     });
 
     return {
@@ -71,6 +104,16 @@ export async function listBatches(): Promise<BatchWithCount[]> {
       activeCount,
       graceCount,
       inactiveCount,
+      dayCounts,
+      startAge: b.startAge,
+      endAge: b.endAge,
+      useDefaultPricing: b.useDefaultPricing !== false,
+      price1d: b.price1d,
+      price2d: b.price2d,
+      price3d: b.price3d,
+      price4d: b.price4d,
+      price5d: b.price5d,
+      price6d: b.price6d,
       createdAt: b.createdAt,
       updatedAt: b.updatedAt,
     };
@@ -78,15 +121,60 @@ export async function listBatches(): Promise<BatchWithCount[]> {
 }
 
 /** Creates a new batch. Throws if name is blank. */
-export async function createBatch(name: string, timing: string) {
-  return prisma.batch.create({ data: { name: name.trim(), timing: timing.trim() } });
+export async function createBatch(
+  name: string,
+  timing: string,
+  startAge: number,
+  endAge: number,
+  useDefaultPricing: boolean,
+  pricing: {
+    price1d: number | null;
+    price2d: number | null;
+    price3d: number | null;
+    price4d: number | null;
+    price5d: number | null;
+    price6d: number | null;
+  }
+) {
+  return prisma.batch.create({
+    data: {
+      name: name.trim(),
+      timing: timing.trim(),
+      startAge,
+      endAge,
+      useDefaultPricing,
+      ...pricing,
+    },
+  });
 }
 
 /** Updates an existing batch's name and/or timing. */
-export async function renameBatch(id: string, name: string, timing: string) {
+export async function renameBatch(
+  id: string,
+  name: string,
+  timing: string,
+  startAge: number,
+  endAge: number,
+  useDefaultPricing: boolean,
+  pricing: {
+    price1d: number | null;
+    price2d: number | null;
+    price3d: number | null;
+    price4d: number | null;
+    price5d: number | null;
+    price6d: number | null;
+  }
+) {
   return prisma.batch.update({
     where: { id },
-    data: { name: name.trim(), timing: timing.trim() },
+    data: {
+      name: name.trim(),
+      timing: timing.trim(),
+      startAge,
+      endAge,
+      useDefaultPricing,
+      ...pricing,
+    },
   });
 }
 

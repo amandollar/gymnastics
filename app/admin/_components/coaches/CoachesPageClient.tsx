@@ -24,6 +24,7 @@ import {
   Users,
   Loader2,
   Check,
+  Printer,
 } from "lucide-react";
 import {
   createCoachAction,
@@ -33,11 +34,13 @@ import {
   getCoachEarningsAction,
   toggleCoachSalaryPaymentAction,
   toggleCoachStatusAction,
+  getSalarySlipDataAction,
 } from "@/lib/actions/coaches";
 import type { CoachWithStats } from "@/lib/services/coaches";
 import type { CoachAttendanceStatus, CoachRole } from "@prisma/client";
 import StudentAvatarPicker from "@/app/admin/_components/students/StudentAvatarPicker";
 import { getMonthSalaryMultiplier } from "@/lib/utils/salary";
+import { SalarySlip } from "@/app/admin/_components/coaches/SalarySlip";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -911,6 +914,66 @@ export default function CoachesPageClient({ coaches: initialCoaches, todayStr }:
   const [chosenRole, setChosenRole] = useState<CoachRole>("COACH");
   const [leftModalCoach, setLeftModalCoach] = useState<CoachWithStats | null>(null);
   const [leftModalStatus, setLeftModalStatus] = useState<"loading" | "success" | null>(null);
+
+  // Pay modal state — shows loading → success (with Close + Download Slip) when marking paid
+  const [payModalCoach, setPayModalCoach] = useState<CoachWithStats | null>(null);
+  const [payModalInfo, setPayModalInfo] = useState<{ year: number; month: number } | null>(null);
+  const [payModalStatus, setPayModalStatus] = useState<"loading" | "success" | null>(null);
+
+
+  const [activePrintSlip, setActivePrintSlip] = useState<any | null>(null);
+
+  const handlePrintSlip = async (coachId: string, year: number, month: number) => {
+    try {
+      const res = await getSalarySlipDataAction(coachId, year, month);
+      if (res.success && res.data) {
+        const coach = coaches.find((c) => c.id === coachId);
+        const firstName = coach?.name.trim().split(/\s+/)[0]?.toLowerCase() || "employee";
+        const monthLabel = new Date(year, month - 1, 1).toLocaleString("en-US", { month: "short" }).toLowerCase();
+        const newTitle = `TAG-${firstName}-${monthLabel}-${year}-salary-slip`;
+        
+        document.title = newTitle;
+        const titleEl = document.querySelector('title');
+        if (titleEl) {
+          titleEl.textContent = newTitle;
+        }
+
+        setActivePrintSlip(res.data);
+      } else {
+        alert(res.message || "Failed to load salary slip data");
+      }
+    } catch {
+      alert("Error loading salary slip data");
+    }
+  };
+
+  useEffect(() => {
+    if (activePrintSlip) {
+      const timer = setTimeout(() => {
+        window.print();
+        
+        const standardTitle = "Coaches — TAG CRM";
+        document.title = standardTitle;
+        const titleEl = document.querySelector('title');
+        if (titleEl) {
+          titleEl.textContent = standardTitle;
+        }
+        
+        setActivePrintSlip(null);
+        window.location.reload();
+      }, 600);
+      return () => {
+        clearTimeout(timer);
+        const standardTitle = "Coaches — TAG CRM";
+        document.title = standardTitle;
+        const titleEl = document.querySelector('title');
+        if (titleEl) {
+          titleEl.textContent = standardTitle;
+        }
+      };
+    }
+  }, [activePrintSlip]);
+
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const headerMenuRef = useRef<HTMLDivElement>(null);
 
@@ -986,16 +1049,46 @@ export default function CoachesPageClient({ coaches: initialCoaches, todayStr }:
   };
 
   const handleTogglePayment = async (coachId: string, year: number, month: number, paid: boolean, amount: number) => {
-    try {
-      const result = await toggleCoachSalaryPaymentAction(coachId, year, month, paid, amount);
-      if (result.success) {
-        showToast("success", `Payment marked as ${paid ? "Paid" : "Unpaid"}`);
-        window.location.reload();
-      } else {
-        showToast("error", result.message ?? "Failed to update payment status");
+    if (paid) {
+      // Find the coach object for the modal
+      const coach = coaches.find((c) => c.id === coachId) ?? null;
+      setPayModalCoach(coach);
+      setPayModalInfo({ year, month });
+      setPayModalStatus("loading");
+
+      const startTime = Date.now();
+      try {
+        const result = await toggleCoachSalaryPaymentAction(coachId, year, month, paid, amount);
+        const elapsed = Date.now() - startTime;
+        await new Promise((resolve) => setTimeout(resolve, Math.max(0, 800 - elapsed)));
+
+        if (result.success) {
+          setPayModalStatus("success");
+        } else {
+          setPayModalCoach(null);
+          setPayModalInfo(null);
+          setPayModalStatus(null);
+          showToast("error", result.message ?? "Failed to update payment status");
+        }
+      } catch {
+        setPayModalCoach(null);
+        setPayModalInfo(null);
+        setPayModalStatus(null);
+        showToast("error", "An error occurred");
       }
-    } catch (err) {
-      showToast("error", "An error occurred");
+    } else {
+      // Marking unpaid — just do it silently and reload
+      try {
+        const result = await toggleCoachSalaryPaymentAction(coachId, year, month, paid, amount);
+        if (result.success) {
+          showToast("success", "Marked as Unpaid");
+          window.location.reload();
+        } else {
+          showToast("error", result.message ?? "Failed to update payment status");
+        }
+      } catch {
+        showToast("error", "An error occurred");
+      }
     }
   };
 
@@ -1251,6 +1344,127 @@ export default function CoachesPageClient({ coaches: initialCoaches, todayStr }:
             ) : null}
           </div>
         </div>
+      )}
+
+      {/* Mark As Paid Modal (Loading → Success with Close + Download Slip) */}
+      {payModalCoach && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div
+            className="relative w-full max-w-sm rounded-[28px] bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-700/60 p-8 shadow-2xl flex flex-col items-center text-center animate-scale-in"
+            style={{ boxShadow: "0 32px 64px -12px rgba(0,0,0,0.25)" }}
+          >
+            {payModalStatus === "loading" ? (
+              <div className="flex flex-col items-center space-y-4 py-4">
+                <Loader2 className="w-12 h-12 text-brand-orange-500 animate-spin" />
+                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  Recording Payment
+                </h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-xs leading-relaxed">
+                  Please wait while we mark {payModalCoach.name}&apos;s salary as paid...
+                </p>
+              </div>
+            ) : payModalStatus === "success" ? (
+              <div className="flex flex-col items-center py-4 w-full">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 mb-5 animate-scale-in">
+                  <Check className="h-8 w-8 stroke-[3]" />
+                </div>
+                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  Payment Recorded!
+                </h3>
+                <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1.5">
+                  {payModalCoach.name}&apos;s salary has been marked as paid.
+                </p>
+
+                <div className="mt-6 flex gap-3 w-full">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPayModalCoach(null);
+                      setPayModalInfo(null);
+                      setPayModalStatus(null);
+                      window.location.reload();
+                    }}
+                    className="flex-1 inline-flex items-center justify-center rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700 text-sm font-semibold text-zinc-700 dark:text-zinc-300 px-4 py-3 transition-colors cursor-pointer"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (payModalInfo) {
+                        handlePrintSlip(payModalCoach.id, payModalInfo.year, payModalInfo.month);
+                      }
+                      setPayModalCoach(null);
+                      setPayModalInfo(null);
+                      setPayModalStatus(null);
+                    }}
+                    className="flex-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-sm font-semibold text-white dark:text-zinc-900 px-4 py-3 transition-colors cursor-pointer"
+                  >
+                    <Printer className="h-4 w-4" />
+                    Download Slip
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {/* Print styles and hidden salary slip container */}
+      {activePrintSlip && (
+        <>
+          <style dangerouslySetInnerHTML={{__html: `
+            @page {
+              size: A4;
+              margin: 0 !important;
+            }
+            @media print {
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                overflow: hidden !important;
+                background: white !important;
+              }
+              body * {
+                visibility: hidden !important;
+              }
+              #print-slip-container,
+              #print-slip-container * {
+                visibility: visible !important;
+              }
+              #print-slip-container {
+                display: block !important;
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                background: white !important;
+                border: none !important;
+              }
+            }
+          `}} />
+          <div
+            id="print-slip-container"
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              zIndex: 99999,
+              backgroundColor: "white",
+              display: "none",
+            }}
+          >
+            <SalarySlip data={activePrintSlip} />
+          </div>
+        </>
       )}
     </div>
   );

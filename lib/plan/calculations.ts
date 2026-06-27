@@ -43,6 +43,7 @@ export interface PlanComputeInput {
    * If omitted the formula (sessionsPerWeek × planMonths × 2) is used.
    */
   gracePeriodMap?: GracePeriodMap;
+  customBatchPricing?: Record<number, number | null> | null;
 }
 
 export interface PlanComputeResult {
@@ -112,17 +113,27 @@ export function computePlanFields(input: PlanComputeInput): PlanComputeResult {
     input.endDate,
     input.selectedDays
   );
-  const pricePerSession = getPricePerSession(
+  let pricePerSession = getPricePerSession(
     input.planType,
     sessionsPerWeek,
     input.pricingMaps
   );
+
+  if (input.planType === "REGULAR" && input.customBatchPricing) {
+    const customPrice = input.customBatchPricing[sessionsPerWeek];
+    if (customPrice !== undefined && customPrice !== null) {
+      pricePerSession = customPrice;
+    }
+  }
+
   const grossFees = Math.round(totalSessions * pricePerSession);
   const fee = Math.round(grossFees - (grossFees * discountPercent) / 100);
 
-  const diffDays = differenceInDays(input.endDate, input.startDate);
+  const startDay = input.startDate.getDate();
+  const monthDiff = (input.endDate.getMonth() - input.startDate.getMonth()) + 12 * (input.endDate.getFullYear() - input.startDate.getFullYear());
+  const calculatedMonths = startDay < 15 ? monthDiff + 1 : monthDiff;
   const planMonths: 1 | 3 | null =
-    diffDays <= 31 ? 1 : diffDays <= 93 ? 3 : null;
+    calculatedMonths === 1 ? 1 : calculatedMonths === 3 ? 3 : null;
 
   // Grace days: from DB map, or formula fallback (only for REGULAR grouped class)
   const graceDays =
@@ -158,4 +169,56 @@ export function computePlanFields(input: PlanComputeInput): PlanComputeResult {
 
 export function computeDaysLeft(expiryDate: Date, today = new Date()): number {
   return differenceInDays(expiryDate, today);
+}
+
+/**
+ * Automatically selects 3 weekdays for a plan based on the lowest student load
+ * in the selected batch, excluding Sundays and preferring alternate days.
+ */
+export function selectThreeDays(counts: Record<WeekdayName, number>): WeekdayName[] {
+  const weekdays: WeekdayName[] = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+  // Generate all 20 combinations of 3 days out of the 6 weekdays (excluding Sunday)
+  const combinations: WeekdayName[][] = [];
+  for (let i = 0; i < weekdays.length; i++) {
+    for (let j = i + 1; j < weekdays.length; j++) {
+      for (let k = j + 1; k < weekdays.length; k++) {
+        combinations.push([weekdays[i], weekdays[j], weekdays[k]]);
+      }
+    }
+  }
+
+  // Helper to check if a combination has consecutive days
+  const hasConsecutive = (comb: WeekdayName[]): boolean => {
+    const idx0 = weekdays.indexOf(comb[0]);
+    const idx1 = weekdays.indexOf(comb[1]);
+    const idx2 = weekdays.indexOf(comb[2]);
+    return (idx1 - idx0 === 1) || (idx2 - idx1 === 1);
+  };
+
+  // Helper to compute sum of students for a combination
+  const getSum = (comb: WeekdayName[]): number => {
+    return comb.reduce((sum, d) => sum + (counts[d] ?? 0), 0);
+  };
+
+  // 1. Find the naive selection (the 3 days with the lowest student count)
+  const sortedDays = [...weekdays].sort((a, b) => (counts[a] ?? 0) - (counts[b] ?? 0));
+  const naiveSelection: WeekdayName[] = [sortedDays[0], sortedDays[1], sortedDays[2]];
+
+  // 2. If the naive selection does not have consecutive days, return it sorted by weekday order
+  if (!hasConsecutive(naiveSelection)) {
+    return naiveSelection.sort((a, b) => weekdays.indexOf(a) - weekdays.indexOf(b));
+  }
+
+  // 3. If it has consecutive days, try selecting alternate days (combinations with 0 consecutive days)
+  const alternateCombinations = combinations.filter(comb => !hasConsecutive(comb));
+
+  // Sort alternate combinations by their student count sum ascending
+  alternateCombinations.sort((a, b) => getSum(a) - getSum(b));
+
+  if (alternateCombinations.length > 0) {
+    return alternateCombinations[0];
+  }
+
+  return naiveSelection.sort((a, b) => weekdays.indexOf(a) - weekdays.indexOf(b));
 }

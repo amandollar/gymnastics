@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Search, X, Check, ChevronDown, UserRound, Lock } from "lucide-react";
-import { STATUS_STYLES, type StudentStatus } from "@/lib/utils/student";
+import { STATUS_STYLES, type StudentStatus, formatAge } from "@/lib/utils/student";
 import StudentAvatar from "@/app/admin/_components/students/StudentAvatar";
 
 export type PlanStudentOption = {
@@ -14,8 +14,13 @@ export type PlanStudentOption = {
   parentName: string;
   gender?: string | null;
   avatarUrl?: string | null;
+  dateOfBirth?: string | null;
   /** ISO date string of the plan's expiry date (endDate + grace) — present when student has active/grace/freeze plan */
   planEndsAt?: string | null;
+  activePlan?: {
+    batchId: string | null;
+    selectedDays: any;
+  } | null;
 };
 
 /** Statuses that mean a student currently has an active plan and cannot be re-assigned */
@@ -118,7 +123,7 @@ export default function StudentPicker({
               {selected.name}
             </p>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-              TAG{selected.studentNumber} · {selected.parentName}
+              TAG{selected.studentNumber} · {selected.parentName}{selected.dateOfBirth && ` · Age: ${formatAge(selected.dateOfBirth)}`}
             </p>
           </div>
           <StatusPill status={selected.status} />
@@ -232,7 +237,7 @@ export default function StudentPicker({
                             {s.name}
                           </span>
                           <span className="block text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
-                            TAG{s.studentNumber} · {s.parentName}
+                            TAG{s.studentNumber} · {s.parentName}{s.dateOfBirth && ` · Age: ${formatAge(s.dateOfBirth)}`}
                           </span>
                         </span>
                         {isLocked ? (

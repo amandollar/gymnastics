@@ -33,9 +33,14 @@ export default async function PlansPage() {
     parentName: s.parentName,
     gender: s.gender,
     avatarUrl: s.avatarUrl,
+    dateOfBirth: s.dateOfBirth ? new Date(s.dateOfBirth).toISOString() : null,
     planEndsAt: (s as any).activePlan?.expiryDate
       ? new Date((s as any).activePlan.expiryDate).toISOString()
       : null,
+    activePlan: (s as any).activePlan ? {
+      batchId: (s as any).activePlan.batchId,
+      selectedDays: (s as any).activePlan.selectedDays,
+    } : null,
   }));
 
   const coachOptions = coaches.map((c: any) => ({

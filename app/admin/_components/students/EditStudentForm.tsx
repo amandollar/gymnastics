@@ -43,6 +43,8 @@ type StudentData = {
   activePlan?: StudentPlanData;
 };
 
+import type { PlanStudentOption } from "@/app/admin/_components/plans/StudentPicker";
+
 export default function EditStudentForm({
   student,
   pricingMaps,
@@ -50,6 +52,7 @@ export default function EditStudentForm({
   batches = [],
   coaches = [],
   planStatus,
+  students = [],
 }: {
   student: StudentData;
   pricingMaps: any;
@@ -57,6 +60,7 @@ export default function EditStudentForm({
   batches?: BatchWithCount[];
   coaches?: any[];
   planStatus?: StudentStatus;
+  students?: PlanStudentOption[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -159,6 +163,8 @@ export default function EditStudentForm({
               batches={batches}
               coaches={coaches}
               planStatus={planStatus}
+              studentDateOfBirth={student.dateOfBirth}
+              students={students}
             />
           )}
         </div>

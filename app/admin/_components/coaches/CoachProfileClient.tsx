@@ -25,10 +25,12 @@ import {
   deleteCoachAttendanceAction,
   getCoachEarningsAction,
   toggleCoachSalaryPaymentAction,
+  getSalarySlipDataAction,
 } from "@/lib/actions/coaches";
 import type { CoachAttendanceStatus, CoachRole } from "@prisma/client";
 import StudentAvatarPicker from "@/app/admin/_components/students/StudentAvatarPicker";
 import { getMonthSalaryMultiplier } from "@/lib/utils/salary";
+import { SalarySlip } from "@/app/admin/_components/coaches/SalarySlip";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -451,6 +453,57 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
     }
     return map;
   });
+  const [activePrintSlip, setActivePrintSlip] = useState<any | null>(null);
+
+  const handlePrintSlip = async (year: number, month: number) => {
+    try {
+      const res = await getSalarySlipDataAction(coach.id, year, month);
+      if (res.success && res.data) {
+        const firstName = coach.name.trim().split(/\s+/)[0]?.toLowerCase() || "employee";
+        const monthLabel = new Date(year, month - 1, 1).toLocaleString("en-US", { month: "short" }).toLowerCase();
+        const newTitle = `TAG-${firstName}-${monthLabel}-${year}-salary-slip`;
+        
+        const originalTitle = document.title;
+        document.title = newTitle;
+        const titleEl = document.querySelector('title');
+        if (titleEl) {
+          titleEl.textContent = newTitle;
+        }
+
+        setActivePrintSlip(res.data);
+      } else {
+        alert(res.message || "Failed to load salary slip data");
+      }
+    } catch {
+      alert("Error loading salary slip data");
+    }
+  };
+
+  useEffect(() => {
+    if (activePrintSlip) {
+      const timer = setTimeout(() => {
+        window.print();
+        
+        const standardTitle = "Coach Profile — TAG CRM";
+        document.title = standardTitle;
+        const titleEl = document.querySelector('title');
+        if (titleEl) {
+          titleEl.textContent = standardTitle;
+        }
+        
+        setActivePrintSlip(null);
+      }, 600);
+      return () => {
+        clearTimeout(timer);
+        const standardTitle = "Coach Profile — TAG CRM";
+        document.title = standardTitle;
+        const titleEl = document.querySelector('title');
+        if (titleEl) {
+          titleEl.textContent = standardTitle;
+        }
+      };
+    }
+  }, [activePrintSlip]);
 
   const handleTogglePayment = async (year: number, month: number, amount: number) => {
     const key = `${year}-${month}`;
@@ -1054,15 +1107,17 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
                       )}
                     </h2>
                     <div className="flex items-center gap-2">
-                      {/* Printable Link */}
-                      <Link
-                        href={`/admin/coaches/${coach.id}/salary-slip/${monthVal.year}/${monthVal.month + 1}`}
-                        target="_blank"
-                        className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-semibold border bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 transition-all cursor-pointer select-none"
-                      >
-                        <Printer className="h-3.5 w-3.5 text-zinc-450 dark:text-zinc-400" />
-                        Slip
-                      </Link>
+                      {/* Slip button — only visible when paid */}
+                      {currentPayment.paid && (
+                        <button
+                          onClick={() => handlePrintSlip(monthVal.year, monthVal.month + 1)}
+                          className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-semibold border bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 transition-all cursor-pointer select-none"
+                          title="Print salary slip"
+                        >
+                          <Printer className="h-3.5 w-3.5 text-zinc-450 dark:text-zinc-400" />
+                          Slip
+                        </button>
+                      )}
 
                       {/* Paid / Unpaid Toggle */}
                       <button
@@ -1248,6 +1303,63 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Print styles and hidden salary slip container */}
+      {activePrintSlip && (
+        <>
+          <style dangerouslySetInnerHTML={{__html: `
+            @page {
+              size: A4;
+              margin: 0 !important;
+            }
+            @media print {
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                overflow: hidden !important;
+                background: white !important;
+              }
+              body * {
+                visibility: hidden !important;
+              }
+              #print-slip-container,
+              #print-slip-container * {
+                visibility: visible !important;
+              }
+              #print-slip-container {
+                display: block !important;
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                background: white !important;
+                border: none !important;
+              }
+            }
+          `}} />
+          <div
+            id="print-slip-container"
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              zIndex: 99999,
+              backgroundColor: "white",
+              display: "none",
+            }}
+          >
+            <SalarySlip data={activePrintSlip} />
+          </div>
+        </>
       )}
     </div>
   );

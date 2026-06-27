@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useTheme } from "@/app/_components/theme-provider";
-import { Sun, Moon, Monitor, Check, Sparkles } from "lucide-react";
+import { Sun, Moon, Monitor, Check } from "lucide-react";
 
 const ACCENT_COLORS = {
   orange: {
@@ -119,8 +119,6 @@ export default function AppearanceTab() {
     },
   ];
 
-  const currentThemeLabel =
-    themes.find((t) => t.value === theme)?.label || "System";
   const currentAccent = ACCENT_COLORS[accent as keyof typeof ACCENT_COLORS];
 
   return (
@@ -138,20 +136,11 @@ export default function AppearanceTab() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800/60 bg-white dark:bg-zinc-950 p-5 shadow-xs">
-        <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
-              Appearance
-            </h2>
-            <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
-              Customize the look and feel of the dashboard.
-            </p>
-          </div>
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 dark:bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300">
-            <Sparkles className="h-3.5 w-3.5" />
-            {currentThemeLabel} · {currentAccent.label}
-          </div>
+      <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800/60 bg-white dark:bg-zinc-950 p-5 shadow-xs md:border-0 md:bg-transparent md:p-0 md:shadow-none">
+        <div className="mb-5">
+          <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+            Appearance
+          </h2>
         </div>
 
         <div className="mb-6 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-gradient-to-br from-zinc-50 via-white to-zinc-100 dark:from-zinc-900 dark:via-zinc-950 dark:to-zinc-900 p-4">
@@ -212,7 +201,7 @@ export default function AppearanceTab() {
                     setTheme(t.value);
                     showToast("success", `${t.label} theme activated.`);
                   }}
-                  className={`flex flex-col items-start p-4 rounded-xl border text-left cursor-pointer transition-all ${
+                  className={`flex flex-col items-start p-4 rounded-2xl border text-left cursor-pointer transition-all ${
                     isActive
                       ? "border-brand-orange-500 bg-brand-orange-50/20 dark:bg-brand-orange-950/10 ring-1 ring-brand-orange-500"
                       : "border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/40"

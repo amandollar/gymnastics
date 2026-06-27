@@ -7,60 +7,21 @@ import { assignPlanFromPlansPageAction } from "@/lib/actions/students";
 import { Check, ArrowRight } from "lucide-react";
 import {
   computePlanFields,
+  selectThreeDays,
   type PlanTypeKey,
   type WeekdayName,
 } from "@/lib/plan/calculations";
 import type { PricingMaps } from "@/lib/plan/pricing-defaults";
 import type { GracePeriodMap } from "@/lib/plan/grace-period-utils";
 import type { BatchWithCount } from "@/lib/services/batches";
-import { parseDateInput, toDateInputValue } from "@/lib/utils/student";
+import { parseDateInput, toDateInputValue, computeStudentAge } from "@/lib/utils/student";
 import PlanBuilderFields from "./PlanBuilderFields";
 import StudentPicker, { type PlanStudentOption } from "./StudentPicker";
 import BatchPicker from "./BatchPicker";
 import CoachPicker, { type CoachOption } from "./CoachPicker";
 import { planInputClass } from "./plan-form-shared";
 
-function parseDaysFromBatchName(name: string): WeekdayName[] | null {
-  const words = name.trim().split(/\s+/);
-  if (words.length === 0) return null;
-  const lastWord = words[words.length - 1];
 
-  // Must consist only of uppercase letters
-  if (!/^[A-Z]+$/.test(lastWord)) {
-    return null;
-  }
-
-  const daysInfo: { char: string; name: WeekdayName }[] = [
-    { char: "M", name: "Monday" },
-    { char: "T", name: "Tuesday" },
-    { char: "W", name: "Wednesday" },
-    { char: "T", name: "Thursday" },
-    { char: "F", name: "Friday" },
-    { char: "S", name: "Saturday" },
-    { char: "S", name: "Sunday" },
-  ];
-
-  const selected: WeekdayName[] = [];
-  let searchIndex = 0;
-
-  for (let i = 0; i < lastWord.length; i++) {
-    const char = lastWord[i];
-    let foundIndex = -1;
-    for (let j = searchIndex; j < daysInfo.length; j++) {
-      if (daysInfo[j].char === char) {
-        foundIndex = j;
-        break;
-      }
-    }
-
-    if (foundIndex !== -1) {
-      selected.push(daysInfo[foundIndex].name);
-      searchIndex = foundIndex + 1;
-    }
-  }
-
-  return selected.length > 0 ? selected : null;
-}
 
 export default function CreateAssignPlanPanel({
   students,
@@ -69,7 +30,6 @@ export default function CreateAssignPlanPanel({
   batches,
   coaches,
   canManage,
-  onOpenBatchesModal,
 }: {
   students: PlanStudentOption[];
   pricingMaps: PricingMaps;
@@ -77,7 +37,6 @@ export default function CreateAssignPlanPanel({
   batches: BatchWithCount[];
   coaches: CoachOption[];
   canManage: boolean;
-  onOpenBatchesModal?: () => void;
 }) {
   const searchParams = useSearchParams();
   const preselectId = searchParams.get("student") ?? "";
@@ -90,6 +49,12 @@ export default function CreateAssignPlanPanel({
   const [selectedDays, setSelectedDays] = useState<WeekdayName[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [selectedBatchId, setSelectedBatchId] = useState("");
+
+  const selectedBatch = useMemo(() => {
+    return batches.find((b) => b.id === selectedBatchId);
+  }, [batches, selectedBatchId]);
+
+  const batchDayCounts = selectedBatch?.dayCounts ?? null;
   const [selectedCoachId, setSelectedCoachId] = useState("");
   const [commissionPercent, setCommissionPercent] = useState(50);
   const [studentError, setStudentError] = useState<string | undefined>();
@@ -139,6 +104,28 @@ export default function CreateAssignPlanPanel({
     setCoachError(undefined);
   }
 
+  const selectedStudent = useMemo(() => {
+    return students.find((s) => s.id === studentId) ?? null;
+  }, [students, studentId]);
+
+  const studentAge = useMemo(() => {
+    if (!selectedStudent || !selectedStudent.dateOfBirth) return null;
+    return Math.floor(computeStudentAge(selectedStudent.dateOfBirth));
+  }, [selectedStudent]);
+
+  const customBatchPricing = useMemo(() => {
+    if (planType !== "REGULAR" || !selectedBatch) return null;
+    if (selectedBatch.useDefaultPricing) return null;
+    return {
+      1: selectedBatch.price1d,
+      2: selectedBatch.price2d,
+      3: selectedBatch.price3d,
+      4: selectedBatch.price4d,
+      5: selectedBatch.price5d,
+      6: selectedBatch.price6d,
+    };
+  }, [planType, selectedBatch]);
+
   const preview = useMemo(() => {
     if (!startDate || !endDate || selectedDays.length === 0) return null;
     try {
@@ -153,11 +140,12 @@ export default function CreateAssignPlanPanel({
         discountPercent,
         pricingMaps,
         gracePeriodMap,
+        customBatchPricing,
       });
     } catch {
       return null;
     }
-  }, [planType, startDate, endDate, selectedDays, discountPercent, pricingMaps, gracePeriodMap]);
+  }, [planType, startDate, endDate, selectedDays, discountPercent, pricingMaps, gracePeriodMap, customBatchPricing]);
 
   function toggleDay(day: WeekdayName) {
     setSelectedDays((prev) =>
@@ -168,16 +156,15 @@ export default function CreateAssignPlanPanel({
   const handleBatchChange = (id: string) => {
     setSelectedBatchId(id);
     setBatchError(undefined);
+    if (!id) return;
     const batch = batches.find((b) => b.id === id);
-    if (batch) {
-      const autoDays = parseDaysFromBatchName(batch.name);
-      if (autoDays) {
-        setSelectedDays(autoDays);
-      }
+    if (batch && batch.dayCounts) {
+      const autoDays = selectThreeDays(batch.dayCounts);
+      setSelectedDays(autoDays);
     }
   };
 
-  const selectedStudent = students.find((s) => s.id === studentId);
+
 
   if (showSuccess && selectedStudent) {
     return (
@@ -290,6 +277,7 @@ export default function CreateAssignPlanPanel({
               onDiscountChange={setDiscountPercent}
               preview={preview}
               selectedDaysError={state?.errors?.selectedDays?.[0]}
+              dayCounts={batchDayCounts}
             >
               {/* Conditional: Batch (REGULAR) or Coach (ONE_TO_ONE) */}
               {isPersonalTraining ? (
@@ -339,14 +327,13 @@ export default function CreateAssignPlanPanel({
                     <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
                       {batches.length === 0 ? "No batches added" : "Batch"}
                     </p>
-                    {batches.length === 0 && onOpenBatchesModal && (
-                      <button
-                        type="button"
-                        onClick={onOpenBatchesModal}
+                    {batches.length === 0 && (
+                      <Link
+                        href="/admin/settings?tab=batches"
                         className="inline-flex items-center justify-center rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 text-white px-3.5 py-1.5 text-xs font-semibold transition-colors cursor-pointer shadow-sm"
                       >
                         Create Batch
-                      </button>
+                      </Link>
                     )}
                   </div>
                   <BatchPicker
@@ -354,7 +341,9 @@ export default function CreateAssignPlanPanel({
                     value={selectedBatchId}
                     onChange={handleBatchChange}
                     error={batchError}
-                    onManageBatches={onOpenBatchesModal}
+                    studentAge={studentAge}
+                    students={students}
+                    pricingMaps={pricingMaps}
                   />
                 </div>
               )}

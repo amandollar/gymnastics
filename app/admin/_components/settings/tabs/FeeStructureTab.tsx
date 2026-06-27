@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useTransition, useEffect } from "react";
+import Link from "next/link";
 import { updateSessionPricingAction } from "@/lib/actions/pricing";
 import type { PricingMaps } from "@/lib/services/pricing";
 import { DollarSign, Info, Save } from "lucide-react";
@@ -82,7 +83,7 @@ export default function FeeStructureTab({ initialPricingMaps }: FeeStructureTabP
         </div>
       )}
 
-      <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800/60 bg-white dark:bg-zinc-950 p-4 lg:p-6 shadow-xs">
+      <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800/60 bg-white dark:bg-zinc-950 p-4 lg:p-6 shadow-xs md:border-0 md:bg-transparent md:p-0 md:shadow-none">
         {/* Header inside card */}
         <div className="mb-5">
           <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
@@ -95,7 +96,7 @@ export default function FeeStructureTab({ initialPricingMaps }: FeeStructureTabP
           <button
             type="button"
             onClick={() => setActiveSubTab("REGULAR")}
-            className={`pb-3 text-sm font-medium border-b-2 px-1 transition-all mr-6 cursor-pointer ${
+            className={`pb-3 text-sm font-medium border-b-2 px-1 transition-all mr-6 cursor-pointer rounded-none ${
               activeSubTab === "REGULAR"
                 ? "border-brand-orange-500 text-brand-orange-600 dark:text-brand-orange-400"
                 : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
@@ -106,7 +107,7 @@ export default function FeeStructureTab({ initialPricingMaps }: FeeStructureTabP
           <button
             type="button"
             onClick={() => setActiveSubTab("ONE_TO_ONE")}
-            className={`pb-3 text-sm font-medium border-b-2 px-1 transition-all cursor-pointer ${
+            className={`pb-3 text-sm font-medium border-b-2 px-1 transition-all cursor-pointer rounded-none ${
               activeSubTab === "ONE_TO_ONE"
                 ? "border-brand-orange-500 text-brand-orange-600 dark:text-brand-orange-400"
                 : "border-transparent text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
@@ -115,13 +116,30 @@ export default function FeeStructureTab({ initialPricingMaps }: FeeStructureTabP
             Personal training
           </button>
         </div>
-
-        <div className="flex items-center gap-2 mb-4 text-xs text-amber-600 dark:text-amber-400">
-          <Info className="h-3.5 w-3.5 shrink-0 text-amber-500 dark:text-amber-455" />
-          <p className="font-medium">
-            The monthly fee is calculated as: <span className="font-semibold text-amber-700 dark:text-amber-300">Days per Week × 4 Weeks × Price per Session</span>
-          </p>
-        </div>
+        {/* Pricing structure warning — only for Regular Plans */}
+        {activeSubTab === "REGULAR" && (
+          <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/40 text-xs text-amber-800 dark:text-amber-300 mb-6 flex items-start gap-2.5">
+            <Info className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-semibold text-amber-900 dark:text-amber-200">
+                This is the default pricing structure of grouped batches.
+              </p>
+              <p className="text-amber-750/80 dark:text-amber-400/80">
+                To modify the plan for a particular batch, go to the{" "}
+                <Link
+                  href="/admin/settings?tab=batches"
+                  className="font-bold underline hover:text-amber-900 dark:hover:text-amber-200 transition-colors"
+                >
+                  batches
+                </Link>{" "}
+                page.
+              </p>
+              <p className="text-[11px] text-amber-700/60 dark:text-amber-500/70 pt-1.5 border-t border-amber-200/30 dark:border-amber-900/20 mt-1.5">
+                The monthly fee is calculated as: <span className="font-semibold text-amber-750 dark:text-amber-300">Days per Week × 4 Weeks × Price per Session</span>
+              </p>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSave}>
           <div className="overflow-x-auto">

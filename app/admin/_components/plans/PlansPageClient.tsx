@@ -6,10 +6,9 @@ import type { PricingMaps } from "@/lib/plan/pricing-defaults";
 import type { GracePeriodMap } from "@/lib/plan/grace-period-utils";
 import type { BatchWithCount } from "@/lib/services/batches";
 import type { CoachOption } from "./CoachPicker";
-import { Settings, X, Layers } from "lucide-react";
+import { Settings, X } from "lucide-react";
 import CreateAssignPlanPanel from "./CreateAssignPlanPanel";
 import PricingRatesPanel from "./PricingRatesPanel";
-import BatchesPanel from "./BatchesPanel";
 import type { PlanStudentOption } from "./StudentPicker";
 
 export default function PlansPageClient({
@@ -30,7 +29,6 @@ export default function PlansPageClient({
   canManage: boolean;
 }) {
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [batchesOpen, setBatchesOpen] = useState(false);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -77,14 +75,13 @@ export default function PlansPageClient({
           <div className="relative">
             {/* Desktop View: Action Buttons */}
             <div className="hidden sm:flex items-center gap-2 shrink-0">
-              {/* Manage Batches button */}
-              <button
-                type="button"
-                onClick={() => setBatchesOpen(true)}
+              {/* Manage Batches link */}
+              <Link
+                href="/admin/settings?tab=batches"
                 className="inline-flex items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
               >
                 <span>Manage Batch</span>
-              </button>
+              </Link>
 
               {/* Pricing & Grace button */}
               <button
@@ -114,16 +111,12 @@ export default function PlansPageClient({
                   ref={headerMenuRef}
                   className="absolute right-0 mt-2 w-48 rounded-2xl border border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-2xl py-1.5 overflow-hidden z-50 animate-scale-in origin-top-right"
                 >
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setHeaderMenuOpen(false);
-                      setBatchesOpen(true);
-                    }}
+                  <Link
+                    href="/admin/settings?tab=batches"
                     className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer font-medium"
                   >
                     Manage Batches
-                  </button>
+                  </Link>
                   <button
                     type="button"
                     onClick={() => {
@@ -155,7 +148,6 @@ export default function PlansPageClient({
             batches={initialBatches}
             coaches={coaches}
             canManage={canManage}
-            onOpenBatchesModal={() => setBatchesOpen(true)}
           />
         </Suspense>
       </div>
@@ -170,44 +162,7 @@ export default function PlansPageClient({
         </p>
       )}
 
-      {/* Manage Batches Modal */}
-      {batchesOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
-          onClick={(e) => e.target === e.currentTarget && setBatchesOpen(false)}
-        >
-          <div className="relative w-full max-w-lg rounded-3xl bg-white dark:bg-zinc-900 shadow-2xl p-6 overflow-hidden max-h-[90vh] flex flex-col animate-scale-in">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between mb-5 shrink-0">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-orange-100 dark:bg-brand-orange-950/40">
-                  <Layers className="h-4 w-4 text-brand-orange-600 dark:text-brand-orange-400" />
-                </div>
-                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">Manage Batches</h3>
-              </div>
-              <button
-                onClick={() => setBatchesOpen(false)}
-                className="h-8 w-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-              >
-                <X className="h-4 w-4" strokeWidth={2} />
-              </button>
-            </div>
 
-            {/* Modal Scrollable Body */}
-            <div className="flex-1 overflow-y-auto pr-1">
-              <BatchesPanel
-                initialBatches={initialBatches}
-                onClose={() => setBatchesOpen(false)}
-                onSuccess={(msg) => {
-                  showToast("success", msg);
-                  // Refresh batches from the server revalidation on next render
-                  // The revalidatePath in actions will refresh server-rendered data
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Settings Modal — Pricing & Grace */}
       {settingsOpen && (

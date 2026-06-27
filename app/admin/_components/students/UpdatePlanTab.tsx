@@ -1,13 +1,14 @@
 "use client";
 
-import { useActionState, useState, useMemo } from "react";
+import { useActionState, useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { AlertCircle, PlusCircle } from "lucide-react";
 import { updateStudentActivePlanAction } from "@/lib/actions/students";
-import { toDateInputValue, parseDateInput } from "@/lib/utils/student";
+import { toDateInputValue, parseDateInput, computeStudentAge } from "@/lib/utils/student";
 import {
   computePlanFields,
   countSessions,
+  selectThreeDays,
   type PlanTypeKey,
   type WeekdayName,
 } from "@/lib/plan/calculations";
@@ -16,48 +17,9 @@ import BatchPicker from "@/app/admin/_components/plans/BatchPicker";
 import CoachPicker, { type CoachOption } from "@/app/admin/_components/plans/CoachPicker";
 import type { BatchWithCount } from "@/lib/services/batches";
 import type { StudentStatus } from "@/lib/utils/student";
+import type { PlanStudentOption } from "@/app/admin/_components/plans/StudentPicker";
 
-function parseDaysFromBatchName(name: string): WeekdayName[] | null {
-  const words = name.trim().split(/\s+/);
-  if (words.length === 0) return null;
-  const lastWord = words[words.length - 1];
 
-  // Must consist only of uppercase letters
-  if (!/^[A-Z]+$/.test(lastWord)) {
-    return null;
-  }
-
-  const daysInfo: { char: string; name: WeekdayName }[] = [
-    { char: "M", name: "Monday" },
-    { char: "T", name: "Tuesday" },
-    { char: "W", name: "Wednesday" },
-    { char: "T", name: "Thursday" },
-    { char: "F", name: "Friday" },
-    { char: "S", name: "Saturday" },
-    { char: "S", name: "Sunday" },
-  ];
-
-  const selected: WeekdayName[] = [];
-  let searchIndex = 0;
-
-  for (let i = 0; i < lastWord.length; i++) {
-    const char = lastWord[i];
-    let foundIndex = -1;
-    for (let j = searchIndex; j < daysInfo.length; j++) {
-      if (daysInfo[j].char === char) {
-        foundIndex = j;
-        break;
-      }
-    }
-
-    if (foundIndex !== -1) {
-      selected.push(daysInfo[foundIndex].name);
-      searchIndex = foundIndex + 1;
-    }
-  }
-
-  return selected.length > 0 ? selected : null;
-}
 
 const inputClass =
   "w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3.5 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 focus:border-brand-orange-500 transition-all duration-200";
@@ -202,6 +164,8 @@ export default function UpdatePlanTab({
   batches,
   coaches = [],
   planStatus,
+  studentDateOfBirth,
+  students = [],
 }: {
   studentId: string;
   activePlan: ActivePlan;
@@ -210,6 +174,8 @@ export default function UpdatePlanTab({
   batches: BatchWithCount[];
   coaches?: CoachOption[];
   planStatus?: StudentStatus;
+  studentDateOfBirth?: Date | string | null;
+  students?: PlanStudentOption[];
 }) {
   // If the plan is INACTIVE or EXPIRED, show the expired banner + create new plan CTA
   const isPlanExpired =
@@ -228,6 +194,8 @@ export default function UpdatePlanTab({
       gracePeriodMap={gracePeriodMap}
       batches={batches}
       coaches={coaches}
+      studentDateOfBirth={studentDateOfBirth}
+      students={students}
     />
   );
 }
@@ -241,6 +209,8 @@ function EditPlanForm({
   gracePeriodMap,
   batches,
   coaches = [],
+  studentDateOfBirth,
+  students = [],
 }: {
   studentId: string;
   activePlan: ActivePlan;
@@ -248,6 +218,8 @@ function EditPlanForm({
   gracePeriodMap: any;
   batches: BatchWithCount[];
   coaches?: CoachOption[];
+  studentDateOfBirth?: Date | string | null;
+  students?: PlanStudentOption[];
 }) {
   const [planType, setPlanType] = useState<PlanTypeKey>(activePlan.planType);
   const [startDate, setStartDate] = useState(
@@ -272,6 +244,30 @@ function EditPlanForm({
     activePlan.commissionPercent ?? 50
   );
 
+  const studentAge = useMemo(() => {
+    if (!studentDateOfBirth) return null;
+    return Math.floor(computeStudentAge(studentDateOfBirth));
+  }, [studentDateOfBirth]);
+
+  const selectedBatch = useMemo(() => {
+    return batches.find((b) => b.id === selectedBatchId);
+  }, [batches, selectedBatchId]);
+
+  const customBatchPricing = useMemo(() => {
+    if (planType !== "REGULAR" || !selectedBatch) return null;
+    if (selectedBatch.useDefaultPricing) return null;
+    return {
+      1: selectedBatch.price1d,
+      2: selectedBatch.price2d,
+      3: selectedBatch.price3d,
+      4: selectedBatch.price4d,
+      5: selectedBatch.price5d,
+      6: selectedBatch.price6d,
+    };
+  }, [planType, selectedBatch]);
+
+  const batchDayCounts = selectedBatch?.dayCounts ?? null;
+
   const [state, action, pending] = useActionState(
     updateStudentActivePlanAction.bind(null, studentId),
     null
@@ -285,12 +281,11 @@ function EditPlanForm({
 
   const handleBatchChange = (id: string) => {
     setSelectedBatchId(id);
+    if (!id) return;
     const batch = batches.find((b) => b.id === id);
-    if (batch) {
-      const autoDays = parseDaysFromBatchName(batch.name);
-      if (autoDays) {
-        setSelectedDays(autoDays);
-      }
+    if (batch && batch.dayCounts) {
+      const autoDays = selectThreeDays(batch.dayCounts);
+      setSelectedDays(autoDays);
     }
   };
 
@@ -309,11 +304,12 @@ function EditPlanForm({
         discountPercent,
         pricingMaps,
         gracePeriodMap,
+        customBatchPricing,
       });
     } catch {
       return null;
     }
-  }, [planType, startDate, endDate, selectedDays, discountPercent, pricingMaps, gracePeriodMap]);
+  }, [planType, startDate, endDate, selectedDays, discountPercent, pricingMaps, gracePeriodMap, customBatchPricing]);
 
   const sessionCount = useMemo(() => {
     if (!startDate || !endDate || selectedDays.length === 0) return 0;
@@ -439,22 +435,29 @@ function EditPlanForm({
               </span>
             )}
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             {PLAN_DAY_OPTIONS.map(({ short, name }) => {
               const on = selectedDays.includes(name);
               return (
-                <button
-                  key={name}
-                  type="button"
-                  onClick={() => toggleDay(name)}
-                  className={`min-w-[3.25rem] rounded-xl px-4 py-2.5 text-sm font-semibold transition-all cursor-pointer ${
-                    on
-                      ? "bg-brand-orange-500 text-white shadow-xs"
-                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                  }`}
-                >
-                  {short}
-                </button>
+                <div key={name} className="flex flex-col items-center gap-1">
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => toggleDay(name)}
+                    className={`min-w-[3.25rem] rounded-xl px-4 py-2.5 text-sm font-semibold transition-all cursor-pointer ${
+                      on
+                        ? "bg-brand-orange-500 text-white shadow-xs"
+                        : "bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                    }`}
+                  >
+                    {short}
+                  </button>
+                  {batchDayCounts && (
+                    <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500">
+                      {batchDayCounts[name] ?? 0}
+                    </span>
+                  )}
+                </div>
               );
             })}
           </div>
@@ -494,6 +497,9 @@ function EditPlanForm({
                 batches={batches}
                 value={selectedBatchId}
                 onChange={handleBatchChange}
+                studentAge={studentAge}
+                students={students}
+                pricingMaps={pricingMaps}
               />
             )}
           </div>

@@ -236,9 +236,7 @@ export default function SettingsShell({
         )}
 
         {/* Right Section: Content Area */}
-        <main className={`flex-1 w-full min-w-0 md:bg-white md:dark:bg-zinc-950 md:rounded-[28px] p-0 md:p-8 md:shadow-xs md:border-0 min-h-[580px] ${
-          clientActiveTab ? "block" : "hidden md:block"
-        }`}>
+        <main className={`flex-1 w-full min-w-0 md:bg-white md:dark:bg-zinc-950 md:rounded-[28px] p-0 md:px-8 md:pt-0 md:pb-8 md:shadow-xs md:border-0 min-h-[580px] ${clientActiveTab ? "block" : "hidden md:block"}`}>
           {/* Back Button on Mobile */}
           {clientActiveTab && (
             <div className="md:hidden mb-6">
@@ -258,7 +256,7 @@ export default function SettingsShell({
             </div>
           )}
           
-          <div className="w-full">
+          <div className="w-full md:pt-8">
             {renderActiveTabContent()}
           </div>
         </main>

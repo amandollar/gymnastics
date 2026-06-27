@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { formatINR, toDateInputValue } from "@/lib/utils/student";
 import type { PlanRow } from "./types";
 
@@ -28,7 +29,20 @@ export function PlanHistory({ plans }: { plans: PlanRow[] }) {
             {plans.map((p) => (
               <tr key={p.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/40 transition-colors">
                 <td className="px-5 py-3 capitalize">
-                  {p.planType === "ONE_TO_ONE" ? "personal" : "grouped"}
+                  <div className="flex flex-col gap-0.5">
+                    <span>{p.planType === "ONE_TO_ONE" ? "personal" : "grouped"}</span>
+                    {p.planType === "ONE_TO_ONE" && p.coach && (
+                      <span className="text-[10px] text-zinc-400 dark:text-zinc-500 normal-case">
+                        Coach:{" "}
+                        <Link
+                          href={`/admin/coaches/${p.coach.id}`}
+                          className="text-brand-orange-500 hover:underline font-semibold"
+                        >
+                          {p.coach.name}
+                        </Link>
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-5 py-3 text-xs text-zinc-500">
                   {toDateInputValue(new Date(p.startDate))} → {toDateInputValue(new Date(p.endDate))}
@@ -60,9 +74,22 @@ export function PlanHistory({ plans }: { plans: PlanRow[] }) {
             className="p-4 space-y-3.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/20 transition-colors"
           >
             <div className="flex items-center justify-between">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-orange-50 dark:bg-brand-orange-950/40 text-brand-orange-700 dark:text-brand-orange-400 uppercase tracking-wider">
-                {p.planType === "ONE_TO_ONE" ? "personal" : "grouped"}
-              </span>
+              <div className="flex flex-col gap-0.5">
+                <span className="inline-flex items-center w-max px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-orange-50 dark:bg-brand-orange-955/40 text-brand-orange-700 dark:text-brand-orange-400 uppercase tracking-wider">
+                  {p.planType === "ONE_TO_ONE" ? "personal" : "grouped"}
+                </span>
+                {p.planType === "ONE_TO_ONE" && p.coach && (
+                  <span className="text-[10px] text-zinc-400 dark:text-zinc-500">
+                    Coach:{" "}
+                    <Link
+                      href={`/admin/coaches/${p.coach.id}`}
+                      className="text-brand-orange-500 hover:underline font-semibold"
+                    >
+                      {p.coach.name}
+                    </Link>
+                  </span>
+                )}
+              </div>
               {p.isActive ? (
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
                   Active

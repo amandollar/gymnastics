@@ -23,6 +23,7 @@ type Props = {
   formMode?: boolean;
   selectedDaysError?: string;
   children?: React.ReactNode;
+  dayCounts?: Record<WeekdayName, number> | null;
 };
 
 export default function PlanBuilderFields({
@@ -40,6 +41,7 @@ export default function PlanBuilderFields({
   formMode = false,
   selectedDaysError,
   children,
+  dayCounts,
 }: Props) {
   function applyDuration(months: 1 | 3) {
     if (!startDate) return;
@@ -157,22 +159,28 @@ export default function PlanBuilderFields({
             </span>
           )}
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3">
           {PLAN_DAY_OPTIONS.map(({ short, name }) => {
             const on = selectedDays.includes(name);
             return (
-              <button
-                key={name}
-                type="button"
-                onClick={() => onToggleDay(name)}
-                className={`min-w-[3.25rem] rounded-xl px-4 py-3 text-sm font-semibold transition-all cursor-pointer ${
-                  on
-                    ? "bg-brand-orange-500 text-white shadow-xs"
-                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                }`}
-              >
-                {short}
-              </button>
+              <div key={name} className="flex flex-col items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => onToggleDay(name)}
+                  className={`min-w-[3.25rem] rounded-xl px-4 py-2.5 text-sm font-semibold transition-all cursor-pointer ${
+                    on
+                      ? "bg-brand-orange-500 text-white shadow-xs"
+                      : "bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                  }`}
+                >
+                  {short}
+                </button>
+                {dayCounts && (
+                  <span className="text-[10px] font-semibold text-zinc-400 dark:text-zinc-500">
+                    {dayCounts[name] ?? 0}
+                  </span>
+                )}
+              </div>
             );
           })}
         </div>
