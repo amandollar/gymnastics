@@ -57,7 +57,7 @@ export default function CoachesSection({
       return initialCoaches.map((c) => ({
         name: c.name.replace(/^Coach\s+/i, ""),
         title: c.specialization || "Gymnastics Coach",
-        image: c.avatarUrl || "/coach-profile-placeholder.webp",
+        image: c.avatarUrl || "/icons/coach-profile-placeholder.webp",
         bio: c.bio || null,
         experience: c.experience ? `${c.experience}+ Years` : null,
         certifications: c.certifications || null,

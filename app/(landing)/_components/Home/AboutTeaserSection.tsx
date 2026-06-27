@@ -252,7 +252,7 @@ export default function AboutTeaserSection({ phone }: { phone?: string }) {
         <div className="lg:col-span-4 flex justify-center lg:justify-start">
           <div className="logo-roll relative h-40 w-40 sm:h-48 sm:w-48 md:h-56 md:w-56 flex items-center justify-center">
             <img
-              src="/logo.webp"
+              src="/icons/logo.webp"
               alt="TAG Logo"
               className="h-full w-full object-contain"
             />

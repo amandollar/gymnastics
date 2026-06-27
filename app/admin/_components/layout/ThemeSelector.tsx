@@ -39,13 +39,15 @@ export default function ThemeSelector({ isCollapsed = false }: { isCollapsed?: b
     };
 
     return (
-      <div className="py-4 flex justify-center">
+      <div className="py-4 flex justify-center overflow-visible">
         <button
           onClick={toggleTheme}
-          className="flex h-11 w-11 items-center justify-center rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all cursor-pointer"
-          title={`Theme: ${activeOption.label} (Click to toggle)`}
+          className="relative group flex h-11 w-11 items-center justify-center rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-all cursor-pointer"
         >
           {React.cloneElement(activeOption.icon, { className: "h-5 w-5 shrink-0" })}
+          <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
+            Theme: {activeOption.label}
+          </span>
         </button>
       </div>
     );

@@ -136,7 +136,7 @@ export function FeeReceipt({
         }}
       >
         <img
-          src="/logo.webp"
+          src="/icons/logo.webp"
           alt="TAG Logo"
           style={{
             width: "94px",

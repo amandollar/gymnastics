@@ -166,7 +166,7 @@ function CoachFormModal({
                 {role === "COACH" && (
                   <div className="flex justify-center pb-2">
                     <StudentAvatarPicker
-                      currentAvatarUrl={existing?.avatarUrl || "/coach-profile-placeholder.webp"}
+                      currentAvatarUrl={existing?.avatarUrl || "/icons/coach-profile-placeholder.webp"}
                     />
                   </div>
                 )}
@@ -509,7 +509,7 @@ function CoachCard({
       {/* Header: Avatar + Identity */}
       <div className="flex items-start gap-3.5 pr-6">
         <img
-          src={coach.avatarUrl || (coach.role === "STAFF" ? "/staff-profile-placeholder.webp" : "/coach-profile-placeholder.webp")}
+          src={coach.avatarUrl || (coach.role === "STAFF" ? "/icons/staff-profile-placeholder.webp" : "/icons/coach-profile-placeholder.webp")}
           alt={coach.name}
           className="h-20 w-20 shrink-0 rounded-2xl object-cover bg-zinc-100 dark:bg-zinc-800"
         />

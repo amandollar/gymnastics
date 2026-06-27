@@ -135,7 +135,7 @@ export default function PlansPageClient({
       </div>
 
       {/* Main form panel */}
-      <div className="max-w-2xl">
+      <div className="max-w-2xl min-[1124px]:max-w-5xl mx-auto">
         <Suspense
           fallback={
             <div className="h-64 rounded-3xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />

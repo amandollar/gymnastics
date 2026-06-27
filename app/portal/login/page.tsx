@@ -15,14 +15,14 @@ export default function PortalLoginPage() {
       {/* Background Graphic with dark mode invert filter */}
       <div 
         className="absolute inset-0 bg-cover bg-center sm:bg-right bg-no-repeat transition-all duration-500 dark:invert-[0.9] dark:opacity-75 pointer-events-none"
-        style={{ backgroundImage: "url('/BgIlluststion.webp')" }}
+        style={{ backgroundImage: "url('/icons/BgIlluststion.webp')" }}
       />
  
       <div className="relative flex w-full lg:w-1/2 flex-col justify-center items-center px-4 py-10 pt-[max(2.5rem,env(safe-area-inset-top))] pb-[max(2.5rem,env(safe-area-inset-bottom))] sm:px-12 md:px-16 xl:px-24 min-h-[100dvh] lg:min-h-screen bg-white/70 dark:bg-zinc-900/80 backdrop-blur-md lg:bg-transparent lg:dark:bg-transparent z-10 transition-colors">
         <div className="absolute top-[max(1.25rem,env(safe-area-inset-top))] left-4 sm:left-6 flex items-center gap-3 lg:hidden">
           <div className="h-12 w-12 sm:h-14 sm:w-14 overflow-hidden rounded-full border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-0.5 shadow-md shrink-0">
             <img
-              src="/logo.webp"
+              src="/icons/logo.webp"
               alt="Academy of Gymnastics"
               className="h-full w-full object-cover rounded-full"
             />
@@ -143,7 +143,7 @@ export default function PortalLoginPage() {
           <div className="relative">
             <div className="relative h-46 w-46 overflow-hidden rounded-full border border-white/40 dark:border-zinc-700 bg-white/20 dark:bg-zinc-800/15">
               <img
-                src="/logo.webp"
+                src="/icons/logo.webp"
                 alt="Academy of Gymnastics"
                 className="h-full w-full object-cover rounded-full"
               />

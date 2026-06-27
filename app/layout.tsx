@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/app/_components/theme-provider";
-import Script from "next/script";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -13,9 +12,9 @@ export const metadata: Metadata = {
   title: "TAG CRM · Academy of Gymnastics",
   description: "Staff portal for The Academy of Gymnastics",
   icons: {
-    icon: "/logo.webp",
-    shortcut: "/logo.webp",
-    apple: "/logo.webp",
+    icon: "/icons/logo.webp",
+    shortcut: "/icons/logo.webp",
+    apple: "/icons/logo.webp",
   },
 };
 
@@ -27,9 +26,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
-        <Script
+        <script
           id="theme-initializer"
-          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               (function() {

@@ -35,76 +35,108 @@ export default function DashboardNav({
       <Link
         href="/admin/dashboard"
         onClick={close}
-        className={navLinkClass(activePathname === "/admin/dashboard", isCollapsed)}
-        title={isCollapsed ? "Dashboard" : undefined}
+        className={`${navLinkClass(activePathname === "/admin/dashboard", isCollapsed)} relative group`}
       >
         <HomeIcon className={iconClass} />
         {!isCollapsed && "Dashboard"}
+        {isCollapsed && (
+          <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
+            Dashboard
+          </span>
+        )}
       </Link>
       <Link
         href="/admin/enquiries"
         onClick={close}
-        className={navLinkClass(activePathname.startsWith("/admin/enquiries"), isCollapsed)}
-        title={isCollapsed ? "Enquiries" : undefined}
+        className={`${navLinkClass(activePathname.startsWith("/admin/enquiries"), isCollapsed)} relative group`}
       >
         <EnquiryIcon className={iconClass} />
         {!isCollapsed && "Enquiries"}
+        {isCollapsed && (
+          <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
+            Enquiries
+          </span>
+        )}
       </Link>
       <Link
         href="/admin/students"
         onClick={close}
-        className={navLinkClass(activePathname.startsWith("/admin/students"), isCollapsed)}
-        title={isCollapsed ? "Students" : undefined}
+        className={`${navLinkClass(activePathname.startsWith("/admin/students"), isCollapsed)} relative group`}
       >
         <UsersIcon className={iconClass} />
         {!isCollapsed && "Students"}
+        {isCollapsed && (
+          <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
+            Students
+          </span>
+        )}
       </Link>
       <Link
         href="/admin/coaches"
         onClick={close}
-        className={navLinkClass(activePathname.startsWith("/admin/coaches"), isCollapsed)}
-        title={isCollapsed ? "Coach & Staff" : undefined}
+        className={`${navLinkClass(activePathname.startsWith("/admin/coaches"), isCollapsed)} relative group`}
       >
         <GymIcon className={iconClass} />
         {!isCollapsed && "Coach & Staff"}
+        {isCollapsed && (
+          <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
+            Coach & Staff
+          </span>
+        )}
       </Link>
       <Link
         href="/admin/attendance"
         onClick={close}
-        className={navLinkClass(activePathname.startsWith("/admin/attendance"), isCollapsed)}
-        title={isCollapsed ? "Attendance" : undefined}
+        className={`${navLinkClass(activePathname.startsWith("/admin/attendance"), isCollapsed)} relative group`}
       >
         <CheckIcon className={iconClass} />
         {!isCollapsed && "Attendance"}
+        {isCollapsed && (
+          <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
+            Attendance
+          </span>
+        )}
       </Link>
       <Link
         href="/admin/plans"
         onClick={close}
-        className={navLinkClass(activePathname === "/admin/plans", isCollapsed)}
-        title={isCollapsed ? "Plans" : undefined}
+        className={`${navLinkClass(activePathname === "/admin/plans", isCollapsed)} relative group`}
       >
         <DocIcon className={iconClass} />
         {!isCollapsed && "Plans"}
+        {isCollapsed && (
+          <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
+            Plans
+          </span>
+        )}
       </Link>
       {isAdmin && (
         <>
           <Link
             href="/admin/finance"
             onClick={close}
-            className={navLinkClass(activePathname.startsWith("/admin/finance"), isCollapsed)}
-            title={isCollapsed ? "Finance" : undefined}
+            className={`${navLinkClass(activePathname.startsWith("/admin/finance"), isCollapsed)} relative group`}
           >
             <FinanceIcon className={iconClass} />
             {!isCollapsed && "Finance"}
+            {isCollapsed && (
+              <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
+                Finance
+              </span>
+            )}
           </Link>
           <Link
             href="/admin/settings"
             onClick={close}
-            className={navLinkClass(activePathname === "/admin/settings", isCollapsed)}
-            title={isCollapsed ? "Settings" : undefined}
+            className={`${navLinkClass(activePathname === "/admin/settings", isCollapsed)} relative group`}
           >
             <SettingsIcon className={iconClass} />
             {!isCollapsed && "Settings"}
+            {isCollapsed && (
+              <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
+                Settings
+              </span>
+            )}
           </Link>
         </>
       )}

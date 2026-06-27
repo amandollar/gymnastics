@@ -6,7 +6,6 @@ import type { PlanComputeResult, PlanTypeKey, WeekdayName } from "@/lib/plan/cal
 import { endDateForPlanMonths } from "@/lib/plan/plan-period";
 import { parseDateInput } from "@/lib/utils/student";
 import { PLAN_DAY_OPTIONS, planInputClass } from "./plan-form-shared";
-import PlanFeePreview from "./PlanFeePreview";
 
 type Props = {
   planType: PlanTypeKey;
@@ -19,7 +18,6 @@ type Props = {
   onToggleDay: (day: WeekdayName) => void;
   discountPercent: number;
   onDiscountChange: (n: number) => void;
-  preview: PlanComputeResult | null;
   formMode?: boolean;
   selectedDaysError?: string;
   children?: React.ReactNode;
@@ -37,7 +35,6 @@ export default function PlanBuilderFields({
   onToggleDay,
   discountPercent,
   onDiscountChange,
-  preview,
   formMode = false,
   selectedDaysError,
   children,
@@ -223,14 +220,6 @@ export default function PlanBuilderFields({
         </div>
       </div>
 
-      {/* Fee preview */}
-      {preview ? (
-        <PlanFeePreview preview={preview} title="Fee summary" />
-      ) : (
-        <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 px-4 py-6 text-center text-xs text-zinc-400 dark:text-zinc-500 leading-relaxed">
-          Pick dates and at least one class day to see sessions & total fee
-        </div>
-      )}
     </div>
   );
 }

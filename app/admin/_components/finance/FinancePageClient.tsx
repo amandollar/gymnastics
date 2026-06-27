@@ -1,835 +1,1412 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-import Link from "next/link";
+import { useMemo, useState, useTransition, useRef, useEffect } from "react";
 import {
   IndianRupee,
-  CreditCard,
-  Briefcase,
   TrendingUp,
-  Search,
-  Printer,
+  Briefcase,
+  PieChart as PieChartIcon,
+  BarChart3,
+  Activity,
+  Plus,
+  X,
+  CreditCard,
+  Trash2,
   Download,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  Filter,
-  Users,
+  Pencil,
+  Check,
+  Repeat,
+  Settings,
   ChevronLeft,
   ChevronRight,
-  RefreshCw
 } from "lucide-react";
-import StudentAvatar from "@/app/admin/_components/students/StudentAvatar";
+import OverviewTab from "./components/OverviewTab";
+import TransactionsTab from "./components/TransactionsTab";
+import BudgetTab from "./components/BudgetTab";
+import { OverviewSkeleton, TransactionsSkeleton, BudgetSkeleton } from "./components/TabSkeletons";
+import {
+  addFinanceTransaction,
+  setBudgetCategory,
+  addAutoPay,
+  editAutoPay,
+  deleteAutoPay,
+  addCategory,
+  updateCategoryName,
+  deleteCategory,
+} from "@/app/admin/_actions/finance";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
-// Types matching server-side queries
-interface Student {
+// --- Types ---
+interface FinanceTransaction {
   id: string;
-  studentNumber: number;
-  name: string;
-  avatarUrl: string | null;
-}
-
-interface StudentPlan {
-  planType: string;
-}
-
-interface PaymentRecord {
-  id: string;
-  invoiceNumber: number;
-  studentId: string;
-  studentPlanId: string;
+  type: "INCOME" | "EXPENDITURE" | "INVESTMENT";
+  category: string;
   amount: number;
-  method: "CASH" | "UPI" | "BANK_TRANSFER" | "OTHER";
-  notes: string | null;
-  paidAt: string;
-  createdAt: string;
-  student: Student;
-  studentPlan: StudentPlan;
+  date: string;
+  description: string | null;
 }
 
-interface Coach {
+interface BudgetCategory {
   id: string;
-  name: string;
-  status: string;
-  role: string;
-  fixedSalary: number;
-}
-
-interface CoachSalaryPayment {
-  id: string;
-  coachId: string;
-  year: number;
+  category: string;
+  amount: number;
   month: number;
-  amount: number;
-  paid: boolean;
-  paidAt: string | null;
-  createdAt: string;
-  coach: Coach;
+  year: number;
 }
 
-interface ActivePlanWithPayments {
+interface AutoPay {
   id: string;
-  studentId: string;
-  planType: string;
+  type: "INCOME" | "EXPENDITURE" | "INVESTMENT";
+  category: string;
+  amount: number;
   startDate: string;
-  endDate: string;
-  expiryDate: string;
-  fee: number;
-  isActive: boolean;
-  student: Student;
-  payments: { amount: number }[];
+  endDate: string | null;
+  description: string | null;
 }
 
 interface FinancePageClientProps {
-  payments: PaymentRecord[];
-  salaryPayments: CoachSalaryPayment[];
-  activePlans: ActivePlanWithPayments[];
+  payments: any[];
+  salaryPayments: any[];
+  activePlans: any[]; // Kept for future use if needed
+  financeTransactions: FinanceTransaction[];
+  budgetCategories: BudgetCategory[];
+  autoPays: AutoPay[];
+  financeCategories: any[];
 }
+
+interface UnifiedTransaction {
+  id: string;
+  type: "INCOME" | "EXPENDITURE" | "INVESTMENT";
+  category: string;
+  amount: number;
+  date: Date;
+  description: string;
+  isManual: boolean;
+}
+
+// --- Colors for Pie Chart ---
+const COLORS = [
+  "#10b981",
+  "#f16d28",
+  "#3b82f6",
+  "#8b5cf6",
+  "#ec4899",
+  "#14b8a6",
+  "#f59e0b",
+];
 
 export default function FinancePageClient({
   payments,
   salaryPayments,
-  activePlans,
+  financeTransactions,
+  budgetCategories,
+  autoPays,
+  financeCategories,
 }: FinancePageClientProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Read initial tab from search params
+  const tabParam = searchParams.get("tab");
+  const initialTab =
+    tabParam === "transactions" || tabParam === "budget"
+      ? (tabParam as "transactions" | "budget")
+      : "overview";
+
   // Navigation & Tabs
-  const [activeTab, setActiveTab] = useState<"revenue" | "expenses" | "outstanding">("revenue");
-  
-  // Search & Filters
-  const [searchQuery, setSearchQuery] = useState("");
-  const [revenueMethodFilter, setRevenueMethodFilter] = useState<string>("ALL");
-  const [outstandingStatusFilter, setOutstandingStatusFilter] = useState<string>("OUTSTANDING_ONLY");
-  
-  // Date range filters
-  const [financeFrom, setFinanceFrom] = useState("");
-  const [financeTo, setFinanceTo] = useState("");
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "transactions" | "budget"
+  >(initialTab);
 
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-
-  // Reset pagination when search, filter, or tab changes
+  // Sync state if URL changes externally (e.g. back/forward button)
   useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab, searchQuery, revenueMethodFilter, outstandingStatusFilter, financeFrom, financeTo]);
+    const currentTab = searchParams.get("tab");
+    const validTab =
+      currentTab === "transactions" || currentTab === "budget"
+        ? (currentTab as "transactions" | "budget")
+        : "overview";
+    if (validTab !== activeTab) {
+      setActiveTab(validTab);
+    }
+  }, [searchParams, activeTab]);
 
-  // Helper: Month formatter
-  const getMonthName = (month: number, year: number) => {
-    const d = new Date(year, month - 1, 1);
-    return d.toLocaleString("en-IN", { month: "long", year: "numeric" });
+  // Handle Tab change and update search parameters with transition caching
+  const [tabPending, startTabTransition] = useTransition();
+
+  const handleTabChange = (tab: "overview" | "transactions" | "budget") => {
+    startTabTransition(() => {
+      setActiveTab(tab);
+      const params = new URLSearchParams(window.location.search);
+      params.set("tab", tab);
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    });
   };
 
-  // Helper: Currency Formatter
-  const formatCurrency = (amount: number) => {
-    return "₹" + amount.toLocaleString("en-IN");
+  // Generate last 12 months for selector (current month first)
+  const monthsList = useMemo(() => {
+    const list = [];
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      list.push({
+        label: d.toLocaleString("en-IN", { month: "short", year: "numeric" }),
+        month: d.getMonth() + 1,
+        year: d.getFullYear(),
+        value: `${d.getFullYear()}-${d.getMonth() + 1}`,
+      });
+    }
+    return list;
+  }, []);
+
+  const [selectedMonthStr, setSelectedMonthStr] = useState<string>(
+    monthsList[0].value,
+  );
+  const [cashflowOffset, setCashflowOffset] = useState<number>(0);
+  const [cashflowViewMode, setCashflowViewMode] = useState<"monthly" | "yearly">("monthly");
+
+  const [tempBudgets, setTempBudgets] = useState<Record<string, string>>({});
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [txType, setTxType] = useState<"INCOME" | "EXPENDITURE" | "INVESTMENT">(
+    "EXPENDITURE",
+  );
+  const [selectedCategory, setSelectedCategory] = useState<string>("Rent");
+  const [customCategory, setCustomCategory] = useState<string>("");
+
+  const [showAutoPayRules, setShowAutoPayRules] = useState(false);
+  const [repeatEveryMonth, setRepeatEveryMonth] = useState(false);
+  const [editingAutoPayId, setEditingAutoPayId] = useState<string | null>(null);
+  const [editApCategory, setEditApCategory] = useState("");
+  const [editApAmount, setEditApAmount] = useState("");
+  const [editApDescription, setEditApDescription] = useState("");
+
+  const [showCategorySettings, setShowCategorySettings] = useState(false);
+  const [categorySettingsTab, setCategorySettingsTab] = useState<
+    "EXPENDITURE" | "INCOME"
+  >("EXPENDITURE");
+  const [categoryDrafts, setCategoryDrafts] = useState<
+    Array<{
+      id: string;
+      name: string;
+      budget: string;
+      isDeleted: boolean;
+      isNew: boolean;
+      type: "INCOME" | "EXPENDITURE";
+    }>
+  >([]);
+
+  const openCategorySettings = () => {
+    const drafts = financeCategories.map((c) => ({
+      id: c.id,
+      name: c.name,
+      budget: getBudgetForCategory(c.name).toString(),
+      isDeleted: false,
+      isNew: false,
+      type:
+        c.type === "INCOME"
+          ? "INCOME"
+          : ("EXPENDITURE" as "INCOME" | "EXPENDITURE"),
+    }));
+    setCategoryDrafts(drafts);
+    setCategorySettingsTab(txType === "INCOME" ? "INCOME" : "EXPENDITURE");
+    setShowCategorySettings(true);
   };
 
-  // 1. Calculate active student plans outstanding dues
-  const activePlansWithBalances = useMemo(() => {
-    return activePlans.map((plan) => {
-      const paid = plan.payments.reduce((sum, p) => sum + p.amount, 0);
-      const outstanding = Math.max(0, plan.fee - paid);
-      let status: "PAID" | "PARTIAL" | "UNPAID" = "UNPAID";
-      if (paid >= plan.fee) {
-        status = "PAID";
-      } else if (paid > 0) {
-        status = "PARTIAL";
-      }
-      return {
-        ...plan,
-        paid,
-        outstanding,
-        status,
-      };
-    });
-  }, [activePlans]);
+  const updateDraftName = (id: string, name: string) => {
+    setCategoryDrafts((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, name } : d)),
+    );
+  };
 
-  // 2. Filter Payments (Revenue)
-  const filteredPayments = useMemo(() => {
-    return payments.filter((p) => {
-      // Date range filter
-      if (financeFrom) {
-        const fromDate = new Date(financeFrom);
-        fromDate.setHours(0, 0, 0, 0);
-        if (new Date(p.paidAt) < fromDate) return false;
-      }
-      if (financeTo) {
-        const toDate = new Date(financeTo);
-        toDate.setHours(23, 59, 59, 999);
-        if (new Date(p.paidAt) > toDate) return false;
-      }
+  const updateDraftBudget = (id: string, budget: string) => {
+    setCategoryDrafts((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, budget } : d)),
+    );
+  };
 
-      // Text search filter
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const name = p.student?.name.toLowerCase() || "";
-        const num = p.student?.studentNumber?.toString() || "";
-        const invoice = p.invoiceNumber?.toString() || "";
-        const notes = p.notes?.toLowerCase() || "";
-        const method = p.method.toLowerCase();
-        if (
-          !name.includes(q) &&
-          !num.includes(q) &&
-          !invoice.includes(q) &&
-          !notes.includes(q) &&
-          !method.includes(q)
-        ) {
-          return false;
+  const deleteDraftRow = (id: string) => {
+    setCategoryDrafts((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, isDeleted: true } : d)),
+    );
+  };
+
+  const addDraftRow = () => {
+    setCategoryDrafts((prev) => [
+      ...prev,
+      {
+        id: `new-${Date.now()}-${Math.random()}`,
+        name: "",
+        budget: "",
+        isDeleted: false,
+        isNew: true,
+        type: categorySettingsTab,
+      },
+    ]);
+  };
+
+  const saveAllCategoryChanges = () => {
+    startTransition(async () => {
+      for (const draft of categoryDrafts) {
+        const original = financeCategories.find((c) => c.id === draft.id);
+
+        if (draft.isDeleted) {
+          if (!draft.isNew) {
+            await deleteCategory({ id: draft.id });
+          }
+          continue;
+        }
+
+        if (draft.isNew) {
+          if (draft.name.trim()) {
+            await addCategory({ name: draft.name.trim(), type: draft.type });
+            if (draft.type === "EXPENDITURE" && draft.budget) {
+              const amt = parseInt(draft.budget) || 0;
+              await setBudgetCategory({
+                category: draft.name.trim(),
+                amount: amt,
+                month: currentMonthData.month,
+                year: currentMonthData.year,
+              });
+            }
+          }
+          continue;
+        }
+
+        if (original) {
+          if (draft.name.trim() && draft.name.trim() !== original.name) {
+            await updateCategoryName({
+              id: draft.id,
+              newName: draft.name.trim(),
+            });
+          }
+          if (draft.type === "EXPENDITURE") {
+            const originalBudget = getBudgetForCategory(original.name);
+            const draftBudgetAmt = parseInt(draft.budget) || 0;
+            if (draftBudgetAmt !== originalBudget) {
+              await setBudgetCategory({
+                category: draft.name.trim() || original.name,
+                amount: draftBudgetAmt,
+                month: currentMonthData.month,
+                year: currentMonthData.year,
+              });
+            }
+          }
         }
       }
-
-      // Dropdown method filter
-      if (revenueMethodFilter !== "ALL" && p.method !== revenueMethodFilter) {
-        return false;
-      }
-
-      return true;
+      setShowCategorySettings(false);
     });
-  }, [payments, financeFrom, financeTo, searchQuery, revenueMethodFilter]);
+  };
 
-  // 3. Filter Salary Payouts (Expenses)
-  const filteredSalaryPayments = useMemo(() => {
-    return salaryPayments.filter((s) => {
-      // Date range filter
-      const payDate = s.paidAt ? new Date(s.paidAt) : new Date(s.year, s.month - 1, 1);
-      if (financeFrom) {
-        const fromDate = new Date(financeFrom);
-        fromDate.setHours(0, 0, 0, 0);
-        if (payDate < fromDate) return false;
-      }
-      if (financeTo) {
-        const toDate = new Date(financeTo);
-        toDate.setHours(23, 59, 59, 999);
-        if (payDate > toDate) return false;
-      }
+  useEffect(() => {
+    setTempBudgets({});
+    setEditingCategory(null);
+  }, [selectedMonthStr]);
 
-      // Text search filter
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const name = s.coach?.name.toLowerCase() || "";
-        const monthLabel = getMonthName(s.month, s.year).toLowerCase();
-        if (!name.includes(q) && !monthLabel.includes(q)) {
-          return false;
+  useEffect(() => {
+    const defaultCat = txType === "INCOME" ? "Student Fees" : "Rent";
+    setSelectedCategory(defaultCat);
+    setCustomCategory("");
+  }, [txType]);
+
+  const handleStartEdit = (category: string, currentVal: number) => {
+    setTempBudgets((prev) => ({
+      ...prev,
+      [category]: currentVal === 0 ? "" : currentVal.toString(),
+    }));
+    setEditingCategory(category);
+  };
+
+  const handleSaveBudget = (category: string) => {
+    const val =
+      tempBudgets[category] !== undefined ? tempBudgets[category] : "";
+    handleBudgetBlur(category, val);
+    setEditingCategory(null);
+  };
+
+  const handleCancelEdit = (category: string) => {
+    setEditingCategory(null);
+    setTempBudgets((prev) => {
+      const next = { ...prev };
+      delete next[category];
+      return next;
+    });
+  };
+
+  const handleBudgetBlur = async (category: string, valueStr: string) => {
+    const amount = parseInt(valueStr) || 0;
+    startTransition(async () => {
+      await setBudgetCategory({
+        category,
+        amount,
+        month: currentMonthData.month,
+        year: currentMonthData.year,
+      });
+    });
+  };
+
+  // Modals
+  const [showAddTx, setShowAddTx] = useState(false);
+  const [showSetBudget, setShowSetBudget] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  // Unified Transactions List
+  const allTransactions = useMemo<UnifiedTransaction[]>(() => {
+    const list: UnifiedTransaction[] = [];
+
+    // 1. Auto Income (Student Fees)
+    payments.forEach((p) => {
+      list.push({
+        id: `auto-inc-${p.id}`,
+        type: "INCOME",
+        category: "Student Fees",
+        amount: p.amount,
+        date: new Date(p.paidAt),
+        description: `Fee: ${p.student?.name} (${p.invoiceNumber})`,
+        isManual: false,
+      });
+    });
+
+    // 2. Auto Expenses (Salaries)
+    salaryPayments.forEach((s) => {
+      if (s.paid) {
+        list.push({
+          id: `auto-exp-${s.id}`,
+          type: "EXPENDITURE",
+          category: "Salaries",
+          amount: s.amount,
+          date: s.paidAt
+            ? new Date(s.paidAt)
+            : new Date(s.year, s.month - 1, 1),
+          description: `Salary: ${s.coach?.name}`,
+          isManual: false,
+        });
+      }
+    });
+
+    // 3. Manual Transactions
+    financeTransactions.forEach((t) => {
+      list.push({
+        id: `man-${t.id}`,
+        type: t.type,
+        category: t.category,
+        amount: t.amount,
+        date: new Date(t.date),
+        description: t.description || "Manual Entry",
+        isManual: true,
+      });
+    });
+
+    // 4. Auto Pay Transactions (Recurring)
+    autoPays.forEach((ap) => {
+      monthsList.forEach((m) => {
+        const [year, month] = m.value.split("-").map(Number);
+        const startOfActiveMonth = new Date(year, month - 1, 1);
+        const endOfActiveMonth = new Date(year, month, 0, 23, 59, 59);
+
+        const ruleStart = new Date(ap.startDate);
+        const ruleEnd = ap.endDate ? new Date(ap.endDate) : null;
+
+        const isStarted = ruleStart <= endOfActiveMonth;
+        const isNotEnded = !ruleEnd || ruleEnd >= startOfActiveMonth;
+
+        if (isStarted && isNotEnded) {
+          list.push({
+            id: `autopay-${ap.id}-${m.value}`,
+            type: ap.type,
+            category: ap.category,
+            amount: ap.amount,
+            date: new Date(year, month - 1, 15),
+            description: ap.description
+              ? `${ap.description} (Auto)`
+              : "Auto-Pay",
+            isManual: true,
+          });
         }
-      }
-
-      return true;
+      });
     });
-  }, [salaryPayments, financeFrom, financeTo, searchQuery]);
 
-  // 4. Filter Outstanding Plans
-  const filteredActivePlans = useMemo(() => {
-    return activePlansWithBalances.filter((plan) => {
-      // Text search filter
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const name = plan.student?.name.toLowerCase() || "";
-        const num = plan.student?.studentNumber?.toString() || "";
-        const type = plan.planType.toLowerCase();
-        if (!name.includes(q) && !num.includes(q) && !type.includes(q)) {
-          return false;
-        }
-      }
+    // Sort descending by date
+    return list.sort((a, b) => b.date.getTime() - a.date.getTime());
+  }, [payments, salaryPayments, financeTransactions, autoPays, monthsList]);
 
-      // Status filter
-      if (outstandingStatusFilter === "OUTSTANDING_ONLY") {
-        return plan.outstanding > 0;
-      } else if (outstandingStatusFilter !== "ALL" && plan.status !== outstandingStatusFilter) {
-        return false;
-      }
+  // Derived state for currently selected month
+  const currentMonthData = useMemo(() => {
+    const [yearStr, monthStr] = selectedMonthStr.split("-");
+    const year = parseInt(yearStr);
+    const month = parseInt(monthStr);
 
-      return true;
-    });
-  }, [activePlansWithBalances, searchQuery, outstandingStatusFilter]);
+    const txInMonth = allTransactions.filter(
+      (t) => t.date.getFullYear() === year && t.date.getMonth() + 1 === month,
+    );
 
-  // 5. KPIs (Calculated dynamically, respecting date filters for Revenue & Expenses)
-  const stats = useMemo(() => {
-    const totalRev = filteredPayments.reduce((sum, p) => sum + p.amount, 0);
-    const totalExp = filteredSalaryPayments
-      .filter((s) => s.paid)
-      .reduce((sum, s) => sum + s.amount, 0);
-    const profit = totalRev - totalExp;
-    
-    // Outstanding remains snapshot of active plans
-    const totalOut = activePlansWithBalances.reduce((sum, p) => sum + p.outstanding, 0);
+    const income = txInMonth
+      .filter((t) => t.type === "INCOME")
+      .reduce((acc, t) => acc + t.amount, 0);
+    const spent = txInMonth
+      .filter((t) => t.type === "EXPENDITURE")
+      .reduce((acc, t) => acc + t.amount, 0);
+    const investment = txInMonth
+      .filter((t) => t.type === "INVESTMENT")
+      .reduce((acc, t) => acc + t.amount, 0);
+    const saving = income - spent;
+
+    // Spending by category
+    const spendingByCategory = txInMonth
+      .filter((t) => t.type === "EXPENDITURE")
+      .reduce(
+        (acc, t) => {
+          acc[t.category] = (acc[t.category] || 0) + t.amount;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+
+    const pieData = Object.entries(spendingByCategory)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    // Income by category
+    const incomeByCategory = txInMonth
+      .filter((t) => t.type === "INCOME")
+      .reduce(
+        (acc, t) => {
+          acc[t.category] = (acc[t.category] || 0) + t.amount;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+
+    const incomeData = Object.entries(incomeByCategory)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+
+    // Budgets for selected month
+    const budgets = budgetCategories.filter(
+      (b) => b.year === year && b.month === month,
+    );
 
     return {
-      totalRevenue: totalRev,
-      totalExpenses: totalExp,
-      netProfit: profit,
-      totalOutstanding: totalOut,
+      txInMonth,
+      income,
+      spent,
+      investment,
+      saving,
+      pieData,
+      incomeData,
+      budgets,
+      year,
+      month,
     };
-  }, [filteredPayments, filteredSalaryPayments, activePlansWithBalances]);
+  }, [allTransactions, selectedMonthStr, budgetCategories]);
 
-  // Trigger export endpoint
-  const handleCSVExport = () => {
-    const url = `/api/export/finance` + (financeFrom || financeTo ? `?from=${financeFrom}&to=${financeTo}` : "");
-    window.open(url, "_blank");
+  // All-time Net
+  const allTimeNet = useMemo(() => {
+    const totalInc = allTransactions
+      .filter((t) => t.type === "INCOME")
+      .reduce((acc, t) => acc + t.amount, 0);
+    const totalExp = allTransactions
+      .filter((t) => t.type === "EXPENDITURE")
+      .reduce((acc, t) => acc + t.amount, 0);
+    return totalInc - totalExp;
+  }, [allTransactions]);
+
+  // Insights Data (Monthly vs Yearly cashflow with offset)
+  const insightsData = useMemo(() => {
+    const data = [];
+    const now = new Date();
+
+    if (cashflowViewMode === "yearly") {
+      // Show 5 years at a time
+      const baseYear = now.getFullYear() - cashflowOffset;
+      for (let i = 4; i >= 0; i--) {
+        const y = baseYear - i;
+        const tx = allTransactions.filter((t) => t.date.getFullYear() === y);
+        const inc = tx
+          .filter((t) => t.type === "INCOME")
+          .reduce((acc, t) => acc + t.amount, 0);
+        const exp = tx
+          .filter((t) => t.type === "EXPENDITURE")
+          .reduce((acc, t) => acc + t.amount, 0);
+
+        data.push({
+          name: y.toString(),
+          Income: inc,
+          Expenditure: exp,
+        });
+      }
+    } else {
+      // Show 6 months at a time
+      const baseDate = new Date(now.getFullYear(), now.getMonth() - cashflowOffset, 1);
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(baseDate.getFullYear(), baseDate.getMonth() - i, 1);
+        const m = d.getMonth() + 1;
+        const y = d.getFullYear();
+
+        const tx = allTransactions.filter(
+          (t) => t.date.getFullYear() === y && t.date.getMonth() + 1 === m,
+        );
+        const inc = tx
+          .filter((t) => t.type === "INCOME")
+          .reduce((acc, t) => acc + t.amount, 0);
+        const exp = tx
+          .filter((t) => t.type === "EXPENDITURE")
+          .reduce((acc, t) => acc + t.amount, 0);
+
+        data.push({
+          name: d.toLocaleString("en-IN", { month: "short", year: "2-digit" }),
+          Income: inc,
+          Expenditure: exp,
+        });
+      }
+    }
+    return data;
+  }, [allTransactions, cashflowOffset, cashflowViewMode]);
+
+  const currentMonthLabel = useMemo(() => {
+    return monthsList.find((m) => m.value === selectedMonthStr)?.label || "";
+  }, [monthsList, selectedMonthStr]);
+
+  const chronologicalMonths = useMemo(() => {
+    return monthsList;
+  }, [monthsList]);
+
+  const activeIncomeCategories = useMemo(() => {
+    return financeCategories
+      .filter((c) => c.type === "INCOME" && c.isActive)
+      .map((c) => c.name);
+  }, [financeCategories]);
+
+  const activeExpenseCategories = useMemo(() => {
+    return financeCategories
+      .filter((c) => c.type === "EXPENDITURE" && c.isActive)
+      .map((c) => c.name);
+  }, [financeCategories]);
+
+  const budgetGridCategories = useMemo(() => {
+    const set = new Set(activeExpenseCategories);
+    allTransactions.forEach((t) => {
+      if (t.type === "EXPENDITURE" || t.type === "INVESTMENT") {
+        set.add(t.category);
+      }
+    });
+    budgetCategories.forEach((b) => {
+      set.add(b.category);
+    });
+    return Array.from(set);
+  }, [activeExpenseCategories, allTransactions, budgetCategories]);
+
+  const incomeCategories = useMemo(() => {
+    const set = new Set(activeIncomeCategories);
+    allTransactions.forEach((t) => {
+      if (t.type === "INCOME") {
+        set.add(t.category);
+      }
+    });
+    return Array.from(set);
+  }, [activeIncomeCategories, allTransactions]);
+
+  const getBudgetForCategory = (categoryName: string) => {
+    const match = budgetCategories.find(
+      (b) =>
+        b.category.toLowerCase() === categoryName.toLowerCase() &&
+        b.year === currentMonthData.year &&
+        b.month === currentMonthData.month,
+    );
+    return match ? match.amount : 0;
   };
 
-  // Reset all filters
-  const resetFilters = () => {
-    setFinanceFrom("");
-    setFinanceTo("");
-    setSearchQuery("");
-    setRevenueMethodFilter("ALL");
-    setOutstandingStatusFilter("OUTSTANDING_ONLY");
+  const getActualSpent = (category: string, year: number, month: number) => {
+    return allTransactions
+      .filter(
+        (t) =>
+          t.type === "EXPENDITURE" &&
+          t.category.toLowerCase() === category.toLowerCase() &&
+          t.date.getFullYear() === year &&
+          t.date.getMonth() + 1 === month,
+      )
+      .reduce((sum, t) => sum + t.amount, 0);
   };
 
-  // Pagination Helper
-  const paginatedData = useMemo(() => {
-    const data =
-      activeTab === "revenue"
-        ? filteredPayments
-        : activeTab === "expenses"
-        ? filteredSalaryPayments
-        : filteredActivePlans;
-    
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    return {
-      items: data.slice(startIndex, endIndex),
-      totalItems: data.length,
-      totalPages: Math.max(1, Math.ceil(data.length / itemsPerPage)),
+  const getBudgetVal = (category: string, dbVal: number) => {
+    if (tempBudgets[category] !== undefined) {
+      return tempBudgets[category];
+    }
+    return dbVal === 0 ? "" : dbVal.toString();
+  };
+
+  // Format currency
+  const formatCur = (amt: number) => "₹" + amt.toLocaleString("en-IN");
+
+  // Handle Add Transaction Submit
+  const handleAddTx = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const data = {
+      type: fd.get("type") as "INCOME" | "EXPENDITURE" | "INVESTMENT",
+      category: fd.get("category") as string,
+      amount: parseInt(fd.get("amount") as string, 10),
+      date: fd.get("date") as string,
+      description: fd.get("description") as string,
     };
-  }, [activeTab, filteredPayments, filteredSalaryPayments, filteredActivePlans, currentPage]);
+    startTransition(async () => {
+      if (repeatEveryMonth) {
+        await addAutoPay({
+          type: data.type,
+          category: data.category,
+          amount: data.amount,
+          startDate: data.date,
+          description: data.description,
+        });
+      } else {
+        await addFinanceTransaction(data);
+      }
+      setShowAddTx(false);
+    });
+  };
+
+  // Handle Set Budget Submit
+  const handleSetBudget = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    const data = {
+      category: fd.get("category") as string,
+      amount: parseInt(fd.get("amount") as string, 10),
+      month: currentMonthData.month,
+      year: currentMonthData.year,
+    };
+    startTransition(async () => {
+      await setBudgetCategory(data);
+      setShowSetBudget(false);
+    });
+  };
 
   return (
-    <div className="space-y-6 pb-24">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl sm:text-5xl font-light tracking-tight text-zinc-900 dark:text-zinc-50">
-            Finance Dashboard
-          </h1>
-          <p className="mt-1 text-sm text-zinc-400 dark:text-zinc-500">
-            Track business cashflow, student fee receipts, salary slip disbursements, and outstanding collections.
-          </p>
-        </div>
-        
-        {/* Export / Date Range Panel */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/60 p-1 backdrop-blur-xs">
-            <input
-              type="date"
-              value={financeFrom}
-              onChange={(e) => setFinanceFrom(e.target.value)}
-              className="bg-transparent border-0 px-2 py-1 text-xs focus:ring-0 text-zinc-700 dark:text-zinc-300 [&::-webkit-calendar-picker-indicator]:dark:invert"
-              title="From Date"
-            />
-            <span className="text-zinc-400 dark:text-zinc-600 text-xs">to</span>
-            <input
-              type="date"
-              value={financeTo}
-              onChange={(e) => setFinanceTo(e.target.value)}
-              className="bg-transparent border-0 px-2 py-1 text-xs focus:ring-0 text-zinc-700 dark:text-zinc-300 [&::-webkit-calendar-picker-indicator]:dark:invert"
-              title="To Date"
-            />
-            {(financeFrom || financeTo) && (
-              <button
-                onClick={resetFilters}
-                className="p-1 text-zinc-450 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer"
-                title="Reset Dates"
-              >
-                <RefreshCw className="h-3 w-3 animate-spin-once" />
-              </button>
-            )}
-          </div>
-          
+    <div className="space-y-6 pb-32">
+      {/* Header (Subtitle removed) */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <h1 className="text-3xl sm:text-5xl font-light tracking-tight text-zinc-900 dark:text-zinc-50">
+          Finance Dashboard
+        </h1>
+        <div className="flex items-center gap-2">
           <button
-            onClick={handleCSVExport}
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 px-3.5 py-2 text-xs font-semibold text-white transition-all shadow-sm hover:shadow-md cursor-pointer"
+            onClick={() => setShowAutoPayRules(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-850 px-4 py-2 text-sm font-semibold text-zinc-700 dark:text-zinc-300 transition-all shadow-sm cursor-pointer"
           >
-            <Download className="h-3.5 w-3.5" />
-            Export Ledger
+            <Repeat className="h-3.5 w-3.5 animate-spin-slow text-brand-orange-500" />
+            Auto Pay
+          </button>
+          <button
+            onClick={() => {
+              setTxType("EXPENDITURE");
+              setSelectedCategory("Rent");
+              setCustomCategory("");
+              setRepeatEveryMonth(false);
+              setShowAddTx(true);
+            }}
+            className="inline-flex items-center gap-1.5 rounded-full bg-brand-orange-500 hover:bg-brand-orange-600 px-4 py-2 text-sm font-semibold text-white transition-all shadow-sm cursor-pointer"
+          >
+            <Plus className="h-4 w-4" />
+            Add Entry
           </button>
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* KPI 1: Revenue */}
-        <div className="relative overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 shadow-sm transition-all hover:shadow-md group">
-          <div className="absolute right-0 top-0 h-24 w-24 translate-x-4 -translate-y-4 rounded-full bg-emerald-500/10 dark:bg-emerald-450/5 blur-xl group-hover:scale-125 transition-transform" />
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-              Total Revenue
-            </span>
-            <span className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400">
-              <TrendingUp className="h-4 w-4" />
-            </span>
-          </div>
-          <div className="mt-3 flex items-baseline gap-1">
-            <span className="text-2xl sm:text-3xl font-extralight font-outfit text-zinc-900 dark:text-zinc-50 tracking-tight">
-              {formatCurrency(stats.totalRevenue)}
-            </span>
-          </div>
-          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1">
-            {financeFrom || financeTo ? "In selected range" : "All-time fee payments"}
-          </p>
-        </div>
-
-        {/* KPI 2: Expenses */}
-        <div className="relative overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 shadow-sm transition-all hover:shadow-md group">
-          <div className="absolute right-0 top-0 h-24 w-24 translate-x-4 -translate-y-4 rounded-full bg-brand-orange-500/10 dark:bg-brand-orange-500/5 blur-xl group-hover:scale-125 transition-transform" />
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-              Salary Expenses
-            </span>
-            <span className="p-2 rounded-lg bg-orange-50 dark:bg-orange-950/30 text-brand-orange-655 dark:text-brand-orange-400">
-              <Briefcase className="h-4 w-4" />
-            </span>
-          </div>
-          <div className="mt-3 flex items-baseline gap-1">
-            <span className="text-2xl sm:text-3xl font-extralight font-outfit text-zinc-900 dark:text-zinc-50 tracking-tight">
-              {formatCurrency(stats.totalExpenses)}
-            </span>
-          </div>
-          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1">
-            {financeFrom || financeTo ? "In selected range" : "Disbursed staff payouts"}
-          </p>
-        </div>
-
-        {/* KPI 3: Net Cashflow */}
-        <div className="relative overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 shadow-sm transition-all hover:shadow-md group">
-          <div className="absolute right-0 top-0 h-24 w-24 translate-x-4 -translate-y-4 rounded-full bg-blue-500/10 dark:bg-blue-450/5 blur-xl group-hover:scale-125 transition-transform" />
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-              Net Profit
-            </span>
-            <span className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400">
-              <CreditCard className="h-4 w-4" />
-            </span>
-          </div>
-          <div className="mt-3 flex items-baseline gap-1">
-            <span className={`text-2xl sm:text-3xl font-semibold font-outfit tracking-tight ${stats.netProfit >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-500"}`}>
-              {formatCurrency(stats.netProfit)}
-            </span>
-          </div>
-          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1">
-            Revenue minus Expenses
-          </p>
-        </div>
-
-        {/* KPI 4: Outstanding Dues */}
-        <div className="relative overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 shadow-sm transition-all hover:shadow-md group">
-          <div className="absolute right-0 top-0 h-24 w-24 translate-x-4 -translate-y-4 rounded-full bg-purple-500/10 dark:bg-purple-450/5 blur-xl group-hover:scale-125 transition-transform" />
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
-              Outstanding Fees
-            </span>
-            <span className="p-2 rounded-lg bg-purple-50 dark:bg-purple-950/30 text-purple-655 dark:text-purple-400">
-              <AlertCircle className="h-4 w-4" />
-            </span>
-          </div>
-          <div className="mt-3 flex items-baseline gap-1">
-            <span className="text-2xl sm:text-3xl font-extralight font-outfit text-zinc-900 dark:text-zinc-50 tracking-tight">
-              {formatCurrency(stats.totalOutstanding)}
-            </span>
-          </div>
-          <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-1">
-            Collectable from active plans
-          </p>
+      {/* Tab Switcher (No outer card container, directly on page background) */}
+      <div className="flex items-center justify-between py-2 border-b border-zinc-200/60 dark:border-zinc-800/40 pb-4">
+        <div className="flex items-center gap-1.5 p-1 bg-zinc-100 dark:bg-zinc-800/80 rounded-full">
+          {[
+            { id: "overview", label: "Overview", icon: Activity },
+            { id: "transactions", label: "Transactions", icon: CreditCard },
+            { id: "budget", label: "Budget", icon: PieChartIcon },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => handleTabChange(tab.id as any)}
+              className={`flex items-center gap-2 px-4 py-2 text-xs font-bold rounded-full transition-all cursor-pointer ${
+                activeTab === tab.id
+                  ? "bg-brand-orange-500/15 dark:bg-brand-orange-500/25 text-brand-orange-600 dark:text-brand-orange-400 border border-brand-orange-500/20"
+                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 border border-transparent"
+              }`}
+            >
+              <tab.icon className="h-3.5 w-3.5" />
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Main Tabbed Panel Section */}
-      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 shadow-sm overflow-hidden backdrop-blur-xs">
-        
-        {/* Navigation Tabs Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-5 py-3 gap-3">
-          <div className="flex items-center gap-1.5 p-1 bg-zinc-50 dark:bg-zinc-950 rounded-xl self-start">
-            <button
-              onClick={() => setActiveTab("revenue")}
-              className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                activeTab === "revenue"
-                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 shadow-xs border border-zinc-200/50 dark:border-zinc-800/40"
-                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
-              }`}
-            >
-              Payments History
-            </button>
-            <button
-              onClick={() => setActiveTab("expenses")}
-              className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                activeTab === "expenses"
-                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 shadow-xs border border-zinc-200/50 dark:border-zinc-800/40"
-                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
-              }`}
-            >
-              Employee Payouts
-            </button>
-            <button
-              onClick={() => setActiveTab("outstanding")}
-              className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
-                activeTab === "outstanding"
-                  ? "bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 shadow-xs border border-zinc-200/50 dark:border-zinc-800/40"
-                  : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200"
-              }`}
-            >
-              Outstanding Balances
-            </button>
-          </div>
-
-          {/* Filtering & Searching Controls inside tab header */}
-          <div className="flex flex-wrap items-center gap-2">
-            
-            {/* Payment Method filter (only for revenue tab) */}
-            {activeTab === "revenue" && (
-              <div className="relative">
-                <select
-                  value={revenueMethodFilter}
-                  onChange={(e) => setRevenueMethodFilter(e.target.value)}
-                  className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/30 cursor-pointer pr-8 appearance-none"
-                >
-                  <option value="ALL">All Methods</option>
-                  <option value="CASH">Cash</option>
-                  <option value="UPI">UPI</option>
-                  <option value="BANK_TRANSFER">Bank Transfer</option>
-                  <option value="OTHER">Other</option>
-                </select>
-                <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-450 pointer-events-none" />
-              </div>
-            )}
-
-            {/* Outstanding Status filter (only for outstanding tab) */}
-            {activeTab === "outstanding" && (
-              <div className="relative">
-                <select
-                  value={outstandingStatusFilter}
-                  onChange={(e) => setOutstandingStatusFilter(e.target.value)}
-                  className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/30 cursor-pointer pr-8 appearance-none"
-                >
-                  <option value="OUTSTANDING_ONLY">Outstanding Dues Only</option>
-                  <option value="ALL">All Active Plans</option>
-                  <option value="UNPAID">Fully Unpaid</option>
-                  <option value="PARTIAL">Partially Paid</option>
-                  <option value="PAID">Fully Paid</option>
-                </select>
-                <Filter className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-450 pointer-events-none" />
-              </div>
-            )}
-
-            {/* General Text Search */}
-            <div className="relative w-full sm:w-48">
-              <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-3.5 w-3.5 text-zinc-450" />
-              </span>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={
-                  activeTab === "revenue"
-                    ? "Search name, bill, notes..."
-                    : activeTab === "expenses"
-                    ? "Search employee..."
-                    : "Search student..."
-                }
-                className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 pl-9 pr-3.5 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/30"
+      <div className="pt-2">
+        <style>{`
+          .stats-container {
+            container-type: inline-size;
+            width: 100%;
+          }
+          .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+          }
+          @container (min-width: 750px) {
+            .stats-grid {
+              grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+          }
+        `}</style>
+        {tabPending ? (
+          activeTab === "overview" ? (
+            <OverviewSkeleton />
+          ) : activeTab === "transactions" ? (
+            <TransactionsSkeleton />
+          ) : (
+            <BudgetSkeleton />
+          )
+        ) : (
+          <>
+            {activeTab === "overview" && (
+              <OverviewTab
+                monthsList={monthsList}
+                selectedMonthStr={selectedMonthStr}
+                setSelectedMonthStr={setSelectedMonthStr}
+                currentMonthData={currentMonthData}
+                insightsData={insightsData}
+                cashflowOffset={cashflowOffset}
+                setCashflowOffset={setCashflowOffset}
+                cashflowViewMode={cashflowViewMode}
+                setCashflowViewMode={setCashflowViewMode}
+                formatCur={formatCur}
+                COLORS={COLORS}
               />
+            )}
+            {activeTab === "transactions" && (
+              <TransactionsTab
+                txInMonth={currentMonthData.txInMonth}
+                allTransactionsCount={allTransactions.length}
+                formatCur={formatCur}
+              />
+            )}
+            {activeTab === "budget" && (
+              <BudgetTab
+                chronologicalMonths={chronologicalMonths}
+                selectedMonthStr={selectedMonthStr}
+                currentMonthData={currentMonthData}
+                budgetGridCategories={budgetGridCategories}
+                budgetCategories={budgetCategories}
+                editingCategory={editingCategory}
+                getBudgetVal={getBudgetVal}
+                setTempBudgets={setTempBudgets}
+                handleSaveBudget={handleSaveBudget}
+                handleCancelEdit={handleCancelEdit}
+                handleStartEdit={handleStartEdit}
+                getActualSpent={getActualSpent}
+                setCategorySettingsTab={setCategorySettingsTab}
+                openCategorySettings={openCategorySettings}
+              />
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Add Transaction Modal */}
+      {showAddTx && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl relative animate-scale-in">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
+                Add Manual Entry
+              </h2>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={openCategorySettings}
+                  className="p-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-650 hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-pointer transition-all shadow-sm"
+                  title="Manage Categories"
+                >
+                  <Settings className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddTx(false)}
+                  className="p-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-650 hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-pointer transition-all shadow-sm"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
+            <form onSubmit={handleAddTx} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-zinc-650 dark:text-zinc-400 mb-2">
+                  Type
+                </label>
+                <input type="hidden" name="type" value={txType} />
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: "EXPENDITURE", label: "Expense" },
+                    { value: "INVESTMENT", label: "Investment" },
+                    { value: "INCOME", label: "Income" },
+                  ].map((item) => {
+                    const isSelected = txType === item.value;
+                    let activeClass = "";
+                    if (item.value === "INCOME") {
+                      activeClass =
+                        "bg-emerald-600 text-white border-emerald-600 dark:bg-emerald-600/80 dark:border-emerald-600/80 shadow-sm";
+                    } else if (item.value === "EXPENDITURE") {
+                      activeClass =
+                        "bg-brand-orange-500 text-white border-brand-orange-500 shadow-sm";
+                    } else {
+                      activeClass =
+                        "bg-blue-600 text-white border-blue-600 dark:bg-blue-600/80 dark:border-blue-600/80 shadow-sm";
+                    }
+                    const inactiveClass =
+                      "bg-zinc-50 dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-900";
+
+                    return (
+                      <button
+                        key={item.value}
+                        type="button"
+                        onClick={() => setTxType(item.value as any)}
+                        className={`py-2 px-3 text-xs font-bold rounded-xl border text-center transition-all cursor-pointer ${
+                          isSelected ? activeClass : inactiveClass
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-2">
+                  Category
+                </label>
+                <input
+                  type="hidden"
+                  name="category"
+                  value={
+                    selectedCategory === "Other"
+                      ? customCategory
+                      : selectedCategory
+                  }
+                />
+
+                {/* Category pills */}
+                <div className="flex flex-wrap gap-1.5 mb-2 max-h-32 overflow-y-auto pr-1">
+                  {(txType === "INCOME"
+                    ? incomeCategories
+                    : budgetGridCategories
+                  ).map((cat) => {
+                    const isSelected = selectedCategory === cat;
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => setSelectedCategory(cat)}
+                        className={`px-3 py-1.5 text-[11px] font-bold rounded-full border transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 border-zinc-900 dark:border-white shadow-sm"
+                            : "bg-zinc-50 dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory("Other")}
+                    className={`px-3 py-1.5 text-[11px] font-bold rounded-full border transition-all cursor-pointer ${
+                      selectedCategory === "Other"
+                        ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 border-zinc-900 dark:border-white shadow-sm"
+                        : "bg-zinc-50 dark:bg-zinc-950 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-850 hover:bg-zinc-100 dark:hover:bg-zinc-900"
+                    }`}
+                  >
+                    Other
+                  </button>
+                </div>
+
+                {/* Custom Category Input */}
+                {selectedCategory === "Other" && (
+                  <input
+                    type="text"
+                    name="customCategory"
+                    required
+                    placeholder="Type custom category name..."
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value)}
+                    className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-orange-500"
+                  />
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
+                  Amount (₹)
+                </label>
+                <input
+                  type="number"
+                  name="amount"
+                  required
+                  min="1"
+                  placeholder="1000"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  name="date"
+                  required
+                  defaultValue={new Date().toISOString().split("T")[0]}
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
+                  Description (Optional)
+                </label>
+                <input
+                  type="text"
+                  name="description"
+                  placeholder="Brief note..."
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-white"
+                />
+              </div>
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="repeatEveryMonth"
+                  name="repeatEveryMonth"
+                  checked={repeatEveryMonth}
+                  onChange={(e) => setRepeatEveryMonth(e.target.checked)}
+                  className="rounded border-zinc-300 dark:border-zinc-700 text-brand-orange-500 focus:ring-brand-orange-500 cursor-pointer h-4 w-4"
+                />
+                <label
+                  htmlFor="repeatEveryMonth"
+                  className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 cursor-pointer"
+                >
+                  Repeat every month (Auto-Pay)
+                </label>
+              </div>
+              <button
+                disabled={isPending}
+                type="submit"
+                className="w-full rounded-xl bg-brand-orange-500 py-2.5 text-sm font-bold text-white hover:bg-brand-orange-600 cursor-pointer disabled:opacity-50 mt-2"
+              >
+                {isPending ? "Saving..." : "Save Entry"}
+              </button>
+            </form>
           </div>
         </div>
+      )}
 
-        {/* Tab 1: Payments History (Revenue) */}
-        {activeTab === "revenue" && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 text-[10px] font-bold text-zinc-450 dark:text-zinc-500 uppercase tracking-wider">
-                  <th className="px-6 py-3.5">Invoice #</th>
-                  <th className="px-6 py-3.5">Paid At</th>
-                  <th className="px-6 py-3.5">Student Name</th>
-                  <th className="px-6 py-3.5">Plan Type</th>
-                  <th className="px-6 py-3.5">Method</th>
-                  <th className="px-6 py-3.5">Amount</th>
-                  <th className="px-6 py-3.5">Remarks</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/80 text-sm text-zinc-700 dark:text-zinc-300">
-                {paginatedData.items.map((p: any) => (
-                  <tr key={p.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-850/20 transition-colors">
-                    <td className="px-6 py-4 font-mono text-xs font-bold text-zinc-900 dark:text-zinc-100">
-                      #{p.invoiceNumber}
-                    </td>
-                    <td className="px-6 py-4 text-xs font-medium whitespace-nowrap">
-                      {new Date(p.paidAt).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric"
-                      })}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        {p.student && (
-                          <>
-                            <StudentAvatar student={p.student} size={28} className="ring-1 ring-zinc-200/50" />
-                            <div className="flex flex-col min-w-0">
-                              <span className="font-semibold text-zinc-900 dark:text-zinc-100 truncate text-xs">
-                                {p.student.name}
-                              </span>
-                              <span className="text-[10px] text-zinc-450 font-bold uppercase tracking-wider">
-                                TAG {p.student.studentNumber}
-                              </span>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-xs whitespace-nowrap">
-                      <span className="inline-flex items-center rounded-md px-1.5 py-0.5 font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-350 text-[10px]">
-                        {p.studentPlan?.planType || "REGULAR"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-xs whitespace-nowrap">
-                      <span className="font-semibold text-zinc-600 dark:text-zinc-400">
-                        {p.method}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-zinc-900 dark:text-zinc-150 whitespace-nowrap">
-                      {formatCurrency(p.amount)}
-                    </td>
-                    <td className="px-6 py-4 text-xs text-zinc-450 dark:text-zinc-500 max-w-[200px] truncate">
-                      {p.notes || "—"}
-                    </td>
-                  </tr>
-                ))}
-                {paginatedData.items.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-zinc-450 dark:text-zinc-550">
-                      <div className="flex flex-col items-center justify-center space-y-1.5">
-                        <CreditCard className="h-6 w-6 text-zinc-350 dark:text-zinc-650" />
-                        <p className="font-medium text-zinc-600 dark:text-zinc-400">No payment receipts found</p>
-                        <p className="text-xs">Try adjusting your filters or date selection.</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+      {/* Set Budget Modal */}
+      {showSetBudget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl relative animate-scale-in">
+            <button
+              onClick={() => setShowSetBudget(false)}
+              className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-700 cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <h2 className="text-xl font-semibold mb-2">Set Monthly Budget</h2>
+            <p className="text-xs text-zinc-500 mb-6">
+              Setting budget for {currentMonthData.month}/
+              {currentMonthData.year}
+            </p>
+            <form onSubmit={handleSetBudget} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
+                  Category
+                </label>
+                <input
+                  type="text"
+                  name="category"
+                  required
+                  placeholder="e.g. Rent, Marketing"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-zinc-600 dark:text-zinc-400 mb-1">
+                  Budget Limit (₹)
+                </label>
+                <input
+                  type="number"
+                  name="amount"
+                  required
+                  min="1"
+                  placeholder="5000"
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2 text-sm text-zinc-900 dark:text-white"
+                />
+              </div>
+              <button
+                disabled={isPending}
+                type="submit"
+                className="w-full rounded-xl bg-zinc-900 dark:bg-white py-2.5 text-sm font-bold text-white dark:text-zinc-900 hover:opacity-90 cursor-pointer disabled:opacity-50"
+              >
+                {isPending ? "Saving..." : "Set Budget"}
+              </button>
+            </form>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Tab 2: Coach Payouts (Expenses) */}
-        {activeTab === "expenses" && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 text-[10px] font-bold text-zinc-450 dark:text-zinc-500 uppercase tracking-wider">
-                  <th className="px-6 py-3.5">Month</th>
-                  <th className="px-6 py-3.5">Employee / Coach</th>
-                  <th className="px-6 py-3.5">Status</th>
-                  <th className="px-6 py-3.5">Fixed Salary</th>
-                  <th className="px-6 py-3.5">Total Paid</th>
-                  <th className="px-6 py-3.5">Payout Status</th>
-                  <th className="px-6 py-3.5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/80 text-sm text-zinc-700 dark:text-zinc-300">
-                {paginatedData.items.map((s: any) => (
-                  <tr key={s.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-850/20 transition-colors">
-                    <td className="px-6 py-4 font-medium text-xs whitespace-nowrap">
-                      {getMonthName(s.month, s.year)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-xs">
-                          {s.coach?.name || "Unknown Coach"}
-                        </span>
-                        <span className="text-[10px] text-zinc-450 uppercase tracking-wider font-bold">
-                          {s.coach?.role || "COACH"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-xs whitespace-nowrap">
-                      <span className={`inline-flex items-center rounded-md px-1.5 py-0.5 font-bold text-[9px] uppercase tracking-wider ${
-                        s.coach?.status === "WORKING"
-                          ? "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600"
-                          : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
-                      }`}>
-                        {s.coach?.status || "WORKING"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-xs whitespace-nowrap font-medium text-zinc-500">
-                      {formatCurrency(s.coach?.fixedSalary || 0)}
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-zinc-900 dark:text-zinc-150 whitespace-nowrap">
-                      {formatCurrency(s.amount)}
-                    </td>
-                    <td className="px-6 py-4 text-xs whitespace-nowrap">
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
-                        s.paid
-                          ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400"
-                          : "bg-orange-50 dark:bg-orange-950/30 text-brand-orange-655 dark:text-brand-orange-400"
-                      }`}>
-                        {s.paid ? (
+      {/* Manage Auto Pay Rules Modal */}
+      {showAutoPayRules && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-2xl shadow-2xl relative animate-scale-in">
+            <button
+              onClick={() => setShowAutoPayRules(false)}
+              className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-700 cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <h2 className="text-lg font-semibold mb-2">
+              Manage Auto Pay Rules
+            </h2>
+            <p className="text-xs text-zinc-500 mb-4">
+              Edit or cancel active recurring payments. Modifications apply from
+              the currently selected month onwards and preserve history.
+            </p>
+
+            <div className="overflow-x-auto max-h-[480px] min-h-[350px]">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-zinc-50/50 dark:bg-zinc-950/20 text-[10px] font-bold text-zinc-450 dark:text-zinc-500 uppercase tracking-wider">
+                    <th className="px-4 py-2">Category</th>
+                    <th className="px-4 py-2">Type</th>
+                    <th className="px-4 py-2">Amount</th>
+                    <th className="px-4 py-2">Starts</th>
+                    <th className="px-4 py-2">Status</th>
+                    <th className="px-4 py-2 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="text-xs">
+                  {autoPays.map((ap) => {
+                    const isEditing = editingAutoPayId === ap.id;
+                    const ruleStart = new Date(ap.startDate);
+                    const ruleEnd = ap.endDate ? new Date(ap.endDate) : null;
+                    const isActive = !ruleEnd;
+
+                    return (
+                      <tr
+                        key={ap.id}
+                        className="hover:bg-zinc-50/30 dark:hover:bg-zinc-800/10"
+                      >
+                        {isEditing ? (
                           <>
-                            <CheckCircle className="h-3 w-3" />
-                            Paid
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={editApCategory}
+                                onChange={(e) =>
+                                  setEditApCategory(e.target.value)
+                                }
+                                className="w-full px-2 py-1 text-xs rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold"
+                              />
+                            </td>
+                            <td className="px-4 py-3 font-semibold text-zinc-500">
+                              {ap.type}
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="number"
+                                value={editApAmount}
+                                onChange={(e) =>
+                                  setEditApAmount(e.target.value)
+                                }
+                                className="w-20 px-2 py-1 text-xs rounded border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold font-mono"
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-zinc-400">
+                              {ruleStart.toLocaleDateString("en-IN", {
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/10 text-amber-500">
+                                Editing
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right space-x-1.5 whitespace-nowrap">
+                              <button
+                                onClick={async () => {
+                                  startTransition(async () => {
+                                    await editAutoPay({
+                                      id: ap.id,
+                                      category: editApCategory,
+                                      amount: parseInt(editApAmount) || 0,
+                                      effectiveFromMonthStr: selectedMonthStr,
+                                    });
+                                    setEditingAutoPayId(null);
+                                  });
+                                }}
+                                className="px-2 py-1 rounded bg-brand-orange-500 text-white text-[10px] font-bold cursor-pointer hover:bg-brand-orange-600"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={() => setEditingAutoPayId(null)}
+                                className="px-2 py-1 rounded bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-[10px] font-bold cursor-pointer hover:bg-zinc-300 dark:hover:bg-zinc-700"
+                              >
+                                Cancel
+                              </button>
+                            </td>
                           </>
                         ) : (
                           <>
-                            <Clock className="h-3 w-3" />
-                            Pending
+                            <td className="px-4 py-3 font-semibold text-zinc-800 dark:text-zinc-200">
+                              <div>{ap.category}</div>
+                              {ap.description && (
+                                <div className="text-[10px] font-normal text-zinc-450 dark:text-zinc-500 mt-0.5">
+                                  {ap.description}
+                                </div>
+                              )}
+                            </td>
+                            <td
+                              className={`px-4 py-3 font-bold ${
+                                ap.type === "INCOME"
+                                  ? "text-emerald-600 dark:text-emerald-400"
+                                  : ap.type === "INVESTMENT"
+                                    ? "text-blue-600 dark:text-blue-400"
+                                    : "text-zinc-600 dark:text-zinc-400"
+                              }`}
+                            >
+                              {ap.type}
+                            </td>
+                            <td className="px-4 py-3 font-bold font-mono text-zinc-700 dark:text-zinc-300">
+                              {formatCur(ap.amount)}
+                            </td>
+                            <td className="px-4 py-3 text-zinc-500 dark:text-zinc-450">
+                              {ruleStart.toLocaleDateString("en-IN", {
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span
+                                className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                                  isActive
+                                    ? "bg-emerald-500/10 text-emerald-500"
+                                    : "bg-zinc-500/10 text-zinc-400"
+                                }`}
+                              >
+                                {isActive
+                                  ? "Active"
+                                  : `Ended ${ruleEnd?.toLocaleDateString("en-IN", { month: "short", year: "numeric" })}`}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-right space-x-1.5 whitespace-nowrap">
+                              {isActive && (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      setEditingAutoPayId(ap.id);
+                                      setEditApCategory(ap.category);
+                                      setEditApAmount(ap.amount.toString());
+                                      setEditApDescription(
+                                        ap.description || "",
+                                      );
+                                    }}
+                                    className="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 font-semibold cursor-pointer"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      if (
+                                        confirm(
+                                          "Are you sure you want to stop this Auto-Pay starting from this month?",
+                                        )
+                                      ) {
+                                        startTransition(async () => {
+                                          await deleteAutoPay({
+                                            id: ap.id,
+                                            effectiveFromMonthStr:
+                                              selectedMonthStr,
+                                          });
+                                        });
+                                      }
+                                    }}
+                                    className="text-red-500 hover:text-red-750 font-semibold cursor-pointer"
+                                  >
+                                    Delete
+                                  </button>
+                                </>
+                              )}
+                            </td>
                           </>
                         )}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right whitespace-nowrap">
-                      <Link
-                        href={`/admin/coaches/${s.coachId}/salary-slip/${s.year}/${s.month}`}
-                        target="_blank"
-                        className="inline-flex items-center gap-1 rounded-xl px-2.5 py-1 text-xs font-semibold border bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 transition-all cursor-pointer"
+                      </tr>
+                    );
+                  })}
+                  {autoPays.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="px-4 py-8 text-center text-zinc-400"
                       >
-                        <Printer className="h-3.5 w-3.5 text-zinc-450 dark:text-zinc-400" />
-                        Slip
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-                {paginatedData.items.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-zinc-450 dark:text-zinc-550">
-                      <div className="flex flex-col items-center justify-center space-y-1.5">
-                        <Briefcase className="h-6 w-6 text-zinc-350 dark:text-zinc-650" />
-                        <p className="font-medium text-zinc-600 dark:text-zinc-400">No salary payouts found</p>
-                        <p className="text-xs">Try adjusting your filters or date selection.</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Tab 3: Outstanding Balances */}
-        {activeTab === "outstanding" && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/20 text-[10px] font-bold text-zinc-450 dark:text-zinc-500 uppercase tracking-wider">
-                  <th className="px-6 py-3.5">Student</th>
-                  <th className="px-6 py-3.5">Plan Type</th>
-                  <th className="px-6 py-3.5">Duration</th>
-                  <th className="px-6 py-3.5">Total Fee</th>
-                  <th className="px-6 py-3.5">Paid So Far</th>
-                  <th className="px-6 py-3.5">Outstanding Balance</th>
-                  <th className="px-6 py-3.5">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800/80 text-sm text-zinc-700 dark:text-zinc-300">
-                {paginatedData.items.map((plan: any) => (
-                  <tr key={plan.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-850/20 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        {plan.student && (
-                          <>
-                            <StudentAvatar student={plan.student} size={28} className="ring-1 ring-zinc-200/50" />
-                            <div className="flex flex-col min-w-0">
-                              <span className="font-semibold text-zinc-900 dark:text-zinc-100 truncate text-xs">
-                                {plan.student.name}
-                              </span>
-                              <span className="text-[10px] text-zinc-450 font-bold uppercase tracking-wider">
-                                TAG {plan.student.studentNumber}
-                              </span>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-xs whitespace-nowrap">
-                      <span className="inline-flex items-center rounded-md px-1.5 py-0.5 font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-350 text-[10px]">
-                        {plan.planType}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-xs text-zinc-450 dark:text-zinc-500 whitespace-nowrap">
-                      {new Date(plan.startDate).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "short"
-                      })}
-                      {" - "}
-                      {new Date(plan.endDate).toLocaleDateString("en-IN", {
-                        day: "numeric",
-                        month: "short",
-                        year: "numeric"
-                      })}
-                    </td>
-                    <td className="px-6 py-4 text-xs font-semibold text-zinc-550 whitespace-nowrap">
-                      {formatCurrency(plan.fee)}
-                    </td>
-                    <td className="px-6 py-4 text-xs font-medium text-emerald-600 whitespace-nowrap">
-                      {formatCurrency(plan.paid)}
-                    </td>
-                    <td className="px-6 py-4 font-bold text-zinc-900 dark:text-zinc-50 whitespace-nowrap">
-                      <span className={plan.outstanding > 0 ? "text-red-500" : "text-zinc-450 dark:text-zinc-550 font-normal"}>
-                        {formatCurrency(plan.outstanding)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-xs whitespace-nowrap">
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                        plan.status === "PAID"
-                          ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400"
-                          : plan.status === "PARTIAL"
-                          ? "bg-orange-50 dark:bg-orange-950/30 text-brand-orange-655 dark:text-brand-orange-400"
-                          : "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400"
-                      }`}>
-                        {plan.status === "PAID"
-                          ? "Fully Paid"
-                          : plan.status === "PARTIAL"
-                          ? "Partial"
-                          : "Unpaid"}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-                {paginatedData.items.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-zinc-450 dark:text-zinc-550">
-                      <div className="flex flex-col items-center justify-center space-y-1.5">
-                        <Users className="h-6 w-6 text-zinc-350 dark:text-zinc-650" />
-                        <p className="font-medium text-zinc-600 dark:text-zinc-400">No active student plans found</p>
-                        <p className="text-xs">All active students are fully settled for this filter.</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Pagination Footer */}
-        {paginatedData.totalItems > 0 && (
-          <div className="flex items-center justify-between border-t border-zinc-200 dark:border-zinc-800 px-6 py-4">
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              Showing <span className="font-semibold text-zinc-900 dark:text-zinc-100">{Math.min(paginatedData.totalItems, (currentPage - 1) * itemsPerPage + 1)}</span> to{" "}
-              <span className="font-semibold text-zinc-900 dark:text-zinc-100">{Math.min(paginatedData.totalItems, currentPage * itemsPerPage)}</span> of{" "}
-              <span className="font-semibold text-zinc-900 dark:text-zinc-100">{paginatedData.totalItems}</span> results
-            </p>
-            
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                disabled={currentPage === 1}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-450 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:hover:bg-transparent transition-all cursor-pointer"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
-                Page {currentPage} of {paginatedData.totalPages}
-              </span>
-              <button
-                onClick={() => setCurrentPage((prev) => Math.min(paginatedData.totalPages, prev + 1))}
-                disabled={currentPage === paginatedData.totalPages}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-450 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-50 disabled:hover:bg-transparent transition-all cursor-pointer"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
+                        No active auto-pay configurations found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Manage Categories Modal */}
+      {showCategorySettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-zinc-900/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 w-full max-w-xl shadow-2xl relative animate-scale-in">
+            <div className="flex items-center justify-between mb-6">
+              {/* Tab Selector in the header */}
+              <div className="flex gap-2 p-1 bg-zinc-100 dark:bg-zinc-800 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setCategorySettingsTab("EXPENDITURE")}
+                  className={`py-1.5 px-4 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    categorySettingsTab === "EXPENDITURE"
+                      ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                      : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-850"
+                  }`}
+                >
+                  Expense & Investment
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCategorySettingsTab("INCOME")}
+                  className={`py-1.5 px-4 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    categorySettingsTab === "INCOME"
+                      ? "bg-white dark:bg-zinc-700 text-zinc-900 dark:text-white shadow-sm"
+                      : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-850"
+                  }`}
+                >
+                  Income
+                </button>
+              </div>
+
+              {/* Close button aligned in the header row */}
+              <button
+                type="button"
+                onClick={() => setShowCategorySettings(false)}
+                className="p-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-650 hover:bg-zinc-200 dark:hover:bg-zinc-700 cursor-pointer transition-all shadow-sm"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Categories Spreadsheet Grid */}
+            <div className="overflow-x-auto max-h-[480px] min-h-[350px] mb-6 rounded-xl p-1 bg-zinc-50/30 dark:bg-zinc-950/20">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider bg-zinc-50/50 dark:bg-zinc-950/20">
+                    <th className="py-2.5 px-4">Category Name</th>
+                    {categorySettingsTab === "EXPENDITURE" && (
+                      <th className="py-2.5 px-4 w-36">Budget (₹/Mo)</th>
+                    )}
+                    <th className="py-2.5 px-4 w-12 text-center">Remove</th>
+                  </tr>
+                </thead>
+                <tbody className="text-xs">
+                  {categoryDrafts
+                    .filter(
+                      (d) => d.type === categorySettingsTab && !d.isDeleted,
+                    )
+                    .map((draft) => (
+                      <tr
+                        key={draft.id}
+                        className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/10"
+                      >
+                        <td className="py-2 px-2">
+                          <input
+                            type="text"
+                            value={draft.name}
+                            onChange={(e) =>
+                              updateDraftName(draft.id, e.target.value)
+                            }
+                            placeholder="e.g. Utilities, Salaries"
+                            className="w-full px-3 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-orange-500 font-semibold"
+                            required
+                          />
+                        </td>
+                        {categorySettingsTab === "EXPENDITURE" && (
+                          <td className="py-2 px-2">
+                            <input
+                              type="number"
+                              value={draft.budget}
+                              onChange={(e) =>
+                                updateDraftBudget(draft.id, e.target.value)
+                              }
+                              placeholder="Not Set"
+                              className="w-full px-3 py-2 text-xs rounded-xl border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950 text-zinc-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-orange-500 font-mono font-bold"
+                            />
+                          </td>
+                        )}
+                        <td className="py-2 px-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => deleteDraftRow(draft.id)}
+                            className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl cursor-pointer transition-colors"
+                            title="Deactivate Category"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  {categoryDrafts.filter(
+                    (d) => d.type === categorySettingsTab && !d.isDeleted,
+                  ).length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={categorySettingsTab === "EXPENDITURE" ? 3 : 2}
+                        className="py-8 text-center text-zinc-400"
+                      >
+                        No categories found. Click "Add Category" to create one.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Actions: Add Row & Save Changes */}
+            <div className="flex items-center justify-between pt-4">
+              <button
+                type="button"
+                onClick={addDraftRow}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 px-4 py-2 text-xs font-bold text-zinc-700 dark:text-zinc-300 transition-all cursor-pointer shadow-sm"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Category
+              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCategorySettings(false)}
+                  className="rounded-xl bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 px-4 py-2 text-xs font-bold text-zinc-700 dark:text-zinc-300 transition-all cursor-pointer shadow-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={saveAllCategoryChanges}
+                  className="rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 px-4 py-2 text-xs font-bold text-white transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                >
+                  {isPending ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -185,7 +185,7 @@ function IDCardFront({
 
       {/* Logo */}
       <div className="absolute top-[1.4em] left-[1.6em] z-10 w-[3.2em] h-[3.2em]">
-        <img src="/logo.webp" alt="TAG Logo" className="w-full h-full object-contain" />
+        <img src="/icons/logo.webp" alt="TAG Logo" className="w-full h-full object-contain" />
       </div>
 
       {/* Photo */}

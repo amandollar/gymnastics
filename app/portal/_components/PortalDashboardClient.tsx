@@ -445,8 +445,8 @@ export default function PortalDashboardClient({
 
       {/* 2. DESKTOP SIDEBAR */}
       <aside
-        className={`hidden md:flex flex-col shrink-0 h-[calc(100vh-24px)] my-3 ml-3 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 shadow-xs transition-all duration-300 overflow-hidden sticky top-3 z-20 ${
-          isCollapsed ? "w-16" : "w-60"
+        className={`hidden md:flex flex-col shrink-0 h-[calc(100vh-24px)] my-3 ml-3 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 shadow-xs transition-all duration-300 sticky top-3 z-20 ${
+          isCollapsed ? "w-16 overflow-visible" : "w-60 overflow-hidden"
         }`}
       >
         {/* Top Header Row */}
@@ -457,7 +457,7 @@ export default function PortalDashboardClient({
             <>
               <div className="flex items-center gap-2.5 min-w-0">
                 <img
-                  src="/logo.webp"
+                  src="/icons/logo.webp"
                   alt="TAG"
                   className="h-8 w-8 rounded-full border border-zinc-200 dark:border-zinc-800 object-cover shrink-0"
                 />
@@ -490,67 +490,81 @@ export default function PortalDashboardClient({
 
         {/* Centered Logo below top header when collapsed */}
         {isCollapsed && (
-          <div className="flex justify-center pt-4 pb-2">
+          <div className="flex justify-center pt-4 pb-2 relative group overflow-visible">
             <button
               onClick={() => setActiveTab("overview")}
               className="transition-transform hover:scale-105 active:scale-95 shrink-0 block cursor-pointer"
-              title="Overview"
             >
               <img
-                src="/logo.webp"
+                src="/icons/logo.webp"
                 alt="TAG"
                 className="h-8 w-8 rounded-full border border-zinc-200 dark:border-zinc-800 object-cover shrink-0"
               />
+              <span className="pointer-events-none absolute left-full ml-4 top-[35%] z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
+                Overview
+              </span>
             </button>
           </div>
         )}
 
         {/* Nav List */}
-        <div className="flex-1 overflow-y-auto pt-2">
+        <div className={`flex-1 pt-2 ${isCollapsed ? "overflow-visible" : "overflow-y-auto"}`}>
           <nav className={`transition-all ${isCollapsed ? "space-y-2 p-1.5" : "space-y-0.5 p-3"}`}>
             <button
               onClick={() => setActiveTab("overview")}
               className={`w-full flex items-center ${isCollapsed ? "justify-center" : "gap-2.5"} rounded-lg ${isCollapsed ? "px-2" : "px-3"} ${
                 isCollapsed ? "py-3.5" : "py-2.5"
-              } text-sm font-medium transition-all cursor-pointer ${
+              } text-sm font-medium transition-all cursor-pointer relative group ${
                 activeTab === "overview"
                   ? "bg-brand-orange-500/15 dark:bg-brand-orange-500/25 text-brand-orange-600 dark:text-brand-orange-400 font-semibold"
                   : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:text-zinc-900 dark:hover:text-zinc-50"
               }`}
-              title={isCollapsed ? "Overview" : undefined}
             >
               <Home className={`shrink-0 transition-all ${isCollapsed ? "h-5 w-5" : "h-4 w-4"}`} strokeWidth={2} />
               {!isCollapsed && "Overview"}
+              {isCollapsed && (
+                <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
+                  Overview
+                </span>
+              )}
             </button>
 
             <button
               onClick={() => setActiveTab("attendance")}
               className={`w-full flex items-center ${isCollapsed ? "justify-center" : "gap-2.5"} rounded-lg ${isCollapsed ? "px-2" : "px-3"} ${
                 isCollapsed ? "py-3.5" : "py-2.5"
-              } text-sm font-medium transition-all cursor-pointer ${
+              } text-sm font-medium transition-all cursor-pointer relative group ${
                 activeTab === "attendance"
                   ? "bg-brand-orange-500/15 dark:bg-brand-orange-500/25 text-brand-orange-600 dark:text-brand-orange-400 font-semibold"
                   : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:text-zinc-900 dark:hover:text-zinc-50"
               }`}
-              title={isCollapsed ? "Attendance" : undefined}
             >
               <CheckCircle2 className={`shrink-0 transition-all ${isCollapsed ? "h-5 w-5" : "h-4 w-4"}`} strokeWidth={2} />
               {!isCollapsed && "Attendance"}
+              {isCollapsed && (
+                <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
+                  Attendance
+                </span>
+              )}
             </button>
 
             <button
               onClick={() => setActiveTab("billing")}
               className={`w-full flex items-center ${isCollapsed ? "justify-center" : "gap-2.5"} rounded-lg ${isCollapsed ? "px-2" : "px-3"} ${
                 isCollapsed ? "py-3.5" : "py-2.5"
-              } text-sm font-medium transition-all cursor-pointer ${
+              } text-sm font-medium transition-all cursor-pointer relative group ${
                 activeTab === "billing"
                   ? "bg-brand-orange-500/15 dark:bg-brand-orange-500/25 text-brand-orange-600 dark:text-brand-orange-400 font-semibold"
                   : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:text-zinc-900 dark:hover:text-zinc-50"
               }`}
-              title={isCollapsed ? "Billing" : undefined}
             >
               <FileText className={`shrink-0 transition-all ${isCollapsed ? "h-5 w-5" : "h-4 w-4"}`} strokeWidth={2} />
               {!isCollapsed && "Billing"}
+              {isCollapsed && (
+                <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
+                  Billing
+                </span>
+              )}
             </button>
           </nav>
         </div>
@@ -558,7 +572,7 @@ export default function PortalDashboardClient({
 
         {/* Bottom User Card */}
         <div className="p-3 bg-zinc-50/50 dark:bg-zinc-900/10 flex items-center justify-between">
-          <div className={`flex items-center gap-3 min-w-0 flex-1 ${isCollapsed ? "justify-center" : ""}`}>
+          <div className={`flex items-center gap-3 min-w-0 flex-1 relative group ${isCollapsed ? "justify-center" : ""}`}>
             <div
               onClick={isCollapsed ? handleOpenNotifications : undefined}
               className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-orange-500 text-xs font-bold text-white shadow-2xs ${
@@ -570,6 +584,11 @@ export default function PortalDashboardClient({
                 <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5 rounded-full bg-brand-orange-500 ring-2 ring-white dark:ring-zinc-950" />
               )}
             </div>
+            {isCollapsed && (
+              <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
+                {student.parentName} (Parent)
+              </span>
+            )}
             {!isCollapsed && (
               <div className="min-w-0 flex-1 flex items-center justify-between gap-1">
                 <div className="min-w-0 flex-1 flex flex-col">
@@ -597,7 +616,7 @@ export default function PortalDashboardClient({
       <header className="flex md:hidden sticky top-0 z-30 min-h-14 items-center justify-between gap-2 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 sm:px-6 pt-[env(safe-area-inset-top)] shrink-0 w-full">
         <div className="flex items-center gap-2.5 min-w-0">
           <img
-            src="/logo.webp"
+            src="/icons/logo.webp"
             alt="TAG"
             className="h-8 w-8 shrink-0 rounded-full border border-zinc-200 dark:border-zinc-800 object-cover"
           />

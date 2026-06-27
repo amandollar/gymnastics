@@ -44,7 +44,7 @@ export function getStudentAvatarUrl(student: {
   
   const genderLower = (student.gender || "").toLowerCase();
   if (genderLower === "female") {
-    return "/women.webp";
+    return "/icons/women.webp";
   }
-  return "/man.webp";
+  return "/icons/man.webp";
 }

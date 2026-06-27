@@ -47,7 +47,7 @@ export default function FooterSection({ phone, phone2 }: { phone?: string; phone
           <div className="md:col-span-4 flex flex-col gap-6">
             {/* Logo */}
             <img
-              src="/logo.webp"
+              src="/icons/logo.webp"
               alt="The Academy of Gymnastics"
               className="h-14 w-auto object-contain select-none"
             />

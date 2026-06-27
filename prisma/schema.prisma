@@ -349,3 +349,59 @@ model Notification {
 
   @@index([studentId])
 }
+
+// ─────────────────────────────────────────────
+// Finance / Budget Models
+// ─────────────────────────────────────────────
+
+enum TransactionType {
+  INCOME
+  EXPENDITURE
+  INVESTMENT
+}
+
+model FinanceTransaction {
+  id          String          @id @default(cuid())
+  type        TransactionType
+  category    String
+  amount      Int
+  date        DateTime        @default(now())
+  description String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model BudgetCategory {
+  id          String   @id @default(cuid())
+  category    String
+  amount      Int      // Monthly budget limit
+  month       Int      // 1-12
+  year        Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([category, month, year])
+}
+
+model AutoPay {
+  id          String          @id @default(cuid())
+  type        TransactionType
+  category    String
+  amount      Int
+  startDate   DateTime        // Date when this recurring payment starts
+  endDate     DateTime?       // Date when this recurring payment ends (null if active)
+  description String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model FinanceCategory {
+  id        String          @id @default(cuid())
+  name      String
+  type      TransactionType
+  isActive  Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@unique([name, type])
+}

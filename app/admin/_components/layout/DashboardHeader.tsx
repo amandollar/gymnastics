@@ -35,7 +35,7 @@ export default function DashboardHeader({
         <div className="flex items-center gap-2 min-w-0 flex-1">
           <MobileMenuButton onOpen={() => setMenuOpen(true)} />
           <img
-            src="/logo.webp"
+            src="/icons/logo.webp"
             alt="TAG"
             className="md:hidden h-7 w-7 shrink-0 rounded-full border border-zinc-200 dark:border-zinc-800 object-cover"
           />

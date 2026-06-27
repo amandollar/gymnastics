@@ -55,7 +55,7 @@ export function MobileNavDrawer({
         <div className="flex h-14 items-center justify-between border-b border-zinc-200 dark:border-zinc-800 px-4">
           <div className="flex items-center gap-2.5 min-w-0">
             <img
-              src="/logo.webp"
+              src="/icons/logo.webp"
               alt="TAG"
               className="h-8 w-8 rounded-full border border-zinc-200 dark:border-zinc-800 object-cover shrink-0"
             />

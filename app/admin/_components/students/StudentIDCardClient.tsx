@@ -180,7 +180,7 @@ export default function StudentIDCardClient({
             {/* Top Left: Logo (Smaller) */}
             <div className="absolute top-[1.4em] left-[1.6em] z-10 w-[3.2em] h-[3.2em]">
               <Image
-                src="/logo.webp"
+                src="/icons/logo.webp"
                 alt="TAG Logo"
                 fill
                 sizes="50px"

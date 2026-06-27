@@ -20,6 +20,7 @@ import StudentPicker, { type PlanStudentOption } from "./StudentPicker";
 import BatchPicker from "./BatchPicker";
 import CoachPicker, { type CoachOption } from "./CoachPicker";
 import { planInputClass } from "./plan-form-shared";
+import PlanFeePreview from "./PlanFeePreview";
 
 
 
@@ -238,141 +239,158 @@ export default function CreateAssignPlanPanel({
   }
 
   return (
-    <form action={action} onSubmit={handleSubmit}>
+    <form action={action} onSubmit={handleSubmit} className="w-full">
       <input type="hidden" name="studentId" value={studentId} readOnly />
       <input type="hidden" name="batchId" value={selectedBatchId} readOnly />
       <input type="hidden" name="coachId" value={selectedCoachId} readOnly />
 
-      <div className="rounded-3xl bg-white dark:bg-zinc-900 overflow-hidden">
-        <div className="p-5 sm:p-6 space-y-6">
-          {/* Student selection */}
-          <div className="space-y-3">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-              Student
-            </p>
-            <StudentPicker
-              students={students}
-              value={studentId}
-              onChange={(id) => {
-                setStudentId(id);
-                setStudentError(undefined);
-              }}
-              error={studentError}
-            />
-          </div>
+      <div className="grid gap-6 min-[1124px]:grid-cols-12 items-start w-full">
+        {/* Left Column: Form Fields */}
+        <div className="min-[1124px]:col-span-8 bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800/80 shadow-xs overflow-hidden">
+          <div className="p-5 sm:p-6 space-y-6">
+            {/* Student selection */}
+            <div className="space-y-3">
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                Student
+              </p>
+              <StudentPicker
+                students={students}
+                value={studentId}
+                onChange={(id) => {
+                  setStudentId(id);
+                  setStudentError(undefined);
+                }}
+                error={studentError}
+              />
+            </div>
 
-          {/* Plan builder (includes plan type toggle) */}
-          <div>
-            <PlanBuilderFields
-              formMode
-              planType={planType}
-              onPlanTypeChange={setPlanType}
-              startDate={startDate}
-              onStartDateChange={setStartDate}
-              endDate={endDate}
-              onEndDateChange={setEndDate}
-              selectedDays={selectedDays}
-              onToggleDay={toggleDay}
-              discountPercent={discountPercent}
-              onDiscountChange={setDiscountPercent}
-              preview={preview}
-              selectedDaysError={state?.errors?.selectedDays?.[0]}
-              dayCounts={batchDayCounts}
-            >
-              {/* Conditional: Batch (REGULAR) or Coach (ONE_TO_ONE) */}
-              {isPersonalTraining ? (
-                <div className="space-y-3 animate-fade-in">
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                        Coach
-                      </p>
-                      <CoachPicker
-                        coaches={coaches}
-                        value={selectedCoachId}
-                        onChange={(id) => {
-                          setSelectedCoachId(id);
-                          setCoachError(undefined);
-                        }}
-                        error={coachError}
-                      />
-                      {coaches.filter((c) => c.status === "WORKING").length === 0 && (
-                        <p className="text-xs text-zinc-400 dark:text-zinc-500">
-                          No working coaches available.{" "}
-                          <Link href="/admin/coaches" className="text-brand-orange-500 hover:underline">
-                            Add a coach first.
-                          </Link>
+            {/* Plan builder (includes plan type toggle) */}
+            <div>
+              <PlanBuilderFields
+                formMode
+                planType={planType}
+                onPlanTypeChange={setPlanType}
+                startDate={startDate}
+                onStartDateChange={setStartDate}
+                endDate={endDate}
+                onEndDateChange={setEndDate}
+                selectedDays={selectedDays}
+                onToggleDay={toggleDay}
+                discountPercent={discountPercent}
+                onDiscountChange={setDiscountPercent}
+                selectedDaysError={state?.errors?.selectedDays?.[0]}
+                dayCounts={batchDayCounts}
+              >
+                {/* Conditional: Batch (REGULAR) or Coach (ONE_TO_ONE) */}
+                {isPersonalTraining ? (
+                  <div className="space-y-3 animate-fade-in">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                          Coach
                         </p>
+                        <CoachPicker
+                          coaches={coaches}
+                          value={selectedCoachId}
+                          onChange={(id) => {
+                            setSelectedCoachId(id);
+                            setCoachError(undefined);
+                          }}
+                          error={coachError}
+                        />
+                        {coaches.filter((c) => c.status === "WORKING").length === 0 && (
+                          <p className="text-xs text-zinc-400 dark:text-zinc-500">
+                            No working coaches available.{" "}
+                            <Link href="/admin/coaches" className="text-brand-orange-500 hover:underline">
+                              Add a coach first.
+                            </Link>
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                          PT Commission Share (%)
+                        </p>
+                        <input
+                          name="commissionPercent"
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={commissionPercent}
+                          onChange={(e) => setCommissionPercent(parseInt(e.target.value) || 0)}
+                          className={planInputClass}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                        {batches.length === 0 ? "No batches added" : "Batch"}
+                      </p>
+                      {batches.length === 0 && (
+                        <Link
+                          href="/admin/settings?tab=batches"
+                          className="inline-flex items-center justify-center rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 text-white px-3.5 py-1.5 text-xs font-semibold transition-colors cursor-pointer shadow-sm"
+                        >
+                          Create Batch
+                        </Link>
                       )}
                     </div>
-                    <div className="space-y-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                        PT Commission Share (%)
-                      </p>
-                      <input
-                        name="commissionPercent"
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={commissionPercent}
-                        onChange={(e) => setCommissionPercent(parseInt(e.target.value) || 0)}
-                        className={planInputClass}
-                      />
-                    </div>
+                    <BatchPicker
+                      batches={batches}
+                      value={selectedBatchId}
+                      onChange={handleBatchChange}
+                      error={batchError}
+                      studentAge={studentAge}
+                      students={students}
+                      pricingMaps={pricingMaps}
+                    />
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
-                      {batches.length === 0 ? "No batches added" : "Batch"}
-                    </p>
-                    {batches.length === 0 && (
-                      <Link
-                        href="/admin/settings?tab=batches"
-                        className="inline-flex items-center justify-center rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 text-white px-3.5 py-1.5 text-xs font-semibold transition-colors cursor-pointer shadow-sm"
-                      >
-                        Create Batch
-                      </Link>
-                    )}
-                  </div>
-                  <BatchPicker
-                    batches={batches}
-                    value={selectedBatchId}
-                    onChange={handleBatchChange}
-                    error={batchError}
-                    studentAge={studentAge}
-                    students={students}
-                    pricingMaps={pricingMaps}
-                  />
-                </div>
-              )}
-            </PlanBuilderFields>
+                )}
+              </PlanBuilderFields>
+            </div>
           </div>
         </div>
 
-        {/* Submit footer */}
-        <div className="border-t border-zinc-100 dark:border-zinc-800 px-5 sm:px-6 py-4 flex items-center justify-between gap-4 bg-zinc-50/60 dark:bg-zinc-800/30">
-          <div>
-            {state?.message && !state.success && (
-              <p className="text-xs text-rose-600 dark:text-rose-400">{state.message}</p>
-            )}
+        {/* Right Column: Fee Preview & Save Action */}
+        <div className="min-[1124px]:col-span-4 min-[1124px]:sticky min-[1124px]:top-24 space-y-6">
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800/80 shadow-xs overflow-hidden">
+            <div className="p-5 sm:p-6">
+              {preview ? (
+                <PlanFeePreview preview={preview} title="Fee summary" />
+              ) : (
+                <div className="rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 px-4 py-8 text-center text-xs text-zinc-400 dark:text-zinc-500 leading-relaxed bg-zinc-50/30 dark:bg-zinc-900/30">
+                  Pick student, dates and at least one class day to see sessions & total fee breakdown.
+                </div>
+              )}
+            </div>
+
+            {/* Submit footer */}
+            <div className="border-t border-zinc-100 dark:border-zinc-800 px-5 sm:px-6 py-4 flex items-center justify-between gap-4 bg-zinc-50/60 dark:bg-zinc-800/30">
+              <div className="min-w-0">
+                {state?.message && !state.success && (
+                  <p className="text-xs text-rose-600 dark:text-rose-400 break-words">{state.message}</p>
+                )}
+              </div>
+              <button
+                type="submit"
+                disabled={
+                  pending ||
+                  !studentId ||
+                  (!isPersonalTraining && !selectedBatchId) ||
+                  (isPersonalTraining && !selectedCoachId) ||
+                  !preview ||
+                  preview.totalSessions === 0
+                }
+                className="inline-flex items-center gap-2 rounded-2xl bg-brand-orange-500 hover:bg-brand-orange-600 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer px-5 py-2.5 text-sm font-semibold text-white transition-colors shrink-0 shadow-sm"
+              >
+                {pending ? "Saving…" : "Save plan"}
+                {!pending && <ArrowRight className="h-3.5 w-3.5" />}
+              </button>
+            </div>
           </div>
-          <button
-            type="submit"
-            disabled={
-              pending ||
-              !studentId ||
-              (!isPersonalTraining && !selectedBatchId) ||
-              (isPersonalTraining && !selectedCoachId) ||
-              !preview ||
-              preview.totalSessions === 0
-            }
-            className="inline-flex items-center gap-2 rounded-2xl bg-brand-orange-500 hover:bg-brand-orange-600 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer px-5 py-2.5 text-sm font-semibold text-white transition-colors shrink-0"
-          >
-            {pending ? "Saving…" : "Save plan"}
-            {!pending && <ArrowRight className="h-3.5 w-3.5" />}
-          </button>
         </div>
       </div>
     </form>

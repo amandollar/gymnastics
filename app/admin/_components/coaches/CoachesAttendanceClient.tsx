@@ -333,7 +333,7 @@ export default function CoachesAttendanceClient({
                       }`}
                     >
                       <img
-                        src={coach.avatarUrl || (coach.role === "STAFF" ? "/staff-profile-placeholder.webp" : "/coach-profile-placeholder.webp")}
+                        src={coach.avatarUrl || (coach.role === "STAFF" ? "/icons/staff-profile-placeholder.webp" : "/icons/coach-profile-placeholder.webp")}
                         alt={coach.name}
                         className="h-8 w-8 rounded-xl object-cover bg-zinc-100 dark:bg-zinc-800"
                       />

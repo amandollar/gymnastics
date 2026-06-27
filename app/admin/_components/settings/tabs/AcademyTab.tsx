@@ -89,7 +89,7 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
           {/* Logo & Academy Name (Non-editable) */}
           <div className="flex flex-col items-center justify-center gap-3 pt-4 pb-10 select-none pointer-events-none">
             <img
-              src="/logo.webp"
+              src="/icons/logo.webp"
               alt="Academy Logo"
               className="h-32 w-32 rounded-full border border-zinc-200 dark:border-zinc-800 object-cover shrink-0 shadow-xs"
             />

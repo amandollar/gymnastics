@@ -31,9 +31,9 @@ export default function StudentAvatarPicker({
   const defaultSrc = useMemo(() => {
     const genderLower = (gender || "").toLowerCase();
     if (genderLower === "female") {
-      return "/women.webp";
+      return "/icons/women.webp";
     }
-    return "/man.webp";
+    return "/icons/man.webp";
   }, [gender]);
 
   // Priority: user-selected file > existing avatar > local default

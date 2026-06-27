@@ -724,7 +724,7 @@ export default function DashboardOverview({
           className="group flex flex-col xl:flex-row items-center gap-2.5 xl:gap-4.5 py-3 px-3 xl:py-4 xl:px-4.5 rounded-3xl border-0 bg-orange-200/90 dark:bg-orange-950/60 hover:bg-orange-300/80 dark:hover:bg-orange-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center xl:text-left w-full"
         >
           <img
-            src="/attendance.webp"
+            src="/icons/attendance.webp"
             alt="Attendance"
             className="h-16 w-16 xl:h-18 xl:w-18 object-cover rounded-xl shrink-0 shadow-3xs"
           />
@@ -746,7 +746,7 @@ export default function DashboardOverview({
             className="group flex flex-col xl:flex-row items-center gap-2.5 xl:gap-4.5 py-3 px-3 xl:py-4 xl:px-4.5 rounded-3xl border-0 bg-sky-200/90 dark:bg-sky-950/60 hover:bg-sky-300/80 dark:hover:bg-sky-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center xl:text-left w-full"
           >
             <img
-              src="/enquiry.webp"
+              src="/icons/enquiry.webp"
               alt="New Enquiry"
               className="h-16 w-16 xl:h-18 xl:w-18 object-cover rounded-xl shrink-0 shadow-3xs"
             />
@@ -767,7 +767,7 @@ export default function DashboardOverview({
             className="flex flex-col xl:flex-row items-center gap-2.5 xl:gap-4.5 py-3 px-3 xl:py-4 xl:px-4.5 rounded-3xl border-0 bg-zinc-100 dark:bg-zinc-900/50 text-zinc-400 dark:text-zinc-650 opacity-40 cursor-not-allowed text-center xl:text-left w-full"
           >
             <img
-              src="/enquiry.webp"
+              src="/icons/enquiry.webp"
               alt="New Enquiry"
               className="h-16 w-16 xl:h-18 xl:w-18 object-cover rounded-xl shrink-0 shadow-3xs grayscale"
             />
@@ -789,7 +789,7 @@ export default function DashboardOverview({
           className="group flex flex-col xl:flex-row items-center gap-2.5 xl:gap-4.5 py-3 px-3 xl:py-4 xl:px-4.5 rounded-3xl border-0 bg-emerald-200/90 dark:bg-emerald-950/60 hover:bg-emerald-300/80 dark:hover:bg-emerald-900/60 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center xl:text-left w-full"
         >
           <img
-            src="/newAdmission.webp"
+            src="/icons/newAdmission.webp"
             alt="New Admission"
             className="h-16 w-16 xl:h-18 xl:w-18 object-cover rounded-xl shrink-0 shadow-3xs"
           />
@@ -812,7 +812,7 @@ export default function DashboardOverview({
           className="group flex flex-col xl:flex-row items-center gap-2.5 xl:gap-4.5 py-3 px-3 xl:py-4 xl:px-4.5 rounded-3xl border-0 bg-zinc-300/95 dark:bg-zinc-800/80 hover:bg-zinc-400/85 dark:hover:bg-zinc-700/80 active:scale-[0.98] transition-all duration-200 cursor-pointer text-center xl:text-left w-full"
         >
           <img
-            src="/fee.webp"
+            src="/icons/fee.webp"
             alt="Collect Fee"
             className="h-16 w-16 xl:h-18 xl:w-18 object-cover rounded-xl shrink-0 shadow-3xs"
           />
