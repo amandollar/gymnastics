@@ -1,4 +1,6 @@
 -- AlterEnum: Add STAFF to Role enum if it doesn't already exist (idempotent)
+-- NOTE: ALTER TYPE ADD VALUE cannot be used in the same transaction as statements
+-- that reference the new value. The ALTER TABLE and UPDATE are in the next migration.
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_enum
@@ -7,9 +9,3 @@ BEGIN
     ALTER TYPE "Role" ADD VALUE 'STAFF';
   END IF;
 END $$;
-
--- AlterTable: Set default role to STAFF (replaces legacy TRAINER default)
-ALTER TABLE "User" ALTER COLUMN "role" SET DEFAULT 'STAFF';
-
--- Migrate existing users who still have legacy MANAGER or TRAINER roles
-UPDATE "User" SET "role" = 'STAFF' WHERE "role"::text IN ('MANAGER', 'TRAINER');
