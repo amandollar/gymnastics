@@ -13,6 +13,14 @@ export function getAppHost(hostname: string): AppHost {
     return parts.length > 1 ? (parts[0] as AppHost) : "main";
   }
 
+  if (host.endsWith(".vercel.app")) {
+    const parts = host.split(".");
+    if (parts.length > 3) {
+      return parts[0] as AppHost;
+    }
+    return "main";
+  }
+
   const parts = host.split(".");
   return parts.length >= 3 ? (parts[0] as AppHost) : "main";
 }
@@ -29,13 +37,17 @@ export function buildAppUrl(
   let baseHost = host;
   if (host === "localhost" || host.endsWith(".localhost")) {
     baseHost = "localhost";
+  } else if (host.endsWith(".vercel.app")) {
+    const parts = host.split(".");
+    baseHost = parts.slice(-3).join(".");
   } else {
     const parts = host.split(".");
     baseHost = parts.length >= 3 ? parts.slice(1).join(".") : host;
   }
 
   const nextHost = targetHost === "main" ? baseHost : `${targetHost}.${baseHost}`;
-  url.host = port ? `${nextHost}:${port}` : nextHost;
+  url.hostname = nextHost;
+  url.port = port;
   url.pathname = pathname;
   url.search = requestUrl.search;
   url.hash = "";
