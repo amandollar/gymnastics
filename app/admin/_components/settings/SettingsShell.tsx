@@ -36,7 +36,6 @@ interface SettingsShellProps {
   userRole: string;
   signOutAction: () => Promise<void>;
   students: any[];
-  employees: { id: string; name: string; email: string | null; role: "COACH" | "STAFF" }[];
 }
 
 export default function SettingsShell({
@@ -49,7 +48,6 @@ export default function SettingsShell({
   userRole,
   signOutAction,
   students,
-  employees,
 }: SettingsShellProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -121,7 +119,7 @@ export default function SettingsShell({
       case "academy":
         return <AcademyTab initialProfile={initialProfile} />;
       case "users":
-        return <AccessTab initialUsers={initialUsers} currentUserId={currentUserId} coaches={employees} />;
+        return <AccessTab initialUsers={initialUsers} currentUserId={currentUserId} />;
       case "batches":
         return <BatchesTab initialBatches={initialBatches} students={students} />;
       case "grace-periods":
@@ -192,7 +190,7 @@ export default function SettingsShell({
             <div className="flex items-center justify-between gap-3 w-full">
               <h1 className="text-3xl font-light tracking-tight text-zinc-900 dark:text-zinc-50">Settings</h1>
               <span className="inline-flex items-center rounded-full bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 text-[10px] font-semibold text-amber-800 dark:text-amber-300 ring-1 ring-amber-200/80 dark:ring-amber-900/30 uppercase tracking-wider shrink-0">
-                {userRole === "SUPER" || userRole === "SUPER_ADMIN" ? "Admin" : userRole}
+                {userRole === "ADMIN" || userRole === "SUPER" || userRole === "SUPER_ADMIN" ? "Admin" : userRole === "STAFF" ? "Staff" : userRole}
               </span>
             </div>
 

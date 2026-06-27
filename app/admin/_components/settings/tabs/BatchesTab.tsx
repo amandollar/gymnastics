@@ -195,7 +195,7 @@ export default function BatchesTab({ initialBatches, students }: BatchesTabProps
         </div>
       )}
 
-      <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800/60 bg-white dark:bg-zinc-950 p-4 lg:p-6 shadow-xs md:border-0 md:bg-transparent md:p-0 md:shadow-none">
+      <div className="w-full">
         {/* Header inside card */}
         <div className="flex items-center justify-between gap-4 mb-5">
           <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">

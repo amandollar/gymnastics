@@ -98,7 +98,7 @@ export default function GracePeriodsTab({
         </div>
       )}
 
-      <div className="rounded-2xl border border-zinc-100 dark:border-zinc-800/60 bg-white dark:bg-zinc-950 p-4 lg:p-6 shadow-xs md:border-0 md:bg-transparent md:p-0 md:shadow-none mb-6">
+      <div className="w-full mb-6">
         {/* Header inside card */}
         <div className="mb-5">
           <h2 className="text-base font-bold text-zinc-900 dark:text-zinc-100">

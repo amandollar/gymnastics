@@ -41,6 +41,12 @@ export default function DashboardSidebar({
     .slice(0, 2)
     .toUpperCase();
 
+  const isUserAdmin = userRole === "ADMIN" || userRole === "SUPER" || userRole === "SUPER_ADMIN";
+  const avatarSrc = isUserAdmin
+    ? "/icons/admin-profile-placeholder.webp"
+    : "/icons/staff-profile-placeholder.webp";
+  const displayRole = isUserAdmin ? "Admin" : userRole === "STAFF" ? "Staff" : userRole;
+
   return (
     <aside
       className={`hidden md:flex flex-col shrink-0 h-[calc(100vh-24px)] my-3 ml-3 rounded-2xl border border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 shadow-xs transition-all duration-300 sticky top-3 z-20 ${
@@ -61,7 +67,6 @@ export default function DashboardSidebar({
               />
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold text-zinc-900 dark:text-zinc-100">TAG CRM</p>
-                <p className="truncate text-[10px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">TAG Academy</p>
               </div>
             </div>
 
@@ -112,25 +117,29 @@ export default function DashboardSidebar({
       <ThemeSelector isCollapsed={isCollapsed} />
 
       {/* Bottom User Card */}
-      <div className={`p-3 bg-zinc-50/50 dark:bg-zinc-900/10 flex items-center justify-between ${
+      <div className={`p-3 flex items-center ${
         isCollapsed ? "justify-center" : "gap-3"
       }`}>
-        <div className="flex items-center gap-3 min-w-0 flex-1 relative group">
-          <div
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-orange-500 text-xs font-bold text-white shadow-2xs"
-          >
-            {initials}
-          </div>
+        <div className="flex items-center gap-3 min-w-0 relative group">
+          <img
+            src={avatarSrc}
+            alt={displayRole}
+            className={`shrink-0 rounded-full object-cover ${
+              isCollapsed ? "h-11 w-11" : "h-[61px] w-[61px]"
+            }`}
+          />
           {isCollapsed && (
             <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
-              {userName} ({userRole === "SUPER" || userRole === "SUPER_ADMIN" ? "Admin" : userRole})
+              {userName} ({displayRole})
             </span>
           )}
           {!isCollapsed && (
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-bold text-zinc-900 dark:text-zinc-100">{userName}</p>
-              <span className="inline-flex items-center rounded-md bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 text-[9px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mt-0.5">
-                {userRole === "SUPER" || userRole === "SUPER_ADMIN" ? "Admin" : userRole}
+            <div className="min-w-0 flex flex-col justify-center">
+              <span className="text-sm font-bold text-zinc-900 dark:text-zinc-100 leading-tight">
+                {displayRole}
+              </span>
+              <span className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
+                {userName}
               </span>
             </div>
           )}

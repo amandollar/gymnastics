@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { MessageCircle, Check, Save, AlertCircle, RotateCcw, Pencil, X } from "lucide-react";
+import {
+  MessageCircle,
+  Check,
+  Save,
+  AlertCircle,
+  RotateCcw,
+  Pencil,
+  X,
+} from "lucide-react";
 import { saveMessageTemplatesAction } from "@/lib/actions/academy";
 import {
   ALL_VARIABLES,
@@ -44,11 +52,31 @@ const SAMPLE_VALUES: Required<TemplateVars> = {
 };
 
 const VARS_BY_TEMPLATE: Record<string, (keyof TemplateVars)[]> = {
-  templateGrace: ["studentName", "parentName", "planType", "graceDeadline", "daysLeft", "portalLink", "remainingSessions"],
-  templateFeeReminder: ["studentName", "parentName", "fee", "outstanding", "portalLink"],
+  templateGrace: [
+    "studentName",
+    "parentName",
+    "planType",
+    "graceDeadline",
+    "daysLeft",
+    "portalLink",
+    "remainingSessions",
+  ],
+  templateFeeReminder: [
+    "studentName",
+    "parentName",
+    "fee",
+    "outstanding",
+    "portalLink",
+  ],
   templateInactive: ["studentName", "parentName", "planType", "portalLink"],
   templateInactiveSessionComplete: ["studentName", "parentName", "portalLink"],
-  templateLoginCredentials: ["studentName", "parentName", "loginId", "password", "portalLink"],
+  templateLoginCredentials: [
+    "studentName",
+    "parentName",
+    "loginId",
+    "password",
+    "portalLink",
+  ],
   templateEnquiryFollowUp: ["studentName", "parentName", "planType"],
 };
 
@@ -102,7 +130,9 @@ function TemplateCard({
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">{title}</h3>
+        <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+          {title}
+        </h3>
         <div className="rounded-full p-1.5 border border-zinc-300 dark:border-zinc-700/80 text-zinc-500 dark:text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity duration-150 flex items-center justify-center bg-transparent shrink-0">
           <Pencil className="w-3.5 h-3.5" />
         </div>
@@ -149,19 +179,22 @@ function EditTemplateModal({
     }
   }, [isOpen, value, defaultValue]);
 
-  const insertVariable = useCallback((varKey: string) => {
-    const el = textareaRef.current;
-    if (!el) return;
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const token = `{{${varKey}}}`;
-    const newVal = localValue.slice(0, start) + token + localValue.slice(end);
-    setLocalValue(newVal);
-    requestAnimationFrame(() => {
-      el.focus();
-      el.setSelectionRange(start + token.length, start + token.length);
-    });
-  }, [localValue]);
+  const insertVariable = useCallback(
+    (varKey: string) => {
+      const el = textareaRef.current;
+      if (!el) return;
+      const start = el.selectionStart;
+      const end = el.selectionEnd;
+      const token = `{{${varKey}}}`;
+      const newVal = localValue.slice(0, start) + token + localValue.slice(end);
+      setLocalValue(newVal);
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(start + token.length, start + token.length);
+      });
+    },
+    [localValue],
+  );
 
   if (!isOpen) return null;
 
@@ -169,7 +202,7 @@ function EditTemplateModal({
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       {/* Backdrop click close */}
       <div className="absolute inset-0" onClick={onClose} />
-      
+
       <div className="relative bg-white dark:bg-zinc-900 rounded-3xl w-full max-w-xl overflow-hidden shadow-2xl border border-zinc-100 dark:border-zinc-800/80 flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 pb-3">
@@ -260,12 +293,22 @@ export default function MessagesTab({
   initialProfile: AcademyProfile;
 }) {
   const [grace, setGrace] = useState(initialProfile.templateGrace ?? "");
-  const [feeReminder, setFeeReminder] = useState(initialProfile.templateFeeReminder ?? "");
-  const [inactive, setInactive] = useState(initialProfile.templateInactive ?? "");
-  const [inactiveSessionComplete, setInactiveSessionComplete] = useState((initialProfile as any).templateInactiveSessionComplete ?? "");
-  const [loginCredentials, setLoginCredentials] = useState((initialProfile as any).templateLoginCredentials ?? "");
-  const [enquiryFollowUp, setEnquiryFollowUp] = useState((initialProfile as any).templateEnquiryFollowUp ?? "");
-  
+  const [feeReminder, setFeeReminder] = useState(
+    initialProfile.templateFeeReminder ?? "",
+  );
+  const [inactive, setInactive] = useState(
+    initialProfile.templateInactive ?? "",
+  );
+  const [inactiveSessionComplete, setInactiveSessionComplete] = useState(
+    (initialProfile as any).templateInactiveSessionComplete ?? "",
+  );
+  const [loginCredentials, setLoginCredentials] = useState(
+    (initialProfile as any).templateLoginCredentials ?? "",
+  );
+  const [enquiryFollowUp, setEnquiryFollowUp] = useState(
+    (initialProfile as any).templateEnquiryFollowUp ?? "",
+  );
+
   const [editingTemplate, setEditingTemplate] = useState<{
     id: string;
     title: string;
@@ -275,19 +318,31 @@ export default function MessagesTab({
   } | null>(null);
 
   const [savingId, setSavingId] = useState<string | null>(null);
-  const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [result, setResult] = useState<{
+    success: boolean;
+    message: string;
+  } | null>(null);
 
-  const handleSaveCard = async (cardId: string, updatedValue: string): Promise<boolean> => {
+  const handleSaveCard = async (
+    cardId: string,
+    updatedValue: string,
+  ): Promise<boolean> => {
     setSavingId(cardId);
     setResult(null);
 
     const payload = {
       templateGrace: cardId === "templateGrace" ? updatedValue : grace,
-      templateFeeReminder: cardId === "templateFeeReminder" ? updatedValue : feeReminder,
+      templateFeeReminder:
+        cardId === "templateFeeReminder" ? updatedValue : feeReminder,
       templateInactive: cardId === "templateInactive" ? updatedValue : inactive,
-      templateInactiveSessionComplete: cardId === "templateInactiveSessionComplete" ? updatedValue : inactiveSessionComplete,
-      templateLoginCredentials: cardId === "templateLoginCredentials" ? updatedValue : loginCredentials,
-      templateEnquiryFollowUp: cardId === "templateEnquiryFollowUp" ? updatedValue : enquiryFollowUp,
+      templateInactiveSessionComplete:
+        cardId === "templateInactiveSessionComplete"
+          ? updatedValue
+          : inactiveSessionComplete,
+      templateLoginCredentials:
+        cardId === "templateLoginCredentials" ? updatedValue : loginCredentials,
+      templateEnquiryFollowUp:
+        cardId === "templateEnquiryFollowUp" ? updatedValue : enquiryFollowUp,
     };
 
     const res = await saveMessageTemplatesAction(payload);
@@ -295,16 +350,22 @@ export default function MessagesTab({
       if (cardId === "templateGrace") setGrace(updatedValue);
       else if (cardId === "templateFeeReminder") setFeeReminder(updatedValue);
       else if (cardId === "templateInactive") setInactive(updatedValue);
-      else if (cardId === "templateInactiveSessionComplete") setInactiveSessionComplete(updatedValue);
-      else if (cardId === "templateLoginCredentials") setLoginCredentials(updatedValue);
-      else if (cardId === "templateEnquiryFollowUp") setEnquiryFollowUp(updatedValue);
+      else if (cardId === "templateInactiveSessionComplete")
+        setInactiveSessionComplete(updatedValue);
+      else if (cardId === "templateLoginCredentials")
+        setLoginCredentials(updatedValue);
+      else if (cardId === "templateEnquiryFollowUp")
+        setEnquiryFollowUp(updatedValue);
 
       setResult({ success: true, message: "Template saved successfully!" });
       setSavingId(null);
       setTimeout(() => setResult(null), 3000);
       return true;
     } else {
-      setResult({ success: false, message: res.message ?? "Failed to save template." });
+      setResult({
+        success: false,
+        message: res.message ?? "Failed to save template.",
+      });
       setSavingId(null);
       return false;
     }
@@ -314,14 +375,9 @@ export default function MessagesTab({
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <MessageCircle className="w-5 h-5 text-emerald-500" />
-            <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
-              WhatsApp Messages
-            </h2>
-          </div>
-        </div>
+        <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+          Message Templates
+        </h2>
       </div>
 
       {/* Result toast */}
@@ -333,7 +389,11 @@ export default function MessagesTab({
               : "bg-red-50 dark:bg-red-950/25 border-red-100 dark:border-red-900/30 text-red-650 dark:text-red-400"
           }`}
         >
-          {result.success ? <Check className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+          {result.success ? (
+            <Check className="w-4 h-4 shrink-0" />
+          ) : (
+            <AlertCircle className="w-4 h-4 shrink-0" />
+          )}
           {result.message}
         </div>
       )}
@@ -344,73 +404,86 @@ export default function MessagesTab({
           title="Login credential sharing"
           value={loginCredentials}
           defaultValue={DEFAULT_TEMPLATES.templateLoginCredentials}
-          onClick={() => setEditingTemplate({
-            id: "templateLoginCredentials",
-            title: "Login credential sharing",
-            value: loginCredentials,
-            defaultValue: DEFAULT_TEMPLATES.templateLoginCredentials,
-            availableVarKeys: VARS_BY_TEMPLATE.templateLoginCredentials,
-          })}
+          onClick={() =>
+            setEditingTemplate({
+              id: "templateLoginCredentials",
+              title: "Login credential sharing",
+              value: loginCredentials,
+              defaultValue: DEFAULT_TEMPLATES.templateLoginCredentials,
+              availableVarKeys: VARS_BY_TEMPLATE.templateLoginCredentials,
+            })
+          }
         />
         <TemplateCard
           title="Enquiry Follow-up"
           value={enquiryFollowUp}
           defaultValue={DEFAULT_TEMPLATES.templateEnquiryFollowUp}
-          onClick={() => setEditingTemplate({
-            id: "templateEnquiryFollowUp",
-            title: "Enquiry Follow-up",
-            value: enquiryFollowUp,
-            defaultValue: DEFAULT_TEMPLATES.templateEnquiryFollowUp,
-            availableVarKeys: VARS_BY_TEMPLATE.templateEnquiryFollowUp,
-          })}
+          onClick={() =>
+            setEditingTemplate({
+              id: "templateEnquiryFollowUp",
+              title: "Enquiry Follow-up",
+              value: enquiryFollowUp,
+              defaultValue: DEFAULT_TEMPLATES.templateEnquiryFollowUp,
+              availableVarKeys: VARS_BY_TEMPLATE.templateEnquiryFollowUp,
+            })
+          }
         />
         <TemplateCard
           title="Grace Period Reminder"
           value={grace}
           defaultValue={DEFAULT_TEMPLATES.templateGrace}
-          onClick={() => setEditingTemplate({
-            id: "templateGrace",
-            title: "Grace Period Reminder",
-            value: grace,
-            defaultValue: DEFAULT_TEMPLATES.templateGrace,
-            availableVarKeys: VARS_BY_TEMPLATE.templateGrace,
-          })}
+          onClick={() =>
+            setEditingTemplate({
+              id: "templateGrace",
+              title: "Grace Period Reminder",
+              value: grace,
+              defaultValue: DEFAULT_TEMPLATES.templateGrace,
+              availableVarKeys: VARS_BY_TEMPLATE.templateGrace,
+            })
+          }
         />
         <TemplateCard
           title="Fee Reminder"
           value={feeReminder}
           defaultValue={DEFAULT_TEMPLATES.templateFeeReminder}
-          onClick={() => setEditingTemplate({
-            id: "templateFeeReminder",
-            title: "Fee Reminder",
-            value: feeReminder,
-            defaultValue: DEFAULT_TEMPLATES.templateFeeReminder,
-            availableVarKeys: VARS_BY_TEMPLATE.templateFeeReminder,
-          })}
+          onClick={() =>
+            setEditingTemplate({
+              id: "templateFeeReminder",
+              title: "Fee Reminder",
+              value: feeReminder,
+              defaultValue: DEFAULT_TEMPLATES.templateFeeReminder,
+              availableVarKeys: VARS_BY_TEMPLATE.templateFeeReminder,
+            })
+          }
         />
         <TemplateCard
           title="Inactive (session pending)"
           value={inactive}
           defaultValue={DEFAULT_TEMPLATES.templateInactive}
-          onClick={() => setEditingTemplate({
-            id: "templateInactive",
-            title: "Inactive (session pending)",
-            value: inactive,
-            defaultValue: DEFAULT_TEMPLATES.templateInactive,
-            availableVarKeys: VARS_BY_TEMPLATE.templateInactive,
-          })}
+          onClick={() =>
+            setEditingTemplate({
+              id: "templateInactive",
+              title: "Inactive (session pending)",
+              value: inactive,
+              defaultValue: DEFAULT_TEMPLATES.templateInactive,
+              availableVarKeys: VARS_BY_TEMPLATE.templateInactive,
+            })
+          }
         />
         <TemplateCard
           title="Inactive (session complete)"
           value={inactiveSessionComplete}
           defaultValue={DEFAULT_TEMPLATES.templateInactiveSessionComplete}
-          onClick={() => setEditingTemplate({
-            id: "templateInactiveSessionComplete",
-            title: "Inactive (session complete)",
-            value: inactiveSessionComplete,
-            defaultValue: DEFAULT_TEMPLATES.templateInactiveSessionComplete,
-            availableVarKeys: VARS_BY_TEMPLATE.templateInactiveSessionComplete,
-          })}
+          onClick={() =>
+            setEditingTemplate({
+              id: "templateInactiveSessionComplete",
+              title: "Inactive (session complete)",
+              value: inactiveSessionComplete,
+              defaultValue: DEFAULT_TEMPLATES.templateInactiveSessionComplete,
+              availableVarKeys:
+                VARS_BY_TEMPLATE.templateInactiveSessionComplete,
+            })
+          }
         />
       </div>
 

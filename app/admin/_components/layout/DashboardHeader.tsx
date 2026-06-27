@@ -29,6 +29,11 @@ export default function DashboardHeader({
     .slice(0, 2)
     .toUpperCase();
 
+  const isUserAdmin = userRole === "ADMIN" || userRole === "SUPER" || userRole === "SUPER_ADMIN";
+  const avatarSrc = isUserAdmin
+    ? "/icons/admin-profile-placeholder.webp"
+    : "/icons/staff-profile-placeholder.webp";
+
   return (
     <>
       <header className="sticky top-0 z-30 flex min-h-14 items-center justify-between gap-2 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 sm:px-6 pt-[env(safe-area-inset-top)]">
@@ -55,12 +60,12 @@ export default function DashboardHeader({
             <RoleBadge role={userRole} />
           </div>
 
-          <div
-            className="sm:hidden flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-xs font-semibold text-zinc-600 dark:text-zinc-300"
+          <img
+            src={avatarSrc}
+            alt={userName}
+            className="sm:hidden h-8 w-8 shrink-0 rounded-full object-cover"
             title={userName}
-          >
-            {initials}
-          </div>
+          />
 
           <form action={signOutAction}>
             <button
