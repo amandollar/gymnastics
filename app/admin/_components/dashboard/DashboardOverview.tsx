@@ -87,6 +87,7 @@ interface DashboardOverviewProps {
   dashboardData: DashboardData;
   academyProfile: AcademyProfile;
   canManage?: boolean;
+  isAdmin?: boolean;
   reminders?: any[];
 }
 
@@ -95,6 +96,7 @@ export default function DashboardOverview({
   dashboardData,
   academyProfile,
   canManage = false,
+  isAdmin = false,
   reminders = [],
 }: DashboardOverviewProps) {
   const isMobile = useMediaQuery("(max-width: 639px)");
@@ -665,7 +667,9 @@ export default function DashboardOverview({
           )}
 
           {/* Right Part: Three Primary Stats */}
-          <div className="grid grid-cols-3 gap-1 sm:flex sm:flex-wrap sm:items-center sm:gap-x-6 lg:gap-x-4 xl:gap-x-6 sm:justify-end shrink-0 w-full sm:w-auto">
+          <div className={`grid gap-1 sm:flex sm:flex-wrap sm:items-center sm:gap-x-6 lg:gap-x-4 xl:gap-x-6 sm:justify-end shrink-0 w-full sm:w-auto ${
+            isAdmin ? "grid-cols-3" : "grid-cols-2"
+          }`}>
             {/* Stat 1: Admissions This Month */}
             <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
               <div className="flex items-center gap-1.5 sm:justify-start">
@@ -697,19 +701,21 @@ export default function DashboardOverview({
             </div>
 
             {/* Stat 3: Monthly Revenue */}
-            <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
-              <div className="flex items-center gap-1.5 sm:justify-start">
-                <span className="hidden sm:inline-flex items-center justify-center p-1 rounded-md bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border border-zinc-200/40 dark:border-zinc-800/40">
-                  <IndianRupee className="h-4 w-4" />
-                </span>
-                <span className="text-3xl sm:text-4xl font-extralight text-zinc-955 dark:text-zinc-50 tracking-tight">
-                  {formatShortRevenue(dashboardData.kpis.monthlyRevenue)}
-                </span>
+            {isAdmin && (
+              <div className="flex flex-col items-center text-center sm:items-start sm:text-left">
+                <div className="flex items-center gap-1.5 sm:justify-start">
+                  <span className="hidden sm:inline-flex items-center justify-center p-1 rounded-md bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border border-zinc-200/40 dark:border-zinc-800/40">
+                    <IndianRupee className="h-4 w-4" />
+                  </span>
+                  <span className="text-3xl sm:text-4xl font-extralight text-zinc-955 dark:text-zinc-50 tracking-tight">
+                    {formatShortRevenue(dashboardData.kpis.monthlyRevenue)}
+                  </span>
+                </div>
+                <p className="text-[9px] sm:text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wider text-center sm:text-left sm:pl-7 mt-0.5">
+                  Revenue This Mo.
+                </p>
               </div>
-              <p className="text-[9px] sm:text-[10px] font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wider text-center sm:text-left sm:pl-7 mt-0.5">
-                Revenue This Mo.
-              </p>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -857,55 +863,55 @@ export default function DashboardOverview({
           isMobile={isMobile}
         />
 
-        <RevenueChart
-          dashboardData={dashboardData}
-          chartH={chartH}
-          chartMargin={chartMargin}
-          chartTooltipStyle={chartTooltipStyle}
-          isMobile={isMobile}
-          formatShortRevenue={formatShortRevenue}
-        />
-
-        <AttendanceChart
-          dashboardData={dashboardData}
-          chartH={chartH}
-          chartMargin={chartMargin}
-          chartTooltipStyle={chartTooltipStyle}
-          currentMonthLabel={currentMonthLabel}
-          currentYear={currentYear}
-          isMobile={isMobile}
-        />
+        {isAdmin ? (
+          <>
+            <RevenueChart
+              dashboardData={dashboardData}
+              chartH={chartH}
+              chartMargin={chartMargin}
+              chartTooltipStyle={chartTooltipStyle}
+              isMobile={isMobile}
+              formatShortRevenue={formatShortRevenue}
+            />
+            <AttendanceChart
+              dashboardData={dashboardData}
+              chartH={chartH}
+              chartMargin={chartMargin}
+              chartTooltipStyle={chartTooltipStyle}
+              currentMonthLabel={currentMonthLabel}
+              currentYear={currentYear}
+              isMobile={isMobile}
+            />
+          </>
+        ) : (
+          <>
+            <AttendanceChart
+              dashboardData={dashboardData}
+              chartH={chartH}
+              chartMargin={chartMargin}
+              chartTooltipStyle={chartTooltipStyle}
+              currentMonthLabel={currentMonthLabel}
+              currentYear={currentYear}
+              isMobile={isMobile}
+            />
+            <RecentActivityCard
+              recentActivity={dashboardData.recentActivity}
+              mounted={mounted}
+              formatRelativeTime={formatRelativeTime}
+              isGrid
+            />
+          </>
+        )}
       </div>
 
-      {/* Recent Activity Section */}
-      <div className="rounded-3xl border-0 bg-white dark:bg-zinc-900 p-5 shadow-xs min-w-0 transition-colors">
-        <h3 className="text-sm font-bold text-zinc-955 dark:text-zinc-100 uppercase tracking-wider">
-          Recent activity
-        </h3>
-        <p className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
-          Latest updates across the academy
-        </p>
-        <ul className="mt-4 divide-y divide-zinc-100 dark:divide-zinc-800">
-          {dashboardData.recentActivity.map((item) => (
-            <li
-              key={item.id}
-              className="flex flex-col gap-0.5 py-3.5 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between hover:bg-zinc-50/30 dark:hover:bg-zinc-800/10 px-2 rounded-lg transition-colors"
-            >
-              <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                {item.text}
-              </span>
-              <span className="text-xs text-zinc-400 dark:text-zinc-505 font-semibold shrink-0 sm:pl-4">
-                {mounted ? formatRelativeTime(item.timestamp) : "—"}
-              </span>
-            </li>
-          ))}
-          {dashboardData.recentActivity.length === 0 && (
-            <li className="py-6 text-center text-sm text-zinc-400 dark:text-zinc-500">
-              No recent updates
-            </li>
-          )}
-        </ul>
-      </div>
+      {/* Recent Activity Section (only shown below grid for admin) */}
+      {isAdmin && (
+        <RecentActivityCard
+          recentActivity={dashboardData.recentActivity}
+          mounted={mounted}
+          formatRelativeTime={formatRelativeTime}
+        />
+      )}
 
       {/* Attendance Scanner Modal */}
       {qrOpen && (
@@ -1059,6 +1065,52 @@ export default function DashboardOverview({
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+function RecentActivityCard({
+  recentActivity,
+  mounted,
+  formatRelativeTime,
+  isGrid = false,
+}: {
+  recentActivity: any[];
+  mounted: boolean;
+  formatRelativeTime: (d: any) => string;
+  isGrid?: boolean;
+}) {
+  return (
+    <div className={`rounded-3xl border-0 bg-white dark:bg-zinc-900 p-5 shadow-xs min-w-0 transition-colors flex flex-col ${
+      isGrid ? "h-auto lg:h-[350px]" : ""
+    }`}>
+      <div>
+        <h3 className="text-sm font-bold text-zinc-955 dark:text-zinc-100 uppercase tracking-wider">
+          Recent activity
+        </h3>
+      </div>
+      <ul className={`mt-4 divide-y divide-zinc-100 dark:divide-zinc-800 ${
+        isGrid ? "flex-1 overflow-y-auto min-h-0 pr-1" : ""
+      }`}>
+        {recentActivity.map((item) => (
+          <li
+            key={item.id}
+            className="flex flex-col gap-0.5 py-3.5 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between hover:bg-zinc-50/30 dark:hover:bg-zinc-800/10 px-2 rounded-lg transition-colors"
+          >
+            <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+              {item.text}
+            </span>
+            <span className="text-xs text-zinc-400 dark:text-zinc-505 font-semibold shrink-0 sm:pl-4">
+              {mounted ? formatRelativeTime(item.timestamp) : "—"}
+            </span>
+          </li>
+        ))}
+        {recentActivity.length === 0 && (
+          <li className="py-6 text-center text-sm text-zinc-400 dark:text-zinc-505">
+            No recent updates
+          </li>
+        )}
+      </ul>
     </div>
   );
 }

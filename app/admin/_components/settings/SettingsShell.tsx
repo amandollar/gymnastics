@@ -70,31 +70,33 @@ export default function SettingsShell({
       label: "Academy",
       icon: Building,
     },
-    {
-      id: "users",
-      label: "Access Controls",
-      icon: Users,
-    },
-    {
-      id: "batches",
-      label: "Batches",
-      icon: Calendar,
-    },
-    {
-      id: "grace-periods",
-      label: "Grace Periods",
-      icon: Clock,
-    },
-    {
-      id: "fee-structure",
-      label: "Fee Structure",
-      icon: CreditCard,
-    },
-    {
-      id: "export",
-      label: "Data Export",
-      icon: Download,
-    },
+    ...(userRole === "ADMIN" ? [
+      {
+        id: "users",
+        label: "Access Controls",
+        icon: Users,
+      },
+      {
+        id: "batches",
+        label: "Batches",
+        icon: Calendar,
+      },
+      {
+        id: "grace-periods",
+        label: "Grace Periods",
+        icon: Clock,
+      },
+      {
+        id: "fee-structure",
+        label: "Fee Structure",
+        icon: CreditCard,
+      },
+      {
+        id: "export",
+        label: "Data Export",
+        icon: Download,
+      },
+    ] : []),
     {
       id: "appearance",
       label: "Appearance",
@@ -115,9 +117,13 @@ export default function SettingsShell({
   };
 
   const renderActiveTabContent = () => {
-    switch (effectiveTab) {
+    const isStaff = userRole !== "ADMIN";
+    const allowedTabs = isStaff ? ["academy", "appearance", "msg-templates"] : ["academy", "users", "batches", "grace-periods", "fee-structure", "export", "appearance", "msg-templates"];
+    const currentTab = allowedTabs.includes(effectiveTab) ? effectiveTab : "academy";
+
+    switch (currentTab) {
       case "academy":
-        return <AcademyTab initialProfile={initialProfile} />;
+        return <AcademyTab initialProfile={initialProfile} isReadOnly={isStaff} />;
       case "users":
         return <AccessTab initialUsers={initialUsers} currentUserId={currentUserId} />;
       case "batches":
@@ -133,7 +139,7 @@ export default function SettingsShell({
       case "msg-templates":
         return <MessagesTab initialProfile={initialProfile} />;
       default:
-        return <AcademyTab initialProfile={initialProfile} />;
+        return <AcademyTab initialProfile={initialProfile} isReadOnly={isStaff} />;
     }
   };
 

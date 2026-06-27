@@ -1,7 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { Home, Users, FileText, CheckCircle, Settings, Dumbbell, ClipboardList, IndianRupee, Calendar } from "lucide-react";
+import {
+  Home,
+  Users,
+  CheckCircle,
+  Settings,
+  Dumbbell,
+  ClipboardList,
+  IndianRupee,
+  Calendar,
+} from "lucide-react";
 
 export const navLinkClass = (active: boolean, isCollapsed = false) =>
   `flex items-center ${isCollapsed ? "justify-center" : "gap-2.5"} rounded-lg ${isCollapsed ? "px-2" : "px-3"} ${
@@ -15,23 +24,27 @@ export const navLinkClass = (active: boolean, isCollapsed = false) =>
 export default function DashboardNav({
   pathname,
   isAdmin,
+  userRole = "STAFF",
   onNavigate,
   isCollapsed = false,
 }: {
   pathname: string;
   isAdmin: boolean;
+  userRole?: string;
   onNavigate?: () => void;
   isCollapsed?: boolean;
 }) {
   const close = onNavigate ?? (() => {});
   const iconClass = `shrink-0 transition-all ${isCollapsed ? "h-5 w-5" : "h-4 w-4"}`;
-  
+
   const activePathname = pathname.startsWith("/admin")
     ? pathname
     : `/admin${pathname === "/" ? "/dashboard" : pathname}`;
 
   return (
-    <nav className={`transition-all ${isCollapsed ? "space-y-2 p-1.5" : "space-y-0.5 p-3"}`}>
+    <nav
+      className={`transition-all ${isCollapsed ? "space-y-2 p-1.5" : "space-y-0.5 p-3"}`}
+    >
       <Link
         href="/admin/dashboard"
         onClick={close}
@@ -111,68 +124,84 @@ export default function DashboardNav({
         )}
       </Link>
       {isAdmin && (
-        <>
-          <Link
-            href="/admin/finance"
-            onClick={close}
-            className={`${navLinkClass(activePathname.startsWith("/admin/finance"), isCollapsed)} relative group`}
-          >
-            <FinanceIcon className={iconClass} />
-            {!isCollapsed && "Finance"}
-            {isCollapsed && (
-              <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
-                Finance
-              </span>
-            )}
-          </Link>
-          <Link
-            href="/admin/settings"
-            onClick={close}
-            className={`${navLinkClass(activePathname === "/admin/settings", isCollapsed)} relative group`}
-          >
-            <SettingsIcon className={iconClass} />
-            {!isCollapsed && "Settings"}
-            {isCollapsed && (
-              <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
-                Settings
-              </span>
-            )}
-          </Link>
-        </>
+        <Link
+          href="/admin/finance"
+          onClick={close}
+          className={`${navLinkClass(activePathname.startsWith("/admin/finance"), isCollapsed)} relative group`}
+        >
+          <FinanceIcon className={iconClass} />
+          {!isCollapsed && "Finance"}
+          {isCollapsed && (
+            <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
+              Finance
+            </span>
+          )}
+        </Link>
+      )}
+      {(isAdmin || userRole === "STAFF") && (
+        <Link
+          href="/admin/settings"
+          onClick={close}
+          className={`${navLinkClass(activePathname === "/admin/settings", isCollapsed)} relative group`}
+        >
+          <SettingsIcon className={iconClass} />
+          {!isCollapsed && "Settings"}
+          {isCollapsed && (
+            <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
+              Settings
+            </span>
+          )}
+        </Link>
       )}
     </nav>
   );
 }
 
-function HomeIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {}) {
+function HomeIcon({
+  className = "h-4 w-4 shrink-0",
+}: { className?: string } = {}) {
   return <Home className={className} strokeWidth={2} />;
 }
 
-export function UsersIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {}) {
+export function UsersIcon({
+  className = "h-4 w-4 shrink-0",
+}: { className?: string } = {}) {
   return <Users className={className} strokeWidth={2} />;
 }
 
-export function GymIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {}) {
+export function GymIcon({
+  className = "h-4 w-4 shrink-0",
+}: { className?: string } = {}) {
   return <Dumbbell className={className} strokeWidth={2} />;
 }
 
-export function DocIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {}) {
+export function DocIcon({
+  className = "h-4 w-4 shrink-0",
+}: { className?: string } = {}) {
   return <Calendar className={className} strokeWidth={2} />;
 }
 
-export function CheckIcon({ className = "h-4 w-4 shrink-0 opacity-60" }: { className?: string } = {}) {
+export function CheckIcon({
+  className = "h-4 w-4 shrink-0 opacity-60",
+}: { className?: string } = {}) {
   return <CheckCircle className={className} strokeWidth={2} />;
 }
 
-function SettingsIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {}) {
+function SettingsIcon({
+  className = "h-4 w-4 shrink-0",
+}: { className?: string } = {}) {
   return <Settings className={className} strokeWidth={2} />;
 }
 
-export function EnquiryIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {}) {
+export function EnquiryIcon({
+  className = "h-4 w-4 shrink-0",
+}: { className?: string } = {}) {
   return <ClipboardList className={className} strokeWidth={2} />;
 }
 
-export function FinanceIcon({ className = "h-4 w-4 shrink-0" }: { className?: string } = {}) {
+export function FinanceIcon({
+  className = "h-4 w-4 shrink-0",
+}: { className?: string } = {}) {
   return <IndianRupee className={className} strokeWidth={2} />;
 }
 

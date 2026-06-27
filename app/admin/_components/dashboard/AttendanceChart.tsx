@@ -138,7 +138,7 @@ export default function AttendanceChart({
             <Bar
               dataKey="present"
               fill="#f16d28"
-              radius={[9999, 9999, 8, 8]}
+              radius={[9999, 9999, 2, 2]}
               maxBarSize={isMobile ? 28 : 42}
             />
           </BarChart>

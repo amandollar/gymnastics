@@ -83,7 +83,7 @@ export const authConfig = {
           return redirectTo("portal", "/");
         }
 
-        if (isSettingsRoute && role !== "ADMIN") {
+        if (isSettingsRoute && role !== "ADMIN" && role !== "STAFF") {
           return redirectTo("admin", "/dashboard");
         }
 

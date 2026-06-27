@@ -8,6 +8,7 @@ export default async function StudentsPage() {
   if (!session) redirect("/login");
 
   const user = await getSessionUser();
+  const isAdmin = user?.role === "ADMIN";
   const canManage = user?.role === "ADMIN" || user?.role === "STAFF";
 
   const [students, batches] = await Promise.all([
@@ -19,6 +20,7 @@ export default async function StudentsPage() {
     <div className="mx-auto max-w-7xl min-w-0 w-full">
       <StudentsListClient
         canManage={canManage}
+        isAdmin={isAdmin}
         students={JSON.parse(JSON.stringify(students))}
         batches={JSON.parse(JSON.stringify(batches))}
       />

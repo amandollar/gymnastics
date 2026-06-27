@@ -348,16 +348,16 @@ export default function AdmissionsRenewalsChartCard({
               dataKey="newAdmissions"
               name="New Admissions"
               fill="#f16d28"
-              radius={[4, 4, 0, 0]}
-              maxBarSize={chartViewType === "monthly" ? 18 : 8}
+              radius={[9999, 9999, 2, 2]}
+              maxBarSize={chartViewType === "monthly" ? 28 : 14}
               stackId="a"
             />
             <Bar
               dataKey="renewals"
               name="Renewals"
               fill="#8b5cf6"
-              radius={[4, 4, 0, 0]}
-              maxBarSize={chartViewType === "monthly" ? 18 : 8}
+              radius={[9999, 9999, 2, 2]}
+              maxBarSize={chartViewType === "monthly" ? 28 : 14}
               stackId="a"
             />
           </BarChart>

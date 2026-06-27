@@ -71,7 +71,7 @@ export default function PlansPageClient({
       {/* Page header */}
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-3xl sm:text-5xl font-light tracking-tight text-zinc-955 dark:text-zinc-50">Allot plan</h1>
-        {canManage && (
+        {canManage && isAdmin && (
           <div className="relative">
             {/* Desktop View: Action Buttons */}
             <div className="hidden sm:flex items-center gap-2 shrink-0">

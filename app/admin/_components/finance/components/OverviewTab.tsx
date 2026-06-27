@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
 import {
   TrendingUp,
   Briefcase,
@@ -56,6 +56,16 @@ export default function OverviewTab({
   formatCur,
   COLORS,
 }: OverviewTabProps) {
+  const chartScrollRef = useRef<HTMLDivElement>(null);
+
+  // On mount and whenever the data window changes, scroll to the rightmost
+  // position so the current month (last bar) is always visible.
+  useEffect(() => {
+    if (chartScrollRef.current) {
+      chartScrollRef.current.scrollLeft = chartScrollRef.current.scrollWidth;
+    }
+  }, [insightsData]);
+
   return (
     <div className="space-y-4">
       {/* Month Selector & KPI Summary Wrapper */}
@@ -336,31 +346,34 @@ export default function OverviewTab({
             </div>
           </div>
         </div>
-        <div className="h-80 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={insightsData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#3f3f4620" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#71717a" }} />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 12, fill: "#71717a" }}
-                tickFormatter={(v) => `₹${v / 1000}k`}
-              />
-              <Tooltip
-                cursor={{ fill: "transparent" }}
-                contentStyle={{
-                  borderRadius: "12px",
-                  border: "none",
-                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                }}
-                formatter={(val: any) => formatCur(Number(val))}
-              />
-              <Legend wrapperStyle={{ paddingTop: "20px" }} />
-              <Bar dataKey="Income" fill="#10b981" radius={[9999, 9999, 8, 8]} barSize={32} />
-              <Bar dataKey="Expenditure" fill="#f16d28" radius={[9999, 9999, 8, 8]} barSize={32} />
-            </BarChart>
-          </ResponsiveContainer>
+        <div className="overflow-x-auto w-full" ref={chartScrollRef}>
+          <div className="h-80" style={{ minWidth: "840px" }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={insightsData} margin={{ top: 20, right: 4, left: 0, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#3f3f4620" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#71717a" }} />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 11, fill: "#71717a" }}
+                  tickFormatter={(v) => `₹${v / 1000}k`}
+                  width={48}
+                />
+                <Tooltip
+                  cursor={{ fill: "transparent" }}
+                  contentStyle={{
+                    borderRadius: "12px",
+                    border: "none",
+                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                  }}
+                  formatter={(val: any) => formatCur(Number(val))}
+                />
+                <Legend wrapperStyle={{ paddingTop: "20px" }} />
+                <Bar dataKey="Income" fill="#10b981" radius={[9999, 9999, 2, 2]} barSize={16} />
+                <Bar dataKey="Expenditure" fill="#f16d28" radius={[9999, 9999, 2, 2]} barSize={16} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
     </div>

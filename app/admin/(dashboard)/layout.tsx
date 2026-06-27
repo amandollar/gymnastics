@@ -39,7 +39,7 @@ export default async function DashboardLayout({
           {children}
         </main>
 
-        <MobileBottomNav isAdmin={isAdmin} signOutAction={signOutAction} />
+        <MobileBottomNav isAdmin={isAdmin} userRole={userRole} signOutAction={signOutAction} />
       </div>
     </div>
   );

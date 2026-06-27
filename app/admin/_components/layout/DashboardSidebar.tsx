@@ -110,7 +110,7 @@ export default function DashboardSidebar({
 
       {/* Nav List */}
       <div className={`flex-1 pt-2 ${isCollapsed ? "overflow-visible" : "overflow-y-auto"}`}>
-        <DashboardNav pathname={pathname} isAdmin={isAdmin} isCollapsed={isCollapsed} />
+        <DashboardNav pathname={pathname} isAdmin={isAdmin} userRole={userRole} isCollapsed={isCollapsed} />
       </div>
 
       {/* Theme Selector */}

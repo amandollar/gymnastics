@@ -14,6 +14,14 @@ async function assertCanManage() {
   }
 }
 
+async function assertAdmin() {
+  const session = await auth();
+  const role = (session?.user as { role?: string })?.role;
+  if (!session || role !== "ADMIN") {
+    throw new Error("Unauthorized");
+  }
+}
+
 // ─── Search students with outstanding dues ────────────────────────────────────
 
 export async function searchStudentsWithDuesAction(query?: string) {
@@ -149,7 +157,7 @@ export async function getRevenueChartDataAction(
   month?: number
 ): Promise<{ success: boolean; data?: { label: string; revenue: number }[]; message?: string }> {
   try {
-    await assertCanManage();
+    await assertAdmin();
 
     if (view === "daily") {
       if (month === undefined) {

@@ -29,6 +29,15 @@ async function assertCanManageStudents() {
   return session;
 }
 
+async function assertAdmin() {
+  const session = await auth();
+  const role = (session?.user as { role?: string })?.role;
+  if (!session || role !== "ADMIN") {
+    throw new Error("Unauthorized");
+  }
+  return session;
+}
+
 export async function createStudentAction(
   _prev: unknown,
   formData: FormData
@@ -294,7 +303,7 @@ export async function bulkImportStudentsAction(
   data: import("@/lib/services/students").BulkStudentPayload[]
 ): Promise<{ success: boolean; message?: string; importedCount?: number }> {
   try {
-    await assertCanManageStudents();
+    await assertAdmin();
     
     if (!data || data.length === 0) {
        return { success: false, message: "No valid data to import." };

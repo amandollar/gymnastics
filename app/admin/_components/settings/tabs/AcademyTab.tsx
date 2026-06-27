@@ -8,12 +8,13 @@ import type { AcademyProfile } from "@prisma/client";
 
 interface AcademyTabProps {
   initialProfile: AcademyProfile;
+  isReadOnly?: boolean;
 }
 
 const inputClass =
   "w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3 py-2 text-base md:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/20 focus:border-brand-orange-500 transition-colors";
 
-export default function AcademyTab({ initialProfile }: AcademyTabProps) {
+export default function AcademyTab({ initialProfile, isReadOnly = false }: AcademyTabProps) {
   const [toast, setToast] = useState<{
     type: "success" | "error";
     message: string;
@@ -71,7 +72,7 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
           className={`fixed top-4 right-4 z-50 rounded-xl border px-4 py-3 text-sm shadow-lg max-w-sm ${
             toast.type === "success"
               ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/40"
-              : "bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-900/40"
+              : "bg-rose-50 dark:bg-rose-955/30 text-rose-805 dark:text-rose-300 border-rose-200 dark:border-rose-900/40"
           }`}
         >
           {toast.message}
@@ -107,6 +108,7 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
                 type="text"
                 name="phone"
                 required
+                disabled={isReadOnly}
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="e.g. 7977177463"
@@ -121,6 +123,7 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
                 type="text"
                 name="phone2"
                 required
+                disabled={isReadOnly}
                 value={phone2}
                 onChange={(e) => setPhone2(e.target.value)}
                 placeholder="e.g. 7757965651"
@@ -136,6 +139,7 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
             <input
               type="email"
               name="email"
+              disabled={isReadOnly}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="e.g. contact@tagacademy.com"
@@ -151,6 +155,7 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
               <input
                 type="text"
                 name="website"
+                disabled={isReadOnly}
                 value={website}
                 onChange={(e) => setWebsite(e.target.value)}
                 placeholder="e.g. www.theacademyofgymnastics.com"
@@ -165,6 +170,7 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
               <input
                 type="text"
                 name="parentPortalUrl"
+                disabled={isReadOnly}
                 value={parentPortalUrl}
                 onChange={(e) => setParentPortalUrl(e.target.value)}
                 placeholder="e.g. portal.theacademyofgymnastics.com"
@@ -180,6 +186,7 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
             <textarea
               name="address"
               required
+              disabled={isReadOnly}
               rows={4}
               value={address}
               onChange={(e) => setAddress(e.target.value)}
@@ -188,16 +195,18 @@ export default function AcademyTab({ initialProfile }: AcademyTabProps) {
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
-            <button
-              type="submit"
-              disabled={isPending || !hasChanges}
-              className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 px-4 py-2.5 text-sm font-semibold text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-xs"
-            >
-              <Save className="h-4 w-4" />
-              {isPending ? "Saving profile..." : "Save Profile"}
-            </button>
-          </div>
+          {!isReadOnly && (
+            <div className="flex justify-end gap-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+              <button
+                type="submit"
+                disabled={isPending || !hasChanges}
+                className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 dark:bg-zinc-100 px-4 py-2.5 text-sm font-semibold text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors shadow-xs"
+              >
+                <Save className="h-4 w-4" />
+                {isPending ? "Saving profile..." : "Save Profile"}
+              </button>
+            </div>
+          )}
         </form>
       </div>
     </div>

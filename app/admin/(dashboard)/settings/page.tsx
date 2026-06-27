@@ -13,20 +13,22 @@ export default async function SettingsPage() {
   const session = await getSession();
   const user = session?.user;
 
-  // Protect page: Only ADMIN role is authorized
-  const userRole = (user as { role?: string })?.role;
-  if (!session || userRole !== "ADMIN") {
-    redirect("/dashboard");
+  // Protect page: ADMIN and STAFF roles are authorized
+  const userRole = (user as { role?: string })?.role || "STAFF";
+  if (!session || (userRole !== "ADMIN" && userRole !== "STAFF")) {
+    redirect("/admin/dashboard");
   }
 
-  // Fetch settings data in parallel
+  const isAdmin = userRole === "ADMIN";
+
+  // Fetch settings data in parallel (conditionally based on role)
   const [users, batches, gracePeriodMap, pricingMaps, academyProfile, students] = await Promise.all([
-    getAllUsers(),
-    listBatches(),
-    getGracePeriodMap(),
-    getPricingMaps(),
+    isAdmin ? getAllUsers() : Promise.resolve([]),
+    isAdmin ? listBatches() : Promise.resolve([]),
+    isAdmin ? getGracePeriodMap() : Promise.resolve({}),
+    isAdmin ? getPricingMaps() : Promise.resolve({ REGULAR: {}, ONE_TO_ONE: {} }),
     getAcademyProfile(),
-    listStudents(),
+    isAdmin ? listStudents() : Promise.resolve([]),
   ]);
 
   async function signOutAction() {
@@ -37,10 +39,10 @@ export default async function SettingsPage() {
   return (
     <SettingsShell
       initialUsers={users as any[]}
-      currentUserId={(user as { id: string }).id}
+      currentUserId={user ? (user as { id: string }).id : ""}
       initialBatches={batches}
       initialGracePeriodMap={gracePeriodMap}
-      initialPricingMaps={pricingMaps}
+      initialPricingMaps={pricingMaps as any}
       initialProfile={academyProfile}
       userRole={userRole}
       signOutAction={signOutAction}

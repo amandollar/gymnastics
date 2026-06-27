@@ -1,15 +1,9 @@
 "use client";
 
-import React, {
-  useState,
-  useTransition,
-  useActionState,
-  useRef,
-  useEffect,
-} from "react";
+import { useState, useTransition, useActionState } from "react";
 import { createUser, updateUser, deleteUser } from "@/lib/actions/users";
 import RoleBadge from "@/app/admin/_components/layout/RoleBadge";
-import { X, Plus, Shield, Check, ChevronDown, User, Pencil, Trash2, Info } from "lucide-react";
+import { X, Shield, Check, User, Pencil, Trash2, Info } from "lucide-react";
 
 interface User {
   id: string;
@@ -248,7 +242,7 @@ export default function AccessTab({
             >
               <Info className="h-4.5 w-4.5" />
             </button>
-             <button
+            <button
               type="button"
               onClick={handleAddNewClick}
               className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-brand-orange-500 px-3.5 py-2.5 text-xs font-bold text-white hover:bg-brand-orange-600 transition-all cursor-pointer shadow-xs"
@@ -319,14 +313,11 @@ export default function AccessTab({
                             <RoleBadge role={u.role} />
                           </td>
                           <td className="px-4 py-2 text-zinc-500 dark:text-zinc-400 text-xs">
-                            {new Date(u.createdAt).toLocaleDateString(
-                              "en-US",
-                              {
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              },
-                            )}
+                            {new Date(u.createdAt).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}
                           </td>
                           <td className="px-4 py-2 text-right last:rounded-r-2xl">
                             {deleteConfirmId === u.id ? (
@@ -365,11 +356,20 @@ export default function AccessTab({
                                     className="text-zinc-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-400 transition-colors cursor-pointer"
                                     title="Delete"
                                   >
-                                    <Trash2 className="w-4 h-4" strokeWidth={2} />
+                                    <Trash2
+                                      className="w-4 h-4"
+                                      strokeWidth={2}
+                                    />
                                   </button>
                                 ) : (
-                                  <span className="text-zinc-200 dark:text-zinc-800 cursor-not-allowed select-none" title="Cannot delete current user">
-                                    <Trash2 className="w-4 h-4 opacity-30" strokeWidth={2} />
+                                  <span
+                                    className="text-zinc-200 dark:text-zinc-800 cursor-not-allowed select-none"
+                                    title="Cannot delete current user"
+                                  >
+                                    <Trash2
+                                      className="w-4 h-4 opacity-30"
+                                      strokeWidth={2}
+                                    />
                                   </span>
                                 )}
                               </div>
@@ -445,7 +445,10 @@ export default function AccessTab({
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-zinc-650 dark:text-zinc-400 mb-1.5">
-                      Access role <span className="text-zinc-400 font-normal">(permissions)</span>
+                      Access role{" "}
+                      <span className="text-zinc-400 font-normal">
+                        (permissions)
+                      </span>
                     </label>
                     <select
                       name="role"
@@ -459,7 +462,10 @@ export default function AccessTab({
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-zinc-650 dark:text-zinc-400 mb-1.5">
-                      Password <span className="text-zinc-400 font-normal">(required)</span>
+                      Password{" "}
+                      <span className="text-zinc-400 font-normal">
+                        (required)
+                      </span>
                     </label>
                     <input
                       type="password"
@@ -546,7 +552,10 @@ export default function AccessTab({
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-zinc-650 dark:text-zinc-400 mb-1.5">
-                      Access role <span className="text-zinc-400 font-normal">(permissions)</span>
+                      Access role{" "}
+                      <span className="text-zinc-400 font-normal">
+                        (permissions)
+                      </span>
                     </label>
                     <select
                       name="role"
@@ -560,7 +569,10 @@ export default function AccessTab({
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-zinc-650 dark:text-zinc-400 mb-1.5">
-                      Password <span className="font-normal text-zinc-400">(leave blank to keep)</span>
+                      Password{" "}
+                      <span className="font-normal text-zinc-400">
+                        (leave blank to keep)
+                      </span>
                     </label>
                     <input
                       type="password"
@@ -604,7 +616,9 @@ export default function AccessTab({
       {deleteConfirmId && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in"
-          onClick={(e) => e.target === e.currentTarget && setDeleteConfirmId(null)}
+          onClick={(e) =>
+            e.target === e.currentTarget && setDeleteConfirmId(null)
+          }
         >
           <div className="relative w-full max-w-sm rounded-3xl bg-white dark:bg-zinc-900 shadow-2xl border border-zinc-150 dark:border-zinc-850/80 p-8 flex flex-col items-center text-center animate-scale-in">
             <div className="w-12 h-12 rounded-full bg-rose-50 dark:bg-rose-955/20 flex items-center justify-center text-rose-600 dark:text-rose-455 mb-4">
@@ -615,7 +629,8 @@ export default function AccessTab({
               Delete user account?
             </h3>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-6">
-              This action cannot be undone. This user will immediately lose access to the panel.
+              This action cannot be undone. This user will immediately lose
+              access to the panel.
             </p>
 
             <div className="flex items-center gap-3 w-full">
@@ -642,7 +657,9 @@ export default function AccessTab({
       {showInfoModal && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in"
-          onClick={(e) => e.target === e.currentTarget && setShowInfoModal(false)}
+          onClick={(e) =>
+            e.target === e.currentTarget && setShowInfoModal(false)
+          }
         >
           <div className="relative w-full max-w-2xl rounded-3xl bg-white dark:bg-zinc-900 shadow-2xl p-8 overflow-hidden flex flex-col border border-zinc-150 dark:border-zinc-850/80 animate-scale-in">
             <div className="flex items-center justify-between mb-6">
@@ -670,12 +687,23 @@ export default function AccessTab({
                 </h4>
                 <div className="space-y-3">
                   {getPermissionsList("STAFF").map((p) => (
-                    <div key={p.label} className="flex items-center justify-between text-xs font-semibold">
+                    <div
+                      key={p.label}
+                      className="flex items-center justify-between text-xs font-semibold"
+                    >
                       <span className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-                        <Check className={`h-3.5 w-3.5 ${p.allowed ? "text-emerald-500" : "text-zinc-300 dark:text-zinc-700"}`} />
+                        <Check
+                          className={`h-3.5 w-3.5 ${p.allowed ? "text-emerald-500" : "text-zinc-300 dark:text-zinc-700"}`}
+                        />
                         {p.label}
                       </span>
-                      <span className={p.allowed ? "text-emerald-600 dark:text-emerald-450 font-bold" : "text-zinc-300 dark:text-zinc-700"}>
+                      <span
+                        className={
+                          p.allowed
+                            ? "text-emerald-600 dark:text-emerald-450 font-bold"
+                            : "text-zinc-300 dark:text-zinc-700"
+                        }
+                      >
                         {p.allowed ? "Yes" : "No"}
                       </span>
                     </div>
@@ -693,12 +721,23 @@ export default function AccessTab({
                 </h4>
                 <div className="space-y-3">
                   {getPermissionsList("ADMIN").map((p) => (
-                    <div key={p.label} className="flex items-center justify-between text-xs font-semibold">
+                    <div
+                      key={p.label}
+                      className="flex items-center justify-between text-xs font-semibold"
+                    >
                       <span className="flex items-center gap-2 text-zinc-700 dark:text-zinc-300">
-                        <Check className={`h-3.5 w-3.5 ${p.allowed ? "text-emerald-500" : "text-zinc-300 dark:text-zinc-700"}`} />
+                        <Check
+                          className={`h-3.5 w-3.5 ${p.allowed ? "text-emerald-500" : "text-zinc-300 dark:text-zinc-700"}`}
+                        />
                         {p.label}
                       </span>
-                      <span className={p.allowed ? "text-emerald-600 dark:text-emerald-455 font-bold" : "text-zinc-300 dark:text-zinc-700"}>
+                      <span
+                        className={
+                          p.allowed
+                            ? "text-emerald-600 dark:text-emerald-455 font-bold"
+                            : "text-zinc-300 dark:text-zinc-700"
+                        }
+                      >
                         {p.allowed ? "Yes" : "No"}
                       </span>
                     </div>

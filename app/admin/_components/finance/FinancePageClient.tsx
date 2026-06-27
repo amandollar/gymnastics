@@ -535,9 +535,9 @@ export default function FinancePageClient({
         });
       }
     } else {
-      // Show 6 months at a time
+      // Show 12 months at a time
       const baseDate = new Date(now.getFullYear(), now.getMonth() - cashflowOffset, 1);
-      for (let i = 5; i >= 0; i--) {
+      for (let i = 11; i >= 0; i--) {
         const d = new Date(baseDate.getFullYear(), baseDate.getMonth() - i, 1);
         const m = d.getMonth() + 1;
         const y = d.getFullYear();

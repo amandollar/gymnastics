@@ -15,6 +15,14 @@ async function assertAdmin() {
   }
 }
 
+async function assertCanManageSettings() {
+  const session = await auth();
+  const role = (session?.user as { role?: string })?.role;
+  if (!session || (role !== "ADMIN" && role !== "STAFF")) {
+    throw new Error("Unauthorized: only admins and staff can manage message templates");
+  }
+}
+
 export async function updateAcademyProfileAction(
   _prev: unknown,
   formData: FormData
@@ -53,7 +61,7 @@ export async function saveMessageTemplatesAction(data: {
   templateEnquiryFollowUp: string;
 }): Promise<ActionResult> {
   try {
-    await assertAdmin();
+    await assertCanManageSettings();
     const profile = await getAcademyProfile();
     await prisma.academyProfile.update({
       where: { id: profile.id },

@@ -1069,10 +1069,12 @@ export default function StudentsListClient({
   students,
   batches,
   canManage,
+  isAdmin = false,
 }: {
   students: StudentListItem[];
   batches: { id: string; name: string; timing?: string }[];
   canManage: boolean;
+  isAdmin?: boolean;
 }) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -1342,12 +1344,14 @@ export default function StudentsListClient({
             <div className="relative">
               {/* Desktop action buttons */}
               <div className="hidden sm:flex items-center gap-2">
-                <Link
-                  href="/admin/students/bulk-upload"
-                  className="inline-flex items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-                >
-                  Bulk upload
-                </Link>
+                {isAdmin && (
+                  <Link
+                    href="/admin/students/bulk-upload"
+                    className="inline-flex items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    Bulk upload
+                  </Link>
+                )}
                 <Link
                   href="/admin/students/print-ids"
                   className="inline-flex items-center gap-1.5 justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
@@ -1386,13 +1390,15 @@ export default function StudentsListClient({
                   ref={headerMenuRef}
                   className="absolute right-0 mt-2 w-48 rounded-2xl border border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-2xl py-1.5 overflow-hidden z-50 animate-menu-show"
                 >
-                  <Link
-                    href="/admin/students/bulk-upload"
-                    onClick={() => setHeaderMenuOpen(false)}
-                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-705 dark:text-zinc-295 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-                  >
-                    Bulk upload
-                  </Link>
+                  {isAdmin && (
+                    <Link
+                      href="/admin/students/bulk-upload"
+                      onClick={() => setHeaderMenuOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-705 dark:text-zinc-295 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                    >
+                      Bulk upload
+                    </Link>
+                  )}
                   <Link
                     href="/admin/students/print-ids"
                     onClick={() => setHeaderMenuOpen(false)}
