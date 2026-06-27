@@ -36,6 +36,8 @@ export interface SalarySlipData {
     commissionPercent: number;
     coachShare: number;
     monthlyAmount: number;
+    pricePerSession: number;
+    daysAttended: number;
   }[];
 }
 
@@ -354,10 +356,10 @@ export function SalarySlip({
               <thead>
                 <tr style={{ borderBottom: "1px solid #cbd5e1", textAlign: "left", fontSize: "10px", textTransform: "uppercase", color: "#64748b" }}>
                   <th style={{ padding: "6px 0", fontWeight: 700 }}>Student (TAG)</th>
-                  <th style={{ padding: "6px 0", fontWeight: 700 }}>Plan Total</th>
-                  <th style={{ padding: "6px 0", fontWeight: 700, textAlign: "center" }}>Duration</th>
+                  <th style={{ padding: "6px 0", fontWeight: 700 }}>Daily Fee</th>
+                  <th style={{ padding: "6px 0", fontWeight: 700, textAlign: "center" }}>Days Attended</th>
                   <th style={{ padding: "6px 0", fontWeight: 700, textAlign: "center" }}>Split %</th>
-                  <th style={{ padding: "6px 0", fontWeight: 700, textAlign: "right" }}>Share (Mo.)</th>
+                  <th style={{ padding: "6px 0", fontWeight: 700, textAlign: "right" }}>Share</th>
                 </tr>
               </thead>
               <tbody>
@@ -366,8 +368,8 @@ export function SalarySlip({
                     <td style={{ padding: "6px 0", fontWeight: 600, color: "#334155" }}>
                       {row.studentName} <span style={{ fontWeight: 400, color: "#64748b" }}>(TAG {row.studentNumber})</span>
                     </td>
-                    <td style={{ padding: "6px 0" }}>{formatINRSalary(row.totalFee)}</td>
-                    <td style={{ padding: "6px 0", textAlign: "center" }}>{row.planMonths} mo</td>
+                    <td style={{ padding: "6px 0" }}>{formatINRSalary(row.pricePerSession)}</td>
+                    <td style={{ padding: "6px 0", textAlign: "center" }}>{row.daysAttended}</td>
                     <td style={{ padding: "6px 0", textAlign: "center" }}>{row.commissionPercent}%</td>
                     <td style={{ padding: "6px 0", textAlign: "right", fontWeight: 600, color: "#0f172a" }}>
                       {formatINRSalary(row.monthlyAmount)}

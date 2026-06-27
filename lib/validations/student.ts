@@ -21,6 +21,7 @@ export const createStudentSchema = z.object({
   ]),
   notes: z.string().optional(),
   medicalHistory: z.string().optional(),
+  trainingFocus: z.string().optional(),
   registrationFee: z.coerce.number().int().nonnegative().optional(),
 });
 

@@ -251,6 +251,7 @@ export async function createStudent(data: {
   level: StudentLevel;
   notes?: string;
   medicalHistory?: string;
+  trainingFocus?: string;
   avatarFile?: File | null;
   registrationFee?: number;
 }) {
@@ -269,6 +270,7 @@ export async function createStudent(data: {
         level: data.level,
         notes: data.notes,
         medicalHistory: data.medicalHistory,
+        trainingFocus: data.trainingFocus,
         avatarUrl: null,
         registrationFee: data.registrationFee,
       },
@@ -343,17 +345,52 @@ export async function updateStudentLevel(id: string, level: StudentLevel) {
 
 export async function updateStudentNotesAndMedical(
   id: string,
-  data: { notes?: string | null; medicalHistory?: string | null; trainingFocus?: string | null }
+  data: { notes?: string | null; medicalHistory?: string | null; trainingFocus?: string | null; reminderDate?: Date | string | null }
 ) {
   const updateData: any = {};
   if (data.notes !== undefined) updateData.notes = data.notes;
   if (data.medicalHistory !== undefined) updateData.medicalHistory = data.medicalHistory;
   if (data.trainingFocus !== undefined) updateData.trainingFocus = data.trainingFocus;
+  if (data.reminderDate !== undefined) {
+    updateData.reminderDate = data.reminderDate ? new Date(data.reminderDate) : null;
+  }
 
   return prisma.student.update({
     where: { id },
     data: updateData,
   });
+}
+
+export async function listStudentsWithReminders() {
+  const rawStudents = await prisma.student.findMany({
+    where: {
+      reminderDate: {
+        not: null,
+      },
+    },
+    include: {
+      plans: {
+        where: { isActive: true },
+        take: 1,
+        include: {
+          freezePeriods: true,
+          payments: {
+            select: { amount: true },
+          },
+          attendances: {
+            orderBy: { date: "desc" },
+            take: 1,
+            select: { date: true },
+          },
+        },
+      },
+    },
+    orderBy: {
+      reminderDate: "asc",
+    },
+  });
+
+  return rawStudents.map(mapStudentRow);
 }
 
 export async function assignPlanToStudent(

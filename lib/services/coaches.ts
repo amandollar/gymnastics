@@ -29,19 +29,23 @@ export interface CoachWithStats {
   todayAttendance?: { status: CoachAttendanceStatus } | null;
   /** Count of active ONE_TO_ONE plans assigned to this coach */
   activeStudentCount: number;
-  studentPlans: {
+  studentPlans?: {
     id: string;
     fee: number;
     commissionPercent: number | null;
     planMonths: number | null;
     startDate: Date | string;
     endDate: Date | string;
+    pricePerSession?: number;
+    attendances?: {
+      date: Date | string;
+    }[];
   }[];
-  attendances: {
+  attendances?: {
     date: Date | string;
     status: CoachAttendanceStatus;
   }[];
-  salaryPayments: {
+  salaryPayments?: {
     year: number;
     month: number;
     paid: boolean;
@@ -61,8 +65,15 @@ export interface CoachMonthlyEarningRow {
   planMonths: number;       // duration of plan in months
   monthlyAmount: number;    // coachShare / planMonths
   commissionPercent: number; // custom share percentage
+  pricePerSession: number;   // student's daily session fee
   /** Which months this plan spans (within planStart–planEnd) */
-  months: { year: number; month: number; label: string; amount: number }[];
+  months: { 
+    year: number; 
+    month: number; 
+    label: string; 
+    amount: number;
+    daysAttended: number; // count of attendance in this month
+  }[];
 }
 
 // ─── List ─────────────────────────────────────────────────────────────────────
@@ -355,6 +366,17 @@ export async function getCoachEarnings(
     orderBy: { startDate: "desc" },
   });
 
+  const planIds = plans.map((p: any) => p.id);
+  const attendances = await (prisma as any).attendance.findMany({
+    where: {
+      studentPlanId: { in: planIds },
+    },
+    select: {
+      studentPlanId: true,
+      date: true,
+    },
+  });
+
   return plans.map((plan: any) => {
     const commissionPercent = plan.commissionPercent ?? 50;
     const commissionMultiplier = commissionPercent / 100;
@@ -362,6 +384,8 @@ export async function getCoachEarnings(
     const coachShare = Math.round(totalFee * commissionMultiplier);
     const planMonths: number = plan.planMonths ?? 1;
     const monthlyAmount = planMonths > 0 ? Math.round(coachShare / planMonths) : coachShare;
+
+    const planAttendances = attendances.filter((att: any) => att.studentPlanId === plan.id);
 
     // Build month-wise breakdown: each calendar month within startDate→endDate
     const months: CoachMonthlyEarningRow["months"] = [];
@@ -372,11 +396,24 @@ export async function getCoachEarnings(
     const endMonth = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), 1));
 
     while (cur <= endMonth) {
+      const year = cur.getUTCFullYear();
+      const month = cur.getUTCMonth() + 1;
+
+      // Count attendances in this calendar month/year
+      const daysAttended = planAttendances.filter((att: any) => {
+        const d = new Date(att.date);
+        return d.getUTCFullYear() === year && (d.getUTCMonth() + 1) === month;
+      }).length;
+
+      // Calculate fee for mentor: (pricePerSession * daysAttended) * commissionPercent%
+      const amount = Math.round(plan.pricePerSession * daysAttended * commissionMultiplier);
+
       months.push({
-        year: cur.getUTCFullYear(),
-        month: cur.getUTCMonth() + 1,
+        year,
+        month,
         label: cur.toLocaleString("en-IN", { month: "long", year: "numeric", timeZone: "UTC" }),
-        amount: monthlyAmount,
+        amount,
+        daysAttended,
       });
       cur = new Date(Date.UTC(cur.getUTCFullYear(), cur.getUTCMonth() + 1, 1));
     }
@@ -393,6 +430,7 @@ export async function getCoachEarnings(
       planMonths,
       monthlyAmount,
       commissionPercent,
+      pricePerSession: plan.pricePerSession,
       months,
     } satisfies CoachMonthlyEarningRow;
   });

@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
   UserPlus,
@@ -10,6 +10,9 @@ import {
   ChevronRight,
   X,
   Check,
+  Bell,
+  Trash2,
+  ExternalLink,
 } from "lucide-react";
 import { getPortalBaseUrl } from "@/lib/utils/portal-url";
 import { resolveTemplate, DEFAULT_TEMPLATES } from "@/lib/utils/whatsapp-templates";
@@ -26,6 +29,8 @@ import type { AcademyProfile } from "@prisma/client";
 import {
   getPaymentByIdAction,
 } from "@/lib/actions/payments";
+import StudentAvatar from "@/app/admin/_components/students/StudentAvatar";
+import { clearStudentReminderAction } from "@/lib/actions/students";
 import AttendanceModal from "./AttendanceModal";
 import CollectFeeModal from "./CollectFeeModal";
 import StudentLists from "./StudentLists";
@@ -82,6 +87,7 @@ interface DashboardOverviewProps {
   dashboardData: DashboardData;
   academyProfile: AcademyProfile;
   canManage?: boolean;
+  reminders?: any[];
 }
 
 export default function DashboardOverview({
@@ -89,9 +95,55 @@ export default function DashboardOverview({
   dashboardData,
   academyProfile,
   canManage = false,
+  reminders = [],
 }: DashboardOverviewProps) {
   const isMobile = useMediaQuery("(max-width: 639px)");
   const chartH = isMobile ? CHART_H_SM : CHART_H;
+
+  const [reminderList, setReminderList] = useState<any[]>(reminders);
+  const [remindersOpen, setRemindersOpen] = useState(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setReminderList(reminders);
+  }, [reminders]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+        setRemindersOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const todayRemindersCount = useMemo(() => {
+    const todayStr = new Date().toLocaleDateString("en-CA");
+    return reminderList.filter((r) => {
+      if (!r.reminderDate) return false;
+      return new Date(r.reminderDate).toLocaleDateString("en-CA") === todayStr;
+    }).length;
+  }, [reminderList]);
+
+  const handleDeleteReminder = async (studentId: string) => {
+    setReminderList((prev) => prev.filter((r) => r.id !== studentId));
+    const res = await clearStudentReminderAction(studentId);
+    if (!res.success) {
+      alert(res.message || "Failed to clear reminder.");
+    }
+  };
+
+  const handleMessageReminder = (student: any) => {
+    const rawNumber = student.contactNumber || "";
+    let cleanNumber = rawNumber.replace(/\D/g, "");
+    if (cleanNumber.length === 10) {
+      cleanNumber = "91" + cleanNumber;
+    }
+    const message = `Hello ${student.name}, this is a reminder regarding your gymnastics class.`;
+    const url = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank");
+  };
 
   const currentMonthLabel = useMemo(() => {
     return new Date().toLocaleString("en-US", { month: "short" }).toUpperCase();
@@ -192,6 +244,7 @@ export default function DashboardOverview({
   const [selectedStudentForWhatsapp, setSelectedStudentForWhatsapp] = useState<any | null>(null);
   const [whatsappMessageText, setWhatsappMessageText] = useState("");
   const [whatsappModalTitle, setWhatsappModalTitle] = useState("Send WhatsApp Message");
+  const [whatsappVariables, setWhatsappVariables] = useState<{ label: string; value: string }[]>([]);
 
   const resolveLocalTemplate = (template: string, student: any) => {
     const portalBaseUrl = getPortalBaseUrl((academyProfile as any).parentPortalUrl, academyProfile.website);
@@ -243,6 +296,30 @@ export default function DashboardOverview({
 
     const resolved = resolveLocalTemplate(templateRaw, student);
     setWhatsappMessageText(resolved);
+
+    const vars = [
+      { label: `Student Name (${student.name})`, value: student.name },
+      { label: `Parent Name (${student.parentName || "N/A"})`, value: student.parentName || "" },
+      { label: `TAG ID (TAG${String(student.studentNumber).padStart(3, "0")})`, value: `TAG${String(student.studentNumber).padStart(3, "0")}` }
+    ];
+    setWhatsappVariables(vars);
+    setWhatsappModalOpen(true);
+  };
+
+  const handleOpenReminderWhatsapp = (rem: any) => {
+    setSelectedStudentForWhatsapp(rem);
+    setWhatsappModalTitle("Reminder Message");
+
+    const message = `Hello ${rem.parentName || rem.name}, this is a reminder regarding gymnastics class. Notes: ${rem.notes || ""}`;
+    setWhatsappMessageText(message);
+
+    const vars = [
+      { label: `Student Name (${rem.name})`, value: rem.name },
+      { label: `Parent Name (${rem.parentName || "N/A"})`, value: rem.parentName || "" },
+      { label: `TAG ID (TAG${String(rem.studentNumber).padStart(3, "0")})`, value: `TAG${String(rem.studentNumber).padStart(3, "0")}` },
+      ...(rem.notes ? [{ label: "Notes", value: rem.notes }] : [])
+    ];
+    setWhatsappVariables(vars);
     setWhatsappModalOpen(true);
   };
 
@@ -280,13 +357,123 @@ export default function DashboardOverview({
       {/* Premium Dashboard Header */}
       <div className="relative z-40 flex flex-col gap-4 pt-1 pb-3">
         {/* Header Row 1 */}
-        <div>
-          <h1 className="text-2xl sm:text-3xl md:text-5xl font-light tracking-tight text-zinc-955 dark:text-zinc-50">
-            Welcome back,{" "}
-            <span className="font-semibold text-brand-orange-500 dark:text-brand-orange-500">
-              {firstName}
-            </span>
-          </h1>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-light tracking-tight text-zinc-955 dark:text-zinc-50">
+              <span className="hidden sm:inline">Welcome back, </span>
+              <span className="inline sm:hidden">Hi, </span>
+              <span className="font-semibold text-brand-orange-500 dark:text-brand-orange-500">
+                {firstName}
+              </span>
+            </h1>
+          </div>
+
+          {/* Reminders Indicator & Dropdown */}
+          <div ref={popoverRef} className="relative">
+            {todayRemindersCount > 0 ? (
+              <button
+                type="button"
+                onClick={() => setRemindersOpen(!remindersOpen)}
+                className="flex items-center gap-2 bg-brand-orange-500 hover:bg-brand-orange-600 text-white rounded-full px-4 py-2 text-xs font-semibold shadow-md transition-all cursor-pointer"
+              >
+                <Bell className="w-4 h-4 shrink-0" />
+                <span>{todayRemindersCount} {todayRemindersCount === 1 ? "reminder" : "reminders"}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setRemindersOpen(!remindersOpen)}
+                className="flex items-center justify-center bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 rounded-full w-10 h-10 transition-all cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800"
+              >
+                <Bell className="w-5 h-5 shrink-0" />
+              </button>
+            )}
+
+            {/* Reminders Dropdown Popover */}
+            {remindersOpen && (
+               <div className="absolute right-0 mt-2 w-[340px] sm:w-[410px] max-w-[calc(100vw-32px)] rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-2xl py-1 z-50 animate-menu-show overflow-hidden">
+
+                <div className="max-h-72 overflow-y-auto divide-y divide-zinc-50 dark:divide-zinc-800/50">
+                  {reminderList.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-zinc-400 dark:text-zinc-500 italic">
+                      No scheduled reminders
+                    </div>
+                  ) : (
+                    reminderList.map((rem: any) => {
+                      const remDate = new Date(rem.reminderDate);
+                      const todayStr = new Date().toLocaleDateString("en-CA");
+                      const remDateStr = remDate.toLocaleDateString("en-CA");
+                      const isToday = remDateStr === todayStr;
+                      const isPast = remDateStr < todayStr;
+
+                      const dateBadgeClass = isPast
+                        ? "bg-rose-50 dark:bg-rose-955/20 text-rose-600 dark:text-rose-455 text-[9px] font-bold px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-1"
+                        : isToday
+                        ? "bg-brand-orange-50 dark:bg-brand-orange-955/20 text-brand-orange-600 dark:text-brand-orange-400 text-[9px] font-bold px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-1"
+                        : "bg-zinc-100 dark:bg-zinc-800/50 text-zinc-550 dark:text-zinc-400 text-[9px] font-semibold px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mt-1";                      return (
+                        <div key={rem.id} className="py-3 px-3 sm:px-4 flex items-start gap-3 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
+                          <Link href={`/admin/students/${rem.id}`} className="shrink-0">
+                            <StudentAvatar student={rem} size={36} />
+                          </Link>
+                          <div className="flex-1 min-w-0">
+                            {/* Header row containing Name & Roll (Left) and Date & Actions (Right) */}
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-baseline gap-1.5 min-w-0">
+                                <Link href={`/admin/students/${rem.id}`} className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 hover:text-brand-orange-500 dark:hover:text-brand-orange-400 transition-colors truncate">
+                                  {rem.name}
+                                </Link>
+                                <span className="text-[9px] text-zinc-400 dark:text-zinc-500 font-mono shrink-0">
+                                  TAG{String(rem.studentNumber).padStart(3, "0")}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span className={dateBadgeClass}>
+                                  {isToday ? "Today" : remDate.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  {/* Message Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenReminderWhatsapp(rem)}
+                                    className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-50 hover:bg-emerald-50 text-zinc-500 hover:text-emerald-600 dark:bg-zinc-850 dark:hover:bg-emerald-950/20 dark:hover:text-emerald-450 transition-colors cursor-pointer"
+                                    title="Send WhatsApp Message"
+                                  >
+                                    <svg
+                                      className="w-4.5 h-4.5 fill-current text-emerald-600 dark:text-emerald-500"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path d="M12.016 2a10 10 0 0 0-8.77 14.77l-1.45 5.31 5.43-1.42A10 10 0 1 0 12.016 2zm0 18.18a8.18 8.18 0 0 1-4.23-1.16l-.3-.18-3.1.81.82-3.01-.19-.31a8.18 8.18 0 1 1 7 3.85zm4.49-5.96c-.25-.12-1.46-.72-1.69-.8-.22-.08-.39-.12-.55.12-.16.24-.62.8-.76.96-.14.16-.28.18-.53.06-.25-.12-1.07-.39-2.03-1.25-.75-.67-1.25-1.5-1.4-1.74-.15-.24-.01-.37.11-.49.11-.11.25-.28.37-.42.12-.14.16-.24.24-.4.08-.16.04-.31-.02-.44-.06-.13-.55-1.32-.75-1.81-.2-.48-.4-.41-.55-.42-.14-.01-.3-.01-.46-.01s-.42.06-.64.29c-.22.23-.85.83-.85 2.03s.87 2.35 1 2.51c.12.16 1.7 2.6 4.12 3.64.57.24 1.02.39 1.37.5.58.18 1.11.16 1.53.1.47-.07 1.45-.59 1.65-1.16.2-.57.2-1.06.14-1.16-.06-.1-.23-.16-.48-.28z" />
+                                    </svg>
+                                  </button>
+
+                                  {/* Delete Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteReminder(rem.id)}
+                                    className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-50 hover:bg-rose-50 text-zinc-500 hover:text-rose-600 dark:bg-zinc-850 dark:hover:bg-rose-955/20 dark:hover:text-rose-455 transition-colors cursor-pointer"
+                                    title="Delete Reminder"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Notes below Name/Roll */}
+                            {rem.notes && (
+                              <p className="text-xs text-zinc-700 dark:text-zinc-300 mt-1.5 whitespace-pre-line border-l-2 border-brand-orange-500/30 pl-2 leading-relaxed font-medium">
+                                {rem.notes}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Header Row 2: Pill Bar and Stats */}
@@ -756,10 +943,12 @@ export default function DashboardOverview({
         onClose={() => {
           setWhatsappModalOpen(false);
           setSelectedStudentForWhatsapp(null);
+          setWhatsappVariables([]);
         }}
         contactNumber={selectedStudentForWhatsapp?.contactNumber || ""}
         defaultMessageText={whatsappMessageText}
         title={whatsappModalTitle}
+        variables={whatsappVariables}
       />
 
       {/* Bottom-Right Toast Notification */}

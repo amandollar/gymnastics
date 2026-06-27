@@ -1,4 +1,4 @@
-﻿import NextAuth from "next-auth";
+import NextAuth from "next-auth";
 import { authConfig } from "./auth.config";
 import { NextResponse } from "next/server";
 import { buildAppUrl, getAppHost } from "@/lib/utils/host";
@@ -23,7 +23,9 @@ export const proxy = auth((req) => {
 
     if (pathname.startsWith("/admin")) {
       const cleanPath = pathname.replace(/^\/admin/, "") || "/";
-      return NextResponse.redirect(new URL(cleanPath, req.url));
+      const redirectUrl = new URL(cleanPath, req.url);
+      redirectUrl.search = url.search;
+      return NextResponse.redirect(redirectUrl);
     }
 
     if (pathname.startsWith("/portal")) {
@@ -34,7 +36,9 @@ export const proxy = auth((req) => {
     if (!pathname.startsWith("/_next") && !pathname.startsWith("/api")) {
       const requestHeaders = new Headers(req.headers);
       requestHeaders.set("x-subdomain-rewritten", "true");
-      return NextResponse.rewrite(new URL(`/admin${pathname}`, req.url), {
+      const rewriteUrl = new URL(`/admin${pathname}`, req.url);
+      rewriteUrl.search = url.search;
+      return NextResponse.rewrite(rewriteUrl, {
         request: {
           headers: requestHeaders,
         },
@@ -45,7 +49,9 @@ export const proxy = auth((req) => {
   if (currentHost === "portal") {
     if (pathname.startsWith("/portal")) {
       const cleanPath = pathname.replace(/^\/portal/, "") || "/";
-      return NextResponse.redirect(new URL(cleanPath, req.url));
+      const redirectUrl = new URL(cleanPath, req.url);
+      redirectUrl.search = url.search;
+      return NextResponse.redirect(redirectUrl);
     }
 
     if (pathname.startsWith("/admin")) {
@@ -56,7 +62,9 @@ export const proxy = auth((req) => {
     if (!pathname.startsWith("/_next") && !pathname.startsWith("/api")) {
       const requestHeaders = new Headers(req.headers);
       requestHeaders.set("x-subdomain-rewritten", "true");
-      return NextResponse.rewrite(new URL(`/portal${pathname}`, req.url), {
+      const rewriteUrl = new URL(`/portal${pathname}`, req.url);
+      rewriteUrl.search = url.search;
+      return NextResponse.rewrite(rewriteUrl, {
         request: {
           headers: requestHeaders,
         },

@@ -90,6 +90,8 @@ export default async function CoachSalarySlipPage({ params }: PageProps) {
       commissionPercent: row.commissionPercent,
       coachShare: row.coachShare,
       monthlyAmount: proRatedAmount,
+      pricePerSession: row.pricePerSession,
+      daysAttended: mData?.daysAttended ?? 0,
     };
   }).filter((s) => s.monthlyAmount > 0);
 

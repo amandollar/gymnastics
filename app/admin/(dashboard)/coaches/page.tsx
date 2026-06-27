@@ -38,6 +38,12 @@ export default async function CoachesPage() {
           planMonths: true,
           startDate: true,
           endDate: true,
+          pricePerSession: true,
+          attendances: {
+            select: {
+              date: true,
+            },
+          },
         },
       },
       attendances: {
@@ -93,6 +99,10 @@ export default async function CoachesPage() {
       ...p,
       startDate: p.startDate.toISOString(),
       endDate: p.endDate.toISOString(),
+      attendances: p.attendances ? p.attendances.map((a: any) => ({
+        ...a,
+        date: a.date.toISOString(),
+      })) : [],
     })),
     attendances: c.attendances.map((a: any) => ({
       ...a,

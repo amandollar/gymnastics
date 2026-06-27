@@ -53,7 +53,8 @@ interface CoachEarningRow {
   planMonths: number;
   monthlyAmount: number;
   commissionPercent: number;
-  months: { year: number; month: number; label: string; amount: number }[];
+  pricePerSession: number;
+  months: { year: number; month: number; label: string; amount: number; daysAttended: number }[];
 }
 
 interface Props {
@@ -387,9 +388,17 @@ function CoachCard({
       const currentMonthDate = new Date(currentYear, currentMonth - 1, 1);
       if (currentMonthDate >= startMonth && currentMonthDate <= endMonth) {
         const commissionPercent = plan.commissionPercent ?? 50;
-        const coachShare = Math.round(plan.fee * (commissionPercent / 100));
-        const planMonths = plan.planMonths ?? 1;
-        const monthlyAmount = planMonths > 0 ? Math.round(coachShare / planMonths) : coachShare;
+        const daysAttended = plan.attendances
+          ? plan.attendances.filter((att: any) => {
+              const d = new Date(att.date);
+              const attYear = d.getUTCFullYear();
+              const attMonth = d.getUTCMonth() + 1;
+              return attYear === currentYear && attMonth === currentMonth;
+            }).length
+          : 0;
+        const monthlyAmount = Math.round(
+          (plan.pricePerSession ?? 0) * daysAttended * (commissionPercent / 100)
+        );
         thisMonthCommission += monthlyAmount;
       }
     }
@@ -418,9 +427,17 @@ function CoachCard({
       const lastMonthDateObj = new Date(lastMonthYear, lastMonthMonth - 1, 1);
       if (lastMonthDateObj >= startMonth && lastMonthDateObj <= endMonth) {
         const commissionPercent = plan.commissionPercent ?? 50;
-        const coachShare = Math.round(plan.fee * (commissionPercent / 100));
-        const planMonths = plan.planMonths ?? 1;
-        const monthlyAmount = planMonths > 0 ? Math.round(coachShare / planMonths) : coachShare;
+        const daysAttended = plan.attendances
+          ? plan.attendances.filter((att: any) => {
+              const d = new Date(att.date);
+              const attYear = d.getUTCFullYear();
+              const attMonth = d.getUTCMonth() + 1;
+              return attYear === lastMonthYear && attMonth === lastMonthMonth;
+            }).length
+          : 0;
+        const monthlyAmount = Math.round(
+          (plan.pricePerSession ?? 0) * daysAttended * (commissionPercent / 100)
+        );
         lastMonthCommission += monthlyAmount;
       }
     }

@@ -280,6 +280,21 @@ export default function AddStudentForm() {
             </FormSection>
           </div>
 
+          {/* Training Focus */}
+          <div>
+            <FormSection title="Training Focus" description="Main goals, focus areas, emphasis">
+              <textarea
+                name="trainingFocus"
+                rows={2}
+                className={inputClass}
+                placeholder="e.g. Strength training, flexibility, techniques…"
+              />
+              {state?.errors?.trainingFocus && (
+                <p className="mt-1 text-xs text-rose-600">{state.errors.trainingFocus[0]}</p>
+              )}
+            </FormSection>
+          </div>
+
           {/* Notes */}
           <div>
             <FormSection title="Notes" description="Optional details about student">

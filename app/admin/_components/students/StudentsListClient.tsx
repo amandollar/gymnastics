@@ -14,6 +14,8 @@ import { computeDaysLeft } from "@/lib/plan/calculations";
 import {
   updateStudentActivePlanBatchAction,
   updateStudentNotesAndMedicalAction,
+  updateStudentReminderAction,
+  clearStudentReminderAction,
 } from "@/lib/actions/students";
 import { StudentLevel } from "@prisma/client";
 import { markAttendanceAction, undoMarkAttendanceAction } from "@/lib/actions/attendance";
@@ -48,9 +50,433 @@ export type StudentListItem = {
   createdAt: Date | string;
   notes?: string | null;
   medicalHistory?: string | null;
+  trainingFocus?: string | null;
+  reminderDate?: Date | string | null;
   password?: string | null;
   isTempPassword?: boolean;
 };
+
+const getFormattedReminderDate = (dateStr: string) => {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length === 3) {
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1;
+    const day = parseInt(parts[2], 10);
+    return new Date(year, month, day).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+  }
+  return dateStr;
+};
+
+// ─── Note & Reminder Dropdown ──────────────────────────────────────────────────
+
+function NoteReminderDropdown({
+  student,
+  canManage,
+}: {
+  student: StudentListItem;
+  canManage: boolean;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, right: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
+
+  // Notes Modal states
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  const [notes, setNotes] = useState(student.notes ?? "");
+  const [medicalHistory, setMedicalHistory] = useState(student.medicalHistory ?? "");
+  const [trainingFocus, setTrainingFocus] = useState(student.trainingFocus ?? "");
+  const [reminderDate, setReminderDate] = useState(
+    student.reminderDate ? new Date(student.reminderDate).toLocaleDateString("en-CA") : ""
+  );
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [notesError, setNotesError] = useState<string | null>(null);
+
+  // Sync state if student changes
+  useEffect(() => {
+    setNotes(student.notes ?? "");
+    setMedicalHistory(student.medicalHistory ?? "");
+    setTrainingFocus(student.trainingFocus ?? "");
+    setReminderDate(
+      student.reminderDate ? new Date(student.reminderDate).toLocaleDateString("en-CA") : ""
+    );
+  }, [student]);
+
+  // Click outside / scroll handler
+  useEffect(() => {
+    if (!open) return;
+    function handler(e: MouseEvent) {
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(e.target as Node) &&
+        btnRef.current &&
+        !btnRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    function onScroll() {
+      setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      window.removeEventListener("scroll", onScroll, true);
+    };
+  }, [open]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  const handleMouseEnter = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setCoords({ top: r.bottom + 4, right: window.innerWidth - r.right + 40 });
+    }
+    setOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      setOpen(false);
+    }, 300);
+  };
+
+  function openMenu() {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setCoords({ top: r.bottom + 4, right: window.innerWidth - r.right + 40 });
+    }
+    setOpen(true);
+  }
+
+  // Handle inline date change
+  const handleDateChange = async (newDateStr: string) => {
+    try {
+      const res = await updateStudentReminderAction(student.id, newDateStr || null);
+      if (res.success) {
+        router.refresh();
+      } else {
+        alert(res.message || "Failed to update reminder date");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Handle inline clear date
+  const handleClearReminder = async () => {
+    try {
+      const res = await clearStudentReminderAction(student.id);
+      if (res.success) {
+        router.refresh();
+      } else {
+        alert(res.message || "Failed to clear reminder date");
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSaveNotes = async () => {
+    setIsSavingNotes(true);
+    setNotesError(null);
+    try {
+      const res = await updateStudentNotesAndMedicalAction(student.id, {
+        notes: notes || null,
+        medicalHistory: medicalHistory || null,
+        trainingFocus: trainingFocus || null,
+        reminderDate: reminderDate || null,
+      });
+      if (res.success) {
+        setIsNotesModalOpen(false);
+        setOpen(false);
+        router.refresh();
+      } else {
+        setNotesError(res.message || "Failed to update notes");
+      }
+    } catch (err) {
+      setNotesError(err instanceof Error ? err.message : "An unexpected error occurred");
+    } finally {
+      setIsSavingNotes(false);
+    }
+  };
+
+  const isToday = () => {
+    if (!student.reminderDate) return false;
+    const today = new Date().toLocaleDateString("en-CA");
+    const rDate = new Date(student.reminderDate).toLocaleDateString("en-CA");
+    return today === rDate;
+  };
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={() => (open ? setOpen(false) : openMenu())}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className="relative inline-flex items-center justify-center h-8 w-8 rounded-lg text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+      >
+        {/* Note icon */}
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+
+        {/* Orange dot for active reminder today */}
+        {isToday() && (
+          <span className="absolute top-1 right-1 flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-orange-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-brand-orange-500"></span>
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <nav
+          ref={menuRef}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          style={{ position: "fixed", top: coords.top, right: coords.right, zIndex: 9999 }}
+          className="w-96 rounded-2xl border border-zinc-200 dark:border-zinc-700/80 bg-white dark:bg-zinc-900 shadow-2xl z-50 p-2.5 space-y-2 animate-menu-show text-left"
+        >
+          {/* Notes display */}
+          <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+            {/* Card 1: Custom Notes & Reminder */}
+            <div className="rounded-xl border border-zinc-100 dark:border-zinc-800/40 bg-zinc-50 dark:bg-zinc-955/30 p-3 space-y-1">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                  Notes <span className="normal-case font-normal text-zinc-450 dark:text-zinc-500">(only visible to you)</span>
+                </div>
+                {student.reminderDate && (
+                  <span className="text-[10px] font-bold text-brand-orange-500 bg-brand-orange-50 dark:bg-brand-orange-955/20 px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0">
+                    <svg className="w-3.5 h-3.5 text-brand-orange-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                    </svg>
+                    {new Date(student.reminderDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-zinc-850 dark:text-zinc-200 whitespace-pre-line leading-relaxed font-semibold">
+                {student.notes || <span className="text-zinc-400 dark:text-zinc-655 italic font-normal">No custom notes</span>}
+              </p>
+            </div>
+
+            {/* Card 2: Training Focus */}
+            <div className="rounded-xl border border-zinc-100 dark:border-zinc-800/40 bg-zinc-50 dark:bg-zinc-955/30 p-3 space-y-1">
+              <div className="text-[9px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                Training Focus & Emphasis
+              </div>
+              <p className="text-sm text-zinc-850 dark:text-zinc-200 whitespace-pre-line leading-relaxed font-semibold">
+                {student.trainingFocus || <span className="text-zinc-400 dark:text-zinc-655 italic font-normal">No training focus</span>}
+              </p>
+            </div>
+
+            {/* Card 3: Medical & Allergies */}
+            <div className="rounded-xl border border-zinc-100 dark:border-zinc-800/40 bg-zinc-50 dark:bg-zinc-955/30 p-3 space-y-1">
+              <div className="text-[9px] font-bold text-zinc-400 dark:text-zinc-555 uppercase tracking-wider">
+                Medical & Allergies
+              </div>
+              <p className="text-sm text-zinc-850 dark:text-zinc-200 whitespace-pre-line leading-relaxed font-semibold">
+                {student.medicalHistory || <span className="text-zinc-400 dark:text-zinc-655 italic font-normal">No medical history</span>}
+              </p>
+            </div>
+          </div>
+
+          {canManage && (
+            <div className="border-t border-zinc-100 dark:border-zinc-800/85 pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  setNotes(student.notes ?? "");
+                  setMedicalHistory(student.medicalHistory ?? "");
+                  setTrainingFocus(student.trainingFocus ?? "");
+                  setReminderDate(
+                    student.reminderDate ? new Date(student.reminderDate).toLocaleDateString("en-CA") : ""
+                  );
+                  setNotesError(null);
+                  setIsNotesModalOpen(true);
+                  setOpen(false);
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-brand-orange-500 hover:bg-brand-orange-600 rounded-xl transition-colors cursor-pointer"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-1.414.94l-3.414 1.137 1.137-3.414A4 4 0 019 13z" />
+                </svg>
+                Edit Notes
+              </button>
+            </div>
+          )}
+        </nav>
+      )}
+
+      {/* Dedicated Modal for Editing Notes (triggered from Dropdown Edit button) */}
+      {isNotesModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isSavingNotes) {
+              setIsNotesModalOpen(false);
+            }
+          }}
+        >
+          <div className="relative w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 shadow-2xl p-6 overflow-hidden animate-scale-in space-y-4">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                Notes & Medical History
+              </h3>
+              <button
+                type="button"
+                disabled={isSavingNotes}
+                onClick={() => setIsNotesModalOpen(false)}
+                className="h-8 w-8 rounded-xl flex items-center justify-center text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                ✕
+              </button>
+            </div>
+
+            {notesError && (
+              <div className="p-3 text-xs bg-rose-50 dark:bg-rose-955/20 text-rose-600 dark:text-rose-400 rounded-xl border border-rose-100 dark:border-rose-900/30 animate-fade-in">
+                {notesError}
+              </div>
+            )}
+
+            {/* Modal Body */}
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-555 uppercase tracking-wider">
+                    Notes <span className="text-[10px] font-normal text-zinc-450 dark:text-zinc-500 normal-case">(only visible to you)</span>
+                  </label>
+                  
+                  {/* Reminder button option attached to Notes */}
+                  <div className="relative flex items-center">
+                    <input
+                      ref={dateInputRef}
+                      type="date"
+                      value={reminderDate}
+                      onChange={(e) => setReminderDate(e.target.value)}
+                      disabled={isSavingNotes}
+                      className="absolute inset-0 opacity-0 pointer-events-none w-full h-full"
+                    />
+                    {reminderDate ? (
+                      <div className="inline-flex items-center gap-1 bg-brand-orange-50 dark:bg-brand-orange-955/20 text-brand-orange-600 dark:text-brand-orange-400 rounded-lg px-2.5 py-1 text-xs font-semibold">
+                        <button
+                          type="button"
+                          onClick={() => dateInputRef.current?.showPicker()}
+                          disabled={isSavingNotes}
+                          className="flex items-center gap-1 hover:opacity-85 cursor-pointer disabled:opacity-50"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                          </svg>
+                          {getFormattedReminderDate(reminderDate)}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isSavingNotes}
+                          onClick={() => setReminderDate("")}
+                          className="text-brand-orange-400 hover:text-brand-orange-600 dark:text-brand-orange-500 dark:hover:text-brand-orange-300 p-0.5 rounded-full hover:bg-brand-orange-100 dark:hover:bg-brand-orange-950/40 transition-colors cursor-pointer disabled:opacity-50"
+                          title="Remove reminder"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => dateInputRef.current?.showPicker()}
+                        disabled={isSavingNotes}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-zinc-555 dark:text-zinc-400 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Reminder
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  disabled={isSavingNotes}
+                  placeholder="e.g. Behavioral notes, requirements..."
+                  rows={2}
+                  className="block w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-955 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 disabled:opacity-50"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-555 uppercase tracking-wider">
+                  Training Focus & Emphasis
+                </label>
+                <textarea
+                  value={trainingFocus}
+                  onChange={(e) => setTrainingFocus(e.target.value)}
+                  disabled={isSavingNotes}
+                  placeholder="e.g. Strength training, speed work, style emphasis..."
+                  rows={2}
+                  className="block w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-955 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 disabled:opacity-50"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-555 uppercase tracking-wider">
+                  Medical & Allergies
+                </label>
+                <textarea
+                  value={medicalHistory}
+                  onChange={(e) => setMedicalHistory(e.target.value)}
+                  disabled={isSavingNotes}
+                  placeholder="e.g. Asthma, peanut allergy, none..."
+                  rows={2}
+                  className="block w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-955 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 disabled:opacity-50"
+                />
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex gap-2.5 justify-end pt-2">
+              <button
+                type="button"
+                disabled={isSavingNotes}
+                onClick={() => setIsNotesModalOpen(false)}
+                className="px-4 py-2 text-sm font-semibold text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isSavingNotes}
+                onClick={handleSaveNotes}
+                className="px-4 py-2 text-sm font-semibold text-white bg-brand-orange-500 hover:bg-brand-orange-600 rounded-xl transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+              >
+                {isSavingNotes ? "Saving..." : "Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 
 // ─── Three-dot dropdown ────────────────────────────────────────────────────────
 
@@ -70,6 +496,7 @@ function RowMenu({
   const [coords, setCoords] = useState({ top: 0, right: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
 
   // Modal states for Freeze Plan and Upgrade Level
   const [showFreeze, setShowFreeze] = useState(false);
@@ -86,6 +513,8 @@ function RowMenu({
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
   const [notes, setNotes] = useState(student.notes ?? "");
   const [medicalHistory, setMedicalHistory] = useState(student.medicalHistory ?? "");
+  const [trainingFocus, setTrainingFocus] = useState(student.trainingFocus ?? "");
+  const [reminderDate, setReminderDate] = useState(student.reminderDate ? new Date(student.reminderDate).toLocaleDateString("en-CA") : "");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
 
@@ -131,6 +560,8 @@ function RowMenu({
     setOpen(false);
     setNotes(student.notes ?? "");
     setMedicalHistory(student.medicalHistory ?? "");
+    setTrainingFocus(student.trainingFocus ?? "");
+    setReminderDate(student.reminderDate ? new Date(student.reminderDate).toLocaleDateString("en-CA") : "");
     setNotesError(null);
     setIsNotesModalOpen(true);
   };
@@ -142,6 +573,8 @@ function RowMenu({
       const res = await updateStudentNotesAndMedicalAction(student.id, {
         notes: notes || null,
         medicalHistory: medicalHistory || null,
+        trainingFocus: trainingFocus || null,
+        reminderDate: reminderDate || null,
       });
       if (res.success) {
         setIsNotesModalOpen(false);
@@ -503,8 +936,86 @@ function RowMenu({
 
             {/* Modal Body */}
             <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-555 uppercase tracking-wider">
+                    Notes <span className="text-[10px] font-normal text-zinc-450 dark:text-zinc-500 normal-case">(only visible to you)</span>
+                  </label>
+                  
+                  {/* Reminder button option attached to Notes */}
+                  <div className="relative flex items-center">
+                    <input
+                      ref={dateInputRef}
+                      type="date"
+                      value={reminderDate}
+                      onChange={(e) => setReminderDate(e.target.value)}
+                      disabled={isSavingNotes}
+                      className="absolute inset-0 opacity-0 pointer-events-none w-full h-full"
+                    />
+                    {reminderDate ? (
+                      <div className="inline-flex items-center gap-1 bg-brand-orange-50 dark:bg-brand-orange-955/20 text-brand-orange-600 dark:text-brand-orange-400 rounded-lg px-2.5 py-1 text-xs font-semibold">
+                        <button
+                          type="button"
+                          onClick={() => dateInputRef.current?.showPicker()}
+                          disabled={isSavingNotes}
+                          className="flex items-center gap-1 hover:opacity-85 cursor-pointer disabled:opacity-50"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                          </svg>
+                          {getFormattedReminderDate(reminderDate)}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isSavingNotes}
+                          onClick={() => setReminderDate("")}
+                          className="text-brand-orange-400 hover:text-brand-orange-600 dark:text-brand-orange-500 dark:hover:text-brand-orange-300 p-0.5 rounded-full hover:bg-brand-orange-100 dark:hover:bg-brand-orange-955/40 transition-colors cursor-pointer disabled:opacity-50"
+                          title="Remove reminder"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => dateInputRef.current?.showPicker()}
+                        disabled={isSavingNotes}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-zinc-555 dark:text-zinc-400 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700/80 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                        Add Reminder
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  disabled={isSavingNotes}
+                  placeholder="e.g. Behavioral notes, requirements..."
+                  rows={2}
+                  className="block w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 disabled:opacity-50"
+                />
+              </div>
+
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wider">
+                <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-555 uppercase tracking-wider">
+                  Training Focus & Emphasis
+                </label>
+                <textarea
+                  value={trainingFocus}
+                  onChange={(e) => setTrainingFocus(e.target.value)}
+                  disabled={isSavingNotes}
+                  placeholder="e.g. Strength training, speed work, style emphasis..."
+                  rows={2}
+                  className="block w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 disabled:opacity-50"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-555 uppercase tracking-wider">
                   Medical & Allergies
                 </label>
                 <textarea
@@ -512,22 +1023,8 @@ function RowMenu({
                   onChange={(e) => setMedicalHistory(e.target.value)}
                   disabled={isSavingNotes}
                   placeholder="e.g. Asthma, peanut allergy, none..."
-                  rows={3}
-                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 disabled:opacity-50"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-400 dark:text-zinc-550 uppercase tracking-wider">
-                  Notes
-                </label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  disabled={isSavingNotes}
-                  placeholder="e.g. Behavioral notes, requirements..."
-                  rows={3}
-                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 disabled:opacity-50"
+                  rows={2}
+                  className="block w-full rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2.5 text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 disabled:opacity-50"
                 />
               </div>
             </div>
@@ -858,6 +1355,12 @@ export default function StudentsListClient({
                   Print IDs
                 </Link>
                 <Link
+                  href="/admin/students/id-shirt"
+                  className="inline-flex items-center gap-1.5 justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  ID & shirt
+                </Link>
+                <Link
                   href="/admin/students/new"
                   className="inline-flex items-center justify-center rounded-lg bg-brand-orange-500 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-orange-600 transition-colors"
                 >
@@ -896,6 +1399,13 @@ export default function StudentsListClient({
                     className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
                   >
                     Print IDs
+                  </Link>
+                  <Link
+                    href="/admin/students/id-shirt"
+                    onClick={() => setHeaderMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    ID & shirt
                   </Link>
                   <Link
                     href="/admin/students/new"
@@ -1218,6 +1728,7 @@ export default function StudentsListClient({
                   </div>
                 </Link>
                 <div className="flex items-center gap-1.5 shrink-0">
+                  <NoteReminderDropdown student={s} canManage={canManage} />
                   <RowMenu student={s} canManage={canManage} batches={batches} onMarkPresent={handleMarkPresent} />
                 </div>
               </div>
@@ -1249,7 +1760,7 @@ export default function StudentsListClient({
                           prefetch={false}
                           className="inline-flex items-center gap-1 rounded-lg bg-brand-orange-500 hover:bg-brand-orange-600 px-2 py-0.5 text-[10px] font-bold text-white transition-colors shadow-sm mt-0.5"
                         >
-                          Assign plan
+                          Add plan
                         </Link>
                       ) : (
                         "—"
@@ -1312,10 +1823,9 @@ export default function StudentsListClient({
               {renderHeader("Name", "NAME", "min-w-[180px] whitespace-nowrap")}
               {renderHeader("Age", "AGE", "w-16 min-w-[60px] whitespace-nowrap")}
               {renderHeader("Level", "LEVEL", "w-20 min-w-[75px] whitespace-nowrap")}
-              <th className="px-4 py-3 w-24 min-w-[95px] whitespace-nowrap">Status</th>
-              <th className="px-4 py-3 min-w-[125px] whitespace-nowrap">Plan</th>
-              {renderHeader("Sess. Left", "SESSIONS_LEFT", "w-28 min-w-[105px] whitespace-nowrap")}
+              <th className="px-4 py-3 w-32 min-w-[120px] whitespace-nowrap">Status & Plan</th>
               {renderHeader("Days left", "DAYS_LEFT", "w-28 min-w-[105px] whitespace-nowrap")}
+              {renderHeader("Sess. Left", "SESSIONS_LEFT", "w-28 min-w-[105px] whitespace-nowrap")}
               {renderHeader("Fee", "FEE", "min-w-[110px] whitespace-nowrap")}
               <th className="px-4 py-3 w-12 text-right whitespace-nowrap"></th>
             </tr>
@@ -1382,10 +1892,21 @@ export default function StudentsListClient({
                       {getLevelConfig(s.level).shortLabel}
                     </span>
                   </td>
-                  <td className={`px-4 py-3 w-24 min-w-[95px] whitespace-nowrap ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
-                    <StudentStatusBadge status={s.status} />
+                  <td className={`px-4 py-3 w-32 min-w-[120px] whitespace-nowrap ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
+                    <div className="flex flex-col gap-0.5 items-start">
+                      <StudentStatusBadge status={s.status} />
+                      <span className="text-[11px] font-medium text-zinc-400 dark:text-zinc-500 whitespace-nowrap">
+                        {s.activePlan
+                          ? (s.activePlan.planType === "ONE_TO_ONE" ? "personal" : "grouped")
+                          : "—"}
+                      </span>
+                    </div>
                   </td>
-                  <td className="px-4 py-3 min-w-[125px] whitespace-nowrap text-zinc-650 dark:text-zinc-350">
+                  <td className={`px-4 py-3 w-28 min-w-[105px] whitespace-nowrap ${
+                    s.status === "EXPIRED"
+                      ? "text-zinc-400/80 dark:text-zinc-500/80 opacity-60"
+                      : "text-zinc-600 dark:text-zinc-300"
+                  }`}>
                     {s.activePlan ? (
                       (s.status === "INACTIVE" || s.status === "EXPIRED") && canManage ? (
                         <Link
@@ -1394,15 +1915,10 @@ export default function StudentsListClient({
                           data-prevent-row-click="true"
                           className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 text-xs font-semibold text-white transition-colors shadow-sm whitespace-nowrap"
                         >
-                          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                          </svg>
                           New plan
                         </Link>
                       ) : (
-                        <span className={`whitespace-nowrap ${s.status === "EXPIRED" ? "opacity-60" : ""}`}>
-                          {s.activePlan.planType === "ONE_TO_ONE" ? "personal" : "grouped"}
-                        </span>
+                        computeDaysLeft(new Date(s.activePlan.expiryDate))
                       )
                     ) : (
                       canManage ? (
@@ -1412,7 +1928,7 @@ export default function StudentsListClient({
                           data-prevent-row-click="true"
                           className="inline-flex items-center gap-1 rounded-lg bg-brand-orange-500 hover:bg-brand-orange-600 px-2.5 py-1 text-xs font-semibold text-white transition-colors shadow-sm whitespace-nowrap"
                         >
-                          Assign plan
+                          Add plan
                         </Link>
                       ) : (
                         "—"
@@ -1425,15 +1941,6 @@ export default function StudentsListClient({
                       : "text-zinc-600 dark:text-zinc-300"
                   }`}>
                     {s.sessionsPending ?? "—"}
-                  </td>
-                  <td className={`px-4 py-3 w-28 min-w-[105px] whitespace-nowrap ${
-                    s.status === "EXPIRED"
-                      ? "text-zinc-400/80 dark:text-zinc-500/80 opacity-60"
-                      : "text-zinc-600 dark:text-zinc-300"
-                  }`}>
-                    {s.activePlan
-                      ? computeDaysLeft(new Date(s.activePlan.expiryDate))
-                      : "—"}
                   </td>
                   <td className={`px-4 py-3 min-w-[110px] whitespace-nowrap ${
                     s.status === "EXPIRED"
@@ -1474,6 +1981,7 @@ export default function StudentsListClient({
                   {/* ── Actions ── */}
                   <td className="px-4 py-3 w-12 whitespace-nowrap" data-prevent-row-click="true">
                     <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+                      <NoteReminderDropdown student={s} canManage={canManage} />
                       {/* Three-dot dropdown */}
                       <RowMenu student={s} canManage={canManage} batches={batches} onMarkPresent={handleMarkPresent} />
                     </div>

@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import {
   listStudents as dbListStudents,
   getStudentById as dbGetStudentById,
+  listStudentsWithReminders as dbListStudentsWithReminders,
 } from "./students";
 import { listBatches as dbListBatches } from "./batches";
 import {
@@ -26,6 +27,12 @@ export const listStudents = unstable_cache(
   async (filters?: { search?: string; status?: StudentStatus | "ALL" }) =>
     dbListStudents(filters),
   ["students-list-v2"],
+  { tags: ["students"] }
+);
+
+export const listStudentsWithReminders = unstable_cache(
+  async () => dbListStudentsWithReminders(),
+  ["students-with-reminders-v1"],
   { tags: ["students"] }
 );
 
@@ -90,14 +97,15 @@ export const listPlanTemplates = unstable_cache(
   { tags: ["plan-templates"] }
 );
 
+const getCachedCoaches = unstable_cache(
+  async (status?: CoachStatus | "ALL", role?: CoachRole) =>
+    dbListCoaches({ status, role }),
+  ["coaches-list-v3"],
+  { tags: ["coaches"] }
+);
+
 export const listCoaches = (options?: { status?: CoachStatus | "ALL"; role?: CoachRole }) => {
-  const statusStr = options?.status ?? "ALL";
-  const roleStr = options?.role ?? "ALL";
-  return unstable_cache(
-    async () => dbListCoaches(options),
-    ["coaches-list", statusStr, roleStr],
-    { tags: ["coaches"] }
-  )();
+  return getCachedCoaches(options?.status, options?.role);
 };
 
 import { getCoachMonthlyAttendanceSerializable as dbGetCoachMonthlyAttendanceSerializable } from "./coaches";

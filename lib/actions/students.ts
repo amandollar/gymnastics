@@ -56,6 +56,7 @@ export async function createStudentAction(
       level: formData.get("level"),
       notes: formData.get("notes") || undefined,
       medicalHistory: formData.get("medicalHistory") || undefined,
+      trainingFocus: formData.get("trainingFocus") || undefined,
       registrationFee: formData.get("registrationFee") || undefined,
     };
 
@@ -86,6 +87,7 @@ export async function createStudentAction(
       level: parsed.data.level,
       notes: parsed.data.notes,
       medicalHistory: parsed.data.medicalHistory,
+      trainingFocus: parsed.data.trainingFocus,
       avatarFile:
         avatarFile instanceof File && avatarFile.size > 0 ? avatarFile : null,
       registrationFee: parsed.data.registrationFee,
@@ -421,15 +423,21 @@ export async function updateStudentActivePlanAction(
 
 export async function updateStudentNotesAndMedicalAction(
   studentId: string,
-  data: { notes?: string | null; medicalHistory?: string | null; trainingFocus?: string | null }
+  data: { notes?: string | null; medicalHistory?: string | null; trainingFocus?: string | null; reminderDate?: string | null }
 ): Promise<{ success: boolean; message?: string }> {
   try {
     await assertCanManageStudents();
 
-    await updateStudentNotesAndMedical(studentId, data);
+    await updateStudentNotesAndMedical(studentId, {
+      notes: data.notes,
+      medicalHistory: data.medicalHistory,
+      trainingFocus: data.trainingFocus,
+      reminderDate: data.reminderDate !== undefined ? (data.reminderDate ? new Date(data.reminderDate) : null) : undefined,
+    });
 
     revalidatePath(`/admin/students/${studentId}`);
     revalidatePath("/admin/students");
+    revalidatePath("/admin/dashboard");
     updateTag("students");
 
     return { success: true, message: "Details updated successfully" };
@@ -437,6 +445,58 @@ export async function updateStudentNotesAndMedicalAction(
     return {
       success: false,
       message: e instanceof Error ? e.message : "Failed to update details",
+    };
+  }
+}
+
+export async function updateStudentReminderAction(
+  studentId: string,
+  reminderDate: string | null
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    await assertCanManageStudents();
+
+    await prisma.student.update({
+      where: { id: studentId },
+      data: { reminderDate: reminderDate ? new Date(reminderDate) : null },
+    });
+
+    revalidatePath("/admin/students");
+    revalidatePath("/admin/dashboard");
+    updateTag("students");
+
+    return { success: true };
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Failed to update reminder date",
+    };
+  }
+}
+
+export async function clearStudentReminderAction(
+  studentId: string
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    await assertCanManageStudents();
+
+    await prisma.student.update({
+      where: { id: studentId },
+      data: { 
+        reminderDate: null,
+        notes: null
+      },
+    });
+
+    revalidatePath("/admin/students");
+    revalidatePath("/admin/dashboard");
+    updateTag("students");
+
+    return { success: true };
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Failed to clear reminder date",
     };
   }
 }
@@ -549,4 +609,55 @@ export async function changePortalPasswordAction(
     };
   }
 }
+
+export async function updateStudentIdCardAction(
+  studentId: string,
+  provided: boolean
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    await assertCanManageStudents();
+
+    await prisma.student.update({
+      where: { id: studentId },
+      data: { idCardProvided: provided },
+    });
+
+    revalidatePath("/admin/students");
+    revalidatePath("/admin/students/id-shirt");
+    updateTag("students");
+
+    return { success: true };
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Failed to update ID card status",
+    };
+  }
+}
+
+export async function updateStudentShirtAction(
+  studentId: string,
+  provided: boolean
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    await assertCanManageStudents();
+
+    await prisma.student.update({
+      where: { id: studentId },
+      data: { shirtProvided: provided },
+    });
+
+    revalidatePath("/admin/students");
+    revalidatePath("/admin/students/id-shirt");
+    updateTag("students");
+
+    return { success: true };
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Failed to update shirt status",
+    };
+  }
+}
+
 

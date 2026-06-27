@@ -1,4 +1,4 @@
-﻿export type AppHost = "main" | "admin" | "portal";
+export type AppHost = "main" | "admin" | "portal";
 
 function stripPort(hostname: string) {
   const [host, port] = hostname.split(":");
@@ -37,7 +37,7 @@ export function buildAppUrl(
   const nextHost = targetHost === "main" ? baseHost : `${targetHost}.${baseHost}`;
   url.host = port ? `${nextHost}:${port}` : nextHost;
   url.pathname = pathname;
-  url.search = "";
+  url.search = requestUrl.search;
   url.hash = "";
 
   return url;

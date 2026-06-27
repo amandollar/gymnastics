@@ -1,17 +1,20 @@
 import React from "react";
 import { getSession, getCanManage } from "@/lib/auth-session";
 import DashboardOverview from "@/app/admin/_components/dashboard/DashboardOverview";
-import { getDashboardData, getAcademyProfile } from "@/lib/services/cached";
+import { getDashboardData, getAcademyProfile, listStudentsWithReminders } from "@/lib/services/cached";
 
 export default async function DashboardPage() {
   const session = await getSession();
   const firstName = session?.user?.name?.split(" ")[0] || "there";
 
-  const [dashboardData, academyProfile, canManage] = await Promise.all([
+  const [dashboardData, academyProfile, canManage, rawReminders] = await Promise.all([
     getDashboardData(),
     getAcademyProfile(),
     getCanManage(),
+    listStudentsWithReminders(),
   ]);
+
+  const reminders = JSON.parse(JSON.stringify(rawReminders));
 
   return (
     <div className="mx-auto max-w-7xl min-w-0 w-full">
@@ -20,6 +23,7 @@ export default async function DashboardPage() {
         dashboardData={dashboardData}
         academyProfile={academyProfile}
         canManage={canManage}
+        reminders={reminders}
       />
     </div>
   );

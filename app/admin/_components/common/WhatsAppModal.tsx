@@ -8,6 +8,7 @@ interface WhatsAppModalProps {
   contactNumber: string;
   defaultMessageText: string;
   title?: string;
+  variables?: { label: string; value: string }[];
 }
 
 export default function WhatsAppModal({
@@ -16,6 +17,7 @@ export default function WhatsAppModal({
   contactNumber,
   defaultMessageText,
   title = "Follow up with WhatsApp",
+  variables = [],
 }: WhatsAppModalProps) {
   const [messageText, setMessageText] = useState(defaultMessageText);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -25,10 +27,10 @@ export default function WhatsAppModal({
     setMessageText(defaultMessageText);
   }, [defaultMessageText]);
 
-  const insertEmoji = (emoji: string) => {
+  const insertText = (str: string) => {
     const textarea = textareaRef.current;
     if (!textarea) {
-      setMessageText((prev) => prev + emoji);
+      setMessageText((prev) => prev + str);
       return;
     }
     const start = textarea.selectionStart;
@@ -36,10 +38,10 @@ export default function WhatsAppModal({
     const text = textarea.value;
     const before = text.substring(0, start);
     const after = text.substring(end, text.length);
-    setMessageText(before + emoji + after);
+    setMessageText(before + str + after);
     setTimeout(() => {
       textarea.focus();
-      textarea.setSelectionRange(start + emoji.length, start + emoji.length);
+      textarea.setSelectionRange(start + str.length, start + str.length);
     }, 0);
   };
 
@@ -96,13 +98,34 @@ export default function WhatsAppModal({
 
         {/* Body */}
         <div className="px-6 py-3 space-y-4">
+          {/* Variables Bar */}
+          {variables && variables.length > 0 && (
+            <div className="space-y-1.5">
+              <span className="block text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                Click to Insert Variable:
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {variables.map((v) => (
+                  <button
+                    key={v.label}
+                    type="button"
+                    onClick={() => insertText(v.value)}
+                    className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-brand-orange-50 hover:bg-brand-orange-100 dark:bg-brand-orange-955/20 dark:hover:bg-brand-orange-950/40 dark:text-brand-orange-400 text-brand-orange-600 border border-brand-orange-150/10 cursor-pointer transition-colors"
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="space-y-1.5">
             <textarea
               ref={textareaRef}
-              rows={16}
+              rows={12}
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
-              className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 p-4 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-450 dark:placeholder-zinc-650 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 focus:border-brand-orange-500 transition-all resize-none"
+              className="w-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-955 p-4 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-450 dark:placeholder-zinc-650 focus:outline-none focus:ring-1 focus:ring-brand-orange-500/50 focus:border-brand-orange-500 transition-all resize-none"
               placeholder="Type your WhatsApp message..."
             />
           </div>
@@ -126,7 +149,7 @@ export default function WhatsAppModal({
               <button
                 key={emoji}
                 type="button"
-                onClick={() => insertEmoji(emoji)}
+                onClick={() => insertText(emoji)}
                 className="text-xl hover:scale-125 transition-transform duration-200 cursor-pointer focus:outline-none border-0 bg-transparent"
               >
                 {emoji}

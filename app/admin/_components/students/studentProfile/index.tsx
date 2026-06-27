@@ -39,6 +39,7 @@ type StudentData = {
   notes: string | null;
   medicalHistory: string | null;
   trainingFocus?: string | null;
+  reminderDate?: Date | string | null;
   avatarUrl?: string | null;
   status: StudentStatus;
   activePlan: PlanRow | null;
@@ -441,6 +442,7 @@ export default function StudentDetailClient({
             initialNotes={student.notes}
             initialMedicalHistory={student.medicalHistory}
             initialTrainingFocus={student.trainingFocus}
+            initialReminderDate={student.reminderDate}
             canManage={canManage}
           />
         </div>

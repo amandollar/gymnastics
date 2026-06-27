@@ -73,6 +73,8 @@ export async function createCoachAction(
     });
 
     revalidatePath("/admin/coaches");
+    revalidatePath("/admin/plans");
+    revalidatePath("/admin/coaches/attendance");
     updateTag("coaches");
 
     return { success: true, message: "Employee added successfully" };
@@ -141,6 +143,8 @@ export async function updateCoachAction(
     });
 
     revalidatePath("/admin/coaches");
+    revalidatePath("/admin/plans");
+    revalidatePath("/admin/coaches/attendance");
     updateTag("coaches");
 
     return { success: true, message: "Coach updated successfully" };
@@ -167,6 +171,8 @@ export async function toggleCoachStatusAction(
     await updateCoach(coachId, { status });
     revalidatePath("/admin/coaches");
     revalidatePath(`/admin/coaches/${coachId}`);
+    revalidatePath("/admin/plans");
+    revalidatePath("/admin/coaches/attendance");
     updateTag("coaches");
     return { success: true, message: `Status updated to ${status}` };
   } catch (e) {
@@ -278,6 +284,7 @@ export async function assignCoachToPlanAction(
 
     revalidatePath("/admin/coaches");
     revalidatePath(`/admin/students/${plan.studentId}`);
+    revalidatePath("/admin/plans");
     updateTag("coaches");
     updateTag("students");
 

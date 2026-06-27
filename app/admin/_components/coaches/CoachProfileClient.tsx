@@ -93,7 +93,8 @@ interface CoachEarningRow {
   planMonths: number;
   monthlyAmount: number;
   commissionPercent: number;
-  months: { year: number; month: number; label: string; amount: number }[];
+  pricePerSession: number;
+  months: { year: number; month: number; label: string; amount: number; daysAttended: number }[];
 }
 
 interface Props {
@@ -1114,7 +1115,6 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
                       <div className="space-y-4 pt-3 border-t border-zinc-100 dark:border-zinc-800">
                         {filteredEarningsForMonth.map((row) => {
                           const mData = row.months.find((m) => m.year === monthVal.year && m.month === monthVal.month + 1);
-                          const studentMonthlyFee = Math.round(row.totalFee / row.planMonths);
                           const personalCoachFee = mData?.amount ?? 0;
                           const proRatedPersonalCoachFee = Math.round(personalCoachFee * multiplier);
 
@@ -1139,17 +1139,17 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
                               {/* Breakdown Calculation details */}
                               <div className="pl-5 space-y-1 text-[11px] text-zinc-400 dark:text-zinc-500">
                                 <div className="flex justify-between">
-                                  <span>Total plan fee ({row.planMonths} months)</span>
-                                  <span>{INR(row.totalFee)}</span>
+                                  <span>Daily Fee</span>
+                                  <span>{INR(row.pricePerSession)}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span>Monthly share ({INR(row.totalFee)} / {row.planMonths} mo)</span>
-                                  <span>{INR(studentMonthlyFee)}</span>
+                                  <span>Days Attended</span>
+                                  <span>{mData?.daysAttended ?? 0} days</span>
                                 </div>
                                 <div className="flex justify-between font-medium text-zinc-500 dark:text-zinc-400">
                                   <span>Personal coach fee ({row.commissionPercent || 50}% split)</span>
                                   <span>
-                                    {row.commissionPercent || 50}% of {INR(studentMonthlyFee)} = {INR(personalCoachFee)}
+                                    {row.commissionPercent || 50}% of ({INR(row.pricePerSession)} × {mData?.daysAttended ?? 0}) = {INR(personalCoachFee)}
                                     {multiplier < 1 && <span className="text-[10px] text-zinc-400 font-normal italic"> (pro-rated to {INR(proRatedPersonalCoachFee)})</span>}
                                   </span>
                                 </div>
