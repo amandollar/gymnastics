@@ -51,6 +51,7 @@ function formatStudentId(num: number): string {
 export default function StudentIDCardClient({
   student,
   academyProfile,
+  backUrl,
 }: {
   student: StudentData;
   academyProfile: {
@@ -60,6 +61,7 @@ export default function StudentIDCardClient({
     address: string | null;
     website?: string | null;
   };
+  backUrl?: string;
 }) {
   const [frontQr, setFrontQr] = useState<string>("");
   const [backQr, setBackQr] = useState<string>("");
@@ -143,7 +145,7 @@ export default function StudentIDCardClient({
       {/* Header controls (No print) */}
       <header className="no-print w-full max-w-5xl mx-auto px-4 py-6 flex items-center justify-between z-10">
         <Link
-          href={`/admin/students/${student.id}`}
+          href={backUrl || `/admin/students/${student.id}`}
           className="inline-flex items-center gap-2 text-sm font-semibold text-zinc-400 hover:text-zinc-100 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />

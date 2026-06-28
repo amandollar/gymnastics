@@ -21,6 +21,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           const { email, password } = parsedCredentials.data;
 
+          // Check if it's a sibling switch bypass request
+          if (email === "sibling_switch_token" && password) {
+            const { verifySwitchToken } = await import("@/lib/switch-tokens");
+            const studentId = verifySwitchToken(password);
+            if (studentId) {
+              const student = await prisma.student.findUnique({
+                where: { id: studentId },
+              });
+              if (student) {
+                return {
+                  id: student.id,
+                  name: student.name,
+                  email: `student_${student.studentNumber}@academy.com`,
+                  role: "PARENT",
+                };
+              }
+            }
+            return null;
+          }
+
           // Check if email matches roll number pattern (e.g., TAG173, TAG-173, or just 173)
           const rollNumberMatch = email.match(/^(TAG-?)?(\d+)$/i);
           if (rollNumberMatch) {

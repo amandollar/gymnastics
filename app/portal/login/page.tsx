@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useActionState } from "react";
+import React, { useActionState, useState } from "react";
 import { authenticatePortal } from "@/lib/actions/auth";
 import { AlertTriangle, KeyRound, User } from "lucide-react";
 
@@ -9,6 +9,19 @@ export default function PortalLoginPage() {
     authenticatePortal,
     undefined
   );
+
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    if (password.toUpperCase().startsWith("TAG-")) {
+      const passwordInput = e.currentTarget.querySelector('input[name="password"]') as HTMLInputElement;
+      if (passwordInput) {
+        // Temporarily change type to "text" to bypass browser password saving keychain prompt
+        passwordInput.type = "text";
+        passwordInput.setAttribute("autocomplete", "off");
+      }
+    }
+  };
 
   return (
     <div className="relative flex min-h-screen min-h-[100dvh] w-full flex-col lg:flex-row font-sans antialiased bg-zinc-50 dark:bg-zinc-950 overflow-hidden transition-colors duration-200">
@@ -31,7 +44,7 @@ export default function PortalLoginPage() {
             <span className="text-[11px] font-black uppercase tracking-wider text-brand-orange-500 leading-none">
               Portal
             </span>
-            <span className="mt-1 text-lg sm:text-xl font-bold text-zinc-955 dark:text-zinc-55 leading-none">
+            <span className="mt-1 text-lg sm:text-xl font-bold text-zinc-900 dark:text-zinc-55 leading-none">
               of Gymnastics
             </span>
           </div>
@@ -43,7 +56,7 @@ export default function PortalLoginPage() {
               <span className="w-1.5 h-1.5 rounded-full bg-brand-orange-500 animate-pulse"></span>
               Portal Login
             </span>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-955 dark:text-zinc-50">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
               Welcome
             </h1>
             <p className="text-sm text-zinc-500 dark:text-zinc-450 font-medium">
@@ -51,7 +64,7 @@ export default function PortalLoginPage() {
             </p>
           </div>
  
-          <form action={formAction} className="space-y-5">
+          <form action={formAction} onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-4">
               <div className="space-y-1.5">
                 <label
@@ -93,6 +106,8 @@ export default function PortalLoginPage() {
                     name="password"
                     type="password"
                     required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     className="block w-full rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-950 pl-11 pr-4 py-3 text-sm font-medium text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-550 outline-none transition-all duration-200 focus:border-brand-orange-500/80 focus:ring-4 focus:ring-brand-orange-500/10"
                   />
@@ -150,7 +165,7 @@ export default function PortalLoginPage() {
             </div>
           </div>
           <div className="space-y-2 text-center">
-            <h2 className="text-4xl font-black tracking-[0.05em] text-zinc-955 dark:text-zinc-50 uppercase leading-none">
+            <h2 className="text-4xl font-black tracking-[0.05em] text-zinc-900 dark:text-zinc-50 uppercase leading-none">
               PORTAL
             </h2>
             <p className="text-sm text-zinc-500 dark:text-zinc-450 font-medium">
