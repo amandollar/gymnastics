@@ -246,6 +246,7 @@ export default function DashboardOverview({
   const [selectedStudentForWhatsapp, setSelectedStudentForWhatsapp] = useState<any | null>(null);
   const [whatsappMessageText, setWhatsappMessageText] = useState("");
   const [whatsappModalTitle, setWhatsappModalTitle] = useState("Send WhatsApp Message");
+  const [whatsappModalTemplateName, setWhatsappModalTemplateName] = useState<string | undefined>(undefined);
   const [whatsappVariables, setWhatsappVariables] = useState<{ label: string; value: string }[]>([]);
 
   const resolveLocalTemplate = (template: string, student: any) => {
@@ -279,7 +280,8 @@ export default function DashboardOverview({
       .replace(/\[Plan Type\]/gi, student.planType || "")
       .replace(/\[Program\]/gi, student.planType || "")
       .replace(/\[Grace Deadline\]/gi, graceDeadlineStr)
-      .replace(/\[Days Left\]/gi, daysLeftStr);
+      .replace(/\[Days Left\]/gi, daysLeftStr)
+      .replace(/\[Academy Name\]/gi, "The Academy of Gymnastics");
 
     return text;
   };
@@ -289,12 +291,11 @@ export default function DashboardOverview({
     e.preventDefault();
     setSelectedStudentForWhatsapp(student);
     setWhatsappModalTitle(isGrace ? "Grace Period Message" : "Inactive Student Message");
+    setWhatsappModalTemplateName(isGrace ? "Grace Period Reminder" : "Inactive Reminder");
 
     const templateRaw = isGrace
       ? (academyProfile.templateGrace || DEFAULT_TEMPLATES.templateGrace)
-      : (student.sessionsCompleted >= student.totalSessions
-          ? ((academyProfile as any).templateInactiveSessionComplete || DEFAULT_TEMPLATES.templateInactiveSessionComplete)
-          : (academyProfile.templateInactive || DEFAULT_TEMPLATES.templateInactive));
+      : (academyProfile.templateInactive || DEFAULT_TEMPLATES.templateInactive);
 
     const resolved = resolveLocalTemplate(templateRaw, student);
     setWhatsappMessageText(resolved);
@@ -311,6 +312,7 @@ export default function DashboardOverview({
   const handleOpenReminderWhatsapp = (rem: any) => {
     setSelectedStudentForWhatsapp(rem);
     setWhatsappModalTitle("Reminder Message");
+    setWhatsappModalTemplateName("Reminder Message");
 
     const message = `Hello ${rem.parentName || rem.name}, this is a reminder regarding gymnastics class. Notes: ${rem.notes || ""}`;
     setWhatsappMessageText(message);
@@ -932,6 +934,7 @@ export default function DashboardOverview({
           isOpen={feeOpen}
           onClose={() => setFeeOpen(false)}
           handlePrint={handlePrint}
+          academyProfile={academyProfile}
         />
       )}
 
@@ -955,6 +958,8 @@ export default function DashboardOverview({
         defaultMessageText={whatsappMessageText}
         title={whatsappModalTitle}
         variables={whatsappVariables}
+        studentId={selectedStudentForWhatsapp?.id}
+        templateName={whatsappModalTemplateName}
       />
 
       {/* Bottom-Right Toast Notification */}

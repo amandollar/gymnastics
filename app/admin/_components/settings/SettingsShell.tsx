@@ -12,6 +12,8 @@ import FeeStructureTab from "./tabs/FeeStructureTab";
 import ExportTab from "./tabs/ExportTab";
 import AppearanceTab from "./tabs/AppearanceTab";
 import MessagesTab from "./tabs/MessagesTab";
+import MsgAutomationTab from "./tabs/MsgAutomationTab";
+import MsgLogsTab from "./tabs/MsgLogsTab";
 import type { BatchWithCount } from "@/lib/services/batches";
 import type { GracePeriodMap } from "@/lib/plan/grace-period-utils";
 import type { PricingMaps } from "@/lib/services/pricing";
@@ -104,8 +106,18 @@ export default function SettingsShell({
     },
     {
       id: "msg-templates",
-      label: "Msg templates",
+      label: "Msg Templates",
       icon: MessageSquare,
+    },
+    {
+      id: "msg-automation",
+      label: "Msg Automation",
+      icon: Clock,
+    },
+    {
+      id: "msg-logs",
+      label: "Msg Logs",
+      icon: Users,
     },
   ];
 
@@ -118,7 +130,7 @@ export default function SettingsShell({
 
   const renderActiveTabContent = () => {
     const isStaff = userRole !== "ADMIN";
-    const allowedTabs = isStaff ? ["academy", "appearance", "msg-templates"] : ["academy", "users", "batches", "grace-periods", "fee-structure", "export", "appearance", "msg-templates"];
+    const allowedTabs = isStaff ? ["academy", "appearance", "msg-templates", "msg-automation", "msg-logs"] : ["academy", "users", "batches", "grace-periods", "fee-structure", "export", "appearance", "msg-templates", "msg-automation", "msg-logs"];
     const currentTab = allowedTabs.includes(effectiveTab) ? effectiveTab : "academy";
 
     switch (currentTab) {
@@ -138,6 +150,10 @@ export default function SettingsShell({
         return <AppearanceTab />;
       case "msg-templates":
         return <MessagesTab initialProfile={initialProfile} />;
+      case "msg-automation":
+        return <MsgAutomationTab initialProfile={initialProfile} />;
+      case "msg-logs":
+        return <MsgLogsTab />;
       default:
         return <AcademyTab initialProfile={initialProfile} isReadOnly={isStaff} />;
     }

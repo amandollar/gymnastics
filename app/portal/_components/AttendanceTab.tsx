@@ -174,7 +174,7 @@ export default function AttendanceTab({ student }: AttendanceTabProps) {
           </div>
         </div>
 
-        {activePlan && (
+        {activePlan && student.status !== "INACTIVE" && student.status !== "EXPIRED" && (
           <div className="flex items-center gap-4 sm:pl-5 sm:border-l sm:border-zinc-150 sm:dark:border-zinc-800/60 w-full sm:w-auto">
             <div className="flex items-center gap-1.5 sm:gap-2">
               <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-widest mt-0.5">Sessions</span>

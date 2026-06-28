@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath, updateTag } from "next/cache";
 import { getMonthlyAttendanceData, getYearlyMonthlyBreakdown } from "@/lib/services/cached";
 import { computeStudentStatus } from "@/lib/utils/student";
+import { resolveTemplate } from "@/lib/utils/whatsapp-templates";
+import { getAcademyProfile } from "@/lib/services/academy";
+import { sendWhatsAppMessageAction } from "@/lib/actions/whatsapp";
 
 export async function fetchChartDataAction(year: number, month: number) {
   const [monthData, yearlyBreakdown] = await Promise.all([
@@ -188,6 +191,48 @@ export async function markAttendanceAction(studentId: string, dateStr: string) {
     updateTag("attendance");
     updateTag("students");
     updateTag("dashboard");
+
+    // Automation: Check if all sessions are completed
+    const newSessionsCompleted = activePlan.sessionsCompleted + 1;
+    if (newSessionsCompleted >= activePlan.totalSessions) {
+      try {
+        const profile = await getAcademyProfile();
+        if (profile.autoSendAllSessionsCompleted && profile.templateAllSessionsCompleted) {
+          // Check if already sent recently (within last 30 days) to prevent duplicates
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          const recentLog = await prisma.messageLog.findFirst({
+            where: {
+              studentId,
+              templateName: "All Sessions Completed",
+              sentAt: { gte: thirtyDaysAgo },
+            },
+          });
+
+          if (!recentLog && student.contactNumber) {
+            let cleanNumber = student.contactNumber.replace(/\D/g, "");
+            if (cleanNumber.length === 10) cleanNumber = "91" + cleanNumber;
+
+            const text = resolveTemplate(profile.templateAllSessionsCompleted, {
+              studentName: student.name,
+              parentName: student.parentName || "",
+              portalLink: profile.parentPortalUrl || "",
+            });
+
+            await sendWhatsAppMessageAction({
+              to: cleanNumber,
+              type: "text",
+              text,
+              studentId: student.id,
+              templateName: "All Sessions Completed",
+              isAutomated: true,
+            });
+          }
+        }
+      } catch (autoErr) {
+        console.error("Auto-send All Sessions Completed failed:", autoErr);
+      }
+    }
 
     return {
       success: true,

@@ -185,6 +185,8 @@ export default function AdmissionSuccessModal({
         mediaId: uploadedMediaId,
         filename: `Receipt_${rollNumber}.pdf`,
         caption: messageText,
+        studentId: studentId,
+        templateName: "Admission Welcome",
       });
 
       if (!sendRes.success) {

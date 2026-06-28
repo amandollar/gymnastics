@@ -179,7 +179,7 @@ export default function OverviewTab({ student, academyProfile }: OverviewTabProp
       })()}
 
       {/* Sessions Card */}
-      {activePlan && (
+      {activePlan && student.status !== "INACTIVE" && student.status !== "EXPIRED" && (
         <section className="relative overflow-hidden w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/60 rounded-[2rem] p-6 sm:p-8 shadow-sm space-y-6">
           <div className="absolute -top-24 -left-24 w-80 h-80 bg-brand-orange-50/5 rounded-full blur-3xl pointer-events-none" />
 

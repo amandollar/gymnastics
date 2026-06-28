@@ -11,7 +11,7 @@ import { UnfreezeButton } from "./FreezePlanPopup";
 import { MoreVertical, Trash2, Snowflake, AlertTriangle, MessageCircle, CreditCard } from "lucide-react";
 import StudentStatusBadge from "../StudentStatusBadge";
 import { deleteFreezePeriodAction } from "@/lib/actions/plans";
-import { resolveTemplate, getEffectiveTemplate } from "@/lib/utils/whatsapp-templates";
+import { resolveTemplate, getEffectiveTemplate, buildFeeReminderMessage } from "@/lib/utils/whatsapp-templates";
 import { getPortalBaseUrl } from "@/lib/utils/portal-url";
 import WhatsAppModal from "@/app/admin/_components/common/WhatsAppModal";
 
@@ -56,26 +56,7 @@ function buildGraceMessage({
   return msg;
 }
 
-function buildFeeReminderMessage({
-  student,
-  plan,
-  template,
-}: {
-  student: { name: string; parentName: string; contactNumber: string };
-  plan: PlanRow;
-  template?: string | null;
-}): string {
-  const effectiveTemplate = getEffectiveTemplate(template, "templateFeeReminder");
-  const outstanding = typeof plan.outstanding === "number" ? plan.outstanding : plan.fee;
-  return resolveTemplate(effectiveTemplate, {
-    studentName: student.name,
-    parentName: student.parentName,
-    phone: student.contactNumber,
-    fee: formatINR(plan.fee),
-    outstanding: formatINR(outstanding),
-    portalLink: typeof window !== "undefined" ? `${window.location.origin}/portal/login` : "",
-  });
-}
+
 
 function buildInactiveMessage({
   student,
@@ -307,7 +288,7 @@ export function PlanCard({
 }) {
   if (!plan) return null;
 
-  const [waModal, setWaModal] = useState<{ open: boolean; message: string; title: string }>({
+  const [waModal, setWaModal] = useState<{ open: boolean; message: string; title: string; templateName?: string }>({
     open: false,
     message: "",
     title: "Send on WhatsApp",
@@ -349,16 +330,16 @@ export function PlanCard({
       template: academyProfile?.templateGrace,
       academyProfile,
     });
-    setWaModal({ open: true, message: msg, title: "Grace Period — Send Reminder" });
+    setWaModal({ open: true, message: msg, title: "Grace Period — Send Reminder", templateName: "Grace Period Reminder" });
   }
 
   function openFeeReminderModal() {
     const msg = buildFeeReminderMessage({
       student,
-      plan: plan!,
+      plan: plan as any,
       template: academyProfile?.templateFeeReminder,
     });
-    setWaModal({ open: true, message: msg, title: "Send Fee Reminder" });
+    setWaModal({ open: true, message: msg, title: "Send Fee Reminder", templateName: "Fee Reminder" });
   }
 
   function openInactiveModal() {
@@ -367,7 +348,7 @@ export function PlanCard({
       plan: plan!,
       template: academyProfile?.templateInactive,
     });
-    setWaModal({ open: true, message: msg, title: "Re-engage on WhatsApp" });
+    setWaModal({ open: true, message: msg, title: "Re-engage on WhatsApp", templateName: "Inactive Reminder" });
   }
 
   return (
@@ -378,6 +359,8 @@ export function PlanCard({
       contactNumber={student.contactNumber}
       defaultMessageText={waModal.message}
       title={waModal.title}
+      studentId={student.id}
+      templateName={waModal.templateName}
     />
     <div className="rounded-3xl bg-white dark:bg-zinc-900 p-6 shadow-sm space-y-6 transition-colors">
       {/* Header Row */}

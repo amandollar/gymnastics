@@ -11,6 +11,9 @@ interface WhatsAppModalProps {
   defaultMessageText: string;
   title?: string;
   variables?: { label: string; value: string }[];
+  studentId?: string;
+  enquiryId?: string;
+  templateName?: string;
 }
 
 export default function WhatsAppModal({
@@ -20,6 +23,9 @@ export default function WhatsAppModal({
   defaultMessageText,
   title = "Follow up with WhatsApp",
   variables = [],
+  studentId,
+  enquiryId,
+  templateName,
 }: WhatsAppModalProps) {
   const [messageText, setMessageText] = useState(defaultMessageText);
   const [sending, setSending] = useState(false);
@@ -62,6 +68,10 @@ export default function WhatsAppModal({
         to: cleanNumber,
         type: "text",
         text: messageText,
+        studentId,
+        enquiryId,
+        templateName,
+        isAutomated: false,
       });
 
       if (!res.success) {

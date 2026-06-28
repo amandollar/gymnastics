@@ -56,7 +56,7 @@ export async function saveMessageTemplatesAction(data: {
   templateGrace: string;
   templateFeeReminder: string;
   templateInactive: string;
-  templateInactiveSessionComplete: string;
+  templateAllSessionsCompleted: string;
   templateLoginCredentials: string;
   templateEnquiryFollowUp: string;
   templateAdmissionWelcome: string;
@@ -70,7 +70,7 @@ export async function saveMessageTemplatesAction(data: {
         templateGrace: data.templateGrace.trim() || null,
         templateFeeReminder: data.templateFeeReminder.trim() || null,
         templateInactive: data.templateInactive.trim() || null,
-        templateInactiveSessionComplete: data.templateInactiveSessionComplete.trim() || null,
+        templateAllSessionsCompleted: data.templateAllSessionsCompleted.trim() || null,
         templateLoginCredentials: data.templateLoginCredentials.trim() || null,
         templateEnquiryFollowUp: data.templateEnquiryFollowUp.trim() || null,
         templateAdmissionWelcome: data.templateAdmissionWelcome.trim() || null,
@@ -98,7 +98,7 @@ export async function getAcademyTemplatesAction() {
         templateGrace: profile.templateGrace,
         templateFeeReminder: profile.templateFeeReminder,
         templateInactive: profile.templateInactive,
-        templateInactiveSessionComplete: profile.templateInactiveSessionComplete,
+        templateAllSessionsCompleted: profile.templateAllSessionsCompleted,
         templateLoginCredentials: (profile as any).templateLoginCredentials as string | null,
         templateEnquiryFollowUp: (profile as any).templateEnquiryFollowUp as string | null,
         templateAdmissionWelcome: (profile as any).templateAdmissionWelcome as string | null,
@@ -111,6 +111,86 @@ export async function getAcademyTemplatesAction() {
       templates: null,
       website: null,
       parentPortalUrl: null,
+    };
+  }
+}
+
+export async function saveAutomationSettingsAction(data: {
+  autoSendGrace: boolean;
+  autoSendInactive: boolean;
+  autoSendAllSessionsCompleted: boolean;
+}): Promise<ActionResult> {
+  try {
+    await assertCanManageSettings();
+    const profile = await getAcademyProfile();
+    await prisma.academyProfile.update({
+      where: { id: profile.id },
+      data: {
+        autoSendGrace: data.autoSendGrace,
+        autoSendInactive: data.autoSendInactive,
+        autoSendAllSessionsCompleted: data.autoSendAllSessionsCompleted,
+      },
+    });
+    revalidatePath("/admin/settings");
+    updateTag("academy");
+    return { success: true, message: "Automation settings saved successfully" };
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Failed to save automation settings",
+    };
+  }
+}
+
+export async function getMessageLogsAction() {
+  try {
+    await assertCanManageSettings();
+    const logs = await prisma.messageLog.findMany({
+      orderBy: { sentAt: 'desc' },
+      take: 200,
+      include: {
+        student: {
+          select: {
+            name: true,
+            studentNumber: true,
+            avatarUrl: true,
+          }
+        },
+        enquiry: {
+          select: {
+            childName: true,
+            enquiryNumber: true,
+          }
+        }
+      }
+    });
+
+    const mappedLogs = logs.map((log) => ({
+      id: log.id,
+      templateName: log.templateName,
+      isAutomated: log.isAutomated,
+      sentAt: log.sentAt,
+      student: log.student ? {
+        name: log.student.name,
+        studentNumber: log.student.studentNumber,
+        avatarUrl: log.student.avatarUrl,
+      } : log.enquiry ? {
+        name: log.enquiry.childName + " (Enquiry)",
+        studentNumber: log.enquiry.enquiryNumber,
+        avatarUrl: null,
+      } : {
+        name: "Unknown",
+        studentNumber: 0,
+        avatarUrl: null,
+      }
+    }));
+
+    return { success: true, logs: mappedLogs };
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Failed to load message logs",
+      logs: [],
     };
   }
 }

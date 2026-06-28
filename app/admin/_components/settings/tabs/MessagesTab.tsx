@@ -307,7 +307,7 @@ export default function MessagesTab({
     initialProfile.templateInactive ?? "",
   );
   const [inactiveSessionComplete, setInactiveSessionComplete] = useState(
-    (initialProfile as any).templateInactiveSessionComplete ?? "",
+    (initialProfile as any).templateAllSessionsCompleted ?? "",
   );
   const [loginCredentials, setLoginCredentials] = useState(
     (initialProfile as any).templateLoginCredentials ?? "",
@@ -345,8 +345,8 @@ export default function MessagesTab({
       templateFeeReminder:
         cardId === "templateFeeReminder" ? updatedValue : feeReminder,
       templateInactive: cardId === "templateInactive" ? updatedValue : inactive,
-      templateInactiveSessionComplete:
-        cardId === "templateInactiveSessionComplete"
+      templateAllSessionsCompleted:
+        cardId === "templateAllSessionsCompleted"
           ? updatedValue
           : inactiveSessionComplete,
       templateLoginCredentials:
@@ -361,8 +361,10 @@ export default function MessagesTab({
     if (res.success) {
       if (cardId === "templateGrace") setGrace(updatedValue);
       else if (cardId === "templateFeeReminder") setFeeReminder(updatedValue);
-      else if (cardId === "templateInactive") setInactive(updatedValue);
-      else if (cardId === "templateInactiveSessionComplete")
+      else if (cardId === "templateInactive") {
+        setInactive(updatedValue);
+      }
+      else if (cardId === "templateAllSessionsCompleted")
         setInactiveSessionComplete(updatedValue);
       else if (cardId === "templateLoginCredentials")
         setLoginCredentials(updatedValue);
@@ -415,6 +417,20 @@ export default function MessagesTab({
       {/* Template cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <TemplateCard
+          title="Enquiry Follow-up"
+          value={enquiryFollowUp}
+          defaultValue={DEFAULT_TEMPLATES.templateEnquiryFollowUp}
+          onClick={() =>
+            setEditingTemplate({
+              id: "templateEnquiryFollowUp",
+              title: "Enquiry Follow-up",
+              value: enquiryFollowUp,
+              defaultValue: DEFAULT_TEMPLATES.templateEnquiryFollowUp,
+              availableVarKeys: VARS_BY_TEMPLATE.templateEnquiryFollowUp,
+            })
+          }
+        />
+        <TemplateCard
           title="Admission welcome message"
           value={admissionWelcome}
           defaultValue={DEFAULT_TEMPLATES.templateAdmissionWelcome}
@@ -443,16 +459,31 @@ export default function MessagesTab({
           }
         />
         <TemplateCard
-          title="Enquiry Follow-up"
-          value={enquiryFollowUp}
-          defaultValue={DEFAULT_TEMPLATES.templateEnquiryFollowUp}
+          title="Fee Reminder"
+          value={feeReminder}
+          defaultValue={DEFAULT_TEMPLATES.templateFeeReminder}
           onClick={() =>
             setEditingTemplate({
-              id: "templateEnquiryFollowUp",
-              title: "Enquiry Follow-up",
-              value: enquiryFollowUp,
-              defaultValue: DEFAULT_TEMPLATES.templateEnquiryFollowUp,
-              availableVarKeys: VARS_BY_TEMPLATE.templateEnquiryFollowUp,
+              id: "templateFeeReminder",
+              title: "Fee Reminder",
+              value: feeReminder,
+              defaultValue: DEFAULT_TEMPLATES.templateFeeReminder,
+              availableVarKeys: VARS_BY_TEMPLATE.templateFeeReminder,
+            })
+          }
+        />
+        <TemplateCard
+          title="All Session Completed"
+          value={inactiveSessionComplete}
+          defaultValue={DEFAULT_TEMPLATES.templateAllSessionsCompleted}
+          onClick={() =>
+            setEditingTemplate({
+              id: "templateAllSessionsCompleted",
+              title: "All Session Completed",
+              value: inactiveSessionComplete,
+              defaultValue: DEFAULT_TEMPLATES.templateAllSessionsCompleted,
+              availableVarKeys:
+                VARS_BY_TEMPLATE.templateAllSessionsCompleted,
             })
           }
         />
@@ -471,45 +502,16 @@ export default function MessagesTab({
           }
         />
         <TemplateCard
-          title="Fee Reminder"
-          value={feeReminder}
-          defaultValue={DEFAULT_TEMPLATES.templateFeeReminder}
-          onClick={() =>
-            setEditingTemplate({
-              id: "templateFeeReminder",
-              title: "Fee Reminder",
-              value: feeReminder,
-              defaultValue: DEFAULT_TEMPLATES.templateFeeReminder,
-              availableVarKeys: VARS_BY_TEMPLATE.templateFeeReminder,
-            })
-          }
-        />
-        <TemplateCard
-          title="Inactive (session pending)"
+          title="Inactive"
           value={inactive}
           defaultValue={DEFAULT_TEMPLATES.templateInactive}
           onClick={() =>
             setEditingTemplate({
               id: "templateInactive",
-              title: "Inactive (session pending)",
+              title: "Inactive",
               value: inactive,
               defaultValue: DEFAULT_TEMPLATES.templateInactive,
               availableVarKeys: VARS_BY_TEMPLATE.templateInactive,
-            })
-          }
-        />
-        <TemplateCard
-          title="Inactive (session complete)"
-          value={inactiveSessionComplete}
-          defaultValue={DEFAULT_TEMPLATES.templateInactiveSessionComplete}
-          onClick={() =>
-            setEditingTemplate({
-              id: "templateInactiveSessionComplete",
-              title: "Inactive (session complete)",
-              value: inactiveSessionComplete,
-              defaultValue: DEFAULT_TEMPLATES.templateInactiveSessionComplete,
-              availableVarKeys:
-                VARS_BY_TEMPLATE.templateInactiveSessionComplete,
             })
           }
         />

@@ -142,6 +142,8 @@ export default function StudentCredentialsModal({
         to: whatsappNumber,
         type: "text",
         text: whatsappMessageText,
+        studentId: studentId,
+        templateName: "Login Credentials",
       });
 
       if (res.success) {

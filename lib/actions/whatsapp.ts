@@ -25,6 +25,10 @@ export async function sendWhatsAppMessageAction(params: {
   mediaId?: string;
   filename?: string;
   caption?: string;
+  studentId?: string;
+  enquiryId?: string;
+  templateName?: string;
+  isAutomated?: boolean;
 }) {
   try {
     await assertCanSendNotifications();
@@ -62,6 +66,18 @@ export async function sendWhatsAppMessageAction(params: {
           body: params.text || "",
         },
       });
+
+      if ((params.studentId || params.enquiryId) && params.templateName) {
+        await prisma.messageLog.create({
+          data: {
+            studentId: params.studentId || null,
+            enquiryId: params.enquiryId || null,
+            templateName: params.templateName,
+            isAutomated: params.isAutomated ?? false,
+          },
+        });
+      }
+
       return { success: true, messageId: res.messageId };
     }
   } catch (e) {
