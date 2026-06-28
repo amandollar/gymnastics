@@ -59,6 +59,7 @@ export async function saveMessageTemplatesAction(data: {
   templateInactiveSessionComplete: string;
   templateLoginCredentials: string;
   templateEnquiryFollowUp: string;
+  templateAdmissionWelcome: string;
 }): Promise<ActionResult> {
   try {
     await assertCanManageSettings();
@@ -72,6 +73,7 @@ export async function saveMessageTemplatesAction(data: {
         templateInactiveSessionComplete: data.templateInactiveSessionComplete.trim() || null,
         templateLoginCredentials: data.templateLoginCredentials.trim() || null,
         templateEnquiryFollowUp: data.templateEnquiryFollowUp.trim() || null,
+        templateAdmissionWelcome: data.templateAdmissionWelcome.trim() || null,
       },
     });
     revalidatePath("/admin/settings");
@@ -99,6 +101,7 @@ export async function getAcademyTemplatesAction() {
         templateInactiveSessionComplete: profile.templateInactiveSessionComplete,
         templateLoginCredentials: (profile as any).templateLoginCredentials as string | null,
         templateEnquiryFollowUp: (profile as any).templateEnquiryFollowUp as string | null,
+        templateAdmissionWelcome: (profile as any).templateAdmissionWelcome as string | null,
       },
     };
   } catch (e) {

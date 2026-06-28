@@ -6,7 +6,7 @@ import Link from "next/link";
 import { createStudentAction } from "@/lib/actions/students";
 import { toDateInputValue } from "@/lib/utils/student";
 import StudentAvatarPicker from "./StudentAvatarPicker";
-import StudentCreatedSuccess from "./StudentCreatedSuccess";
+import AdmissionSuccessModal from "./AdmissionSuccessModal";
 import DateOfBirthField from "./DateOfBirthField";
 import SimpleDateInput from "./SimpleDateInput";
 import { STUDENT_LEVELS } from "@/lib/utils/level";
@@ -60,50 +60,21 @@ export default function AddStudentForm() {
   const [gender, setGender] = useState(defaultGender);
   const [state, action, pending] = useActionState(createStudentAction, null);
 
-  if (
+  const showSuccessModal = !!(
     state?.success &&
     state.studentId &&
     state.studentName &&
     state.studentNumber != null &&
     !pending
-  ) {
-    return (
-      <StudentCreatedSuccess
-        studentId={state.studentId}
-        studentName={state.studentName}
-        studentNumber={state.studentNumber}
-        avatarUrl={state.avatarUrl}
-        gender={state.gender}
-        registrationFee={state.registrationFee}
-      />
-    );
-  }
+  );
 
   return (
     <div className="space-y-6">
       {/* Header Section (aligned left, max-width matches dashboard max-w-7xl, no subtitle) */}
       <div className="flex flex-col gap-1.5 pt-1 pb-3">
-        <Link
-          href="/admin/students"
-          className="text-xs sm:text-sm text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 transition-colors inline-flex items-center gap-1 font-medium"
-        >
-          ← Back to students
-        </Link>
         <h1 className="text-3xl sm:text-5xl font-light tracking-tight text-zinc-955 dark:text-zinc-50">
           New Admission
         </h1>
-        {/* Horizontal Process Steps above the card */}
-        <div className="mt-4 flex items-center gap-2.5 text-xs font-semibold">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-orange-500 text-white text-[11px] font-bold shadow-xs">
-            1
-          </span>
-          <span className="text-zinc-900 dark:text-zinc-200">Details</span>
-          <span className="text-zinc-300 dark:text-zinc-700">—</span>
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 text-[11px] font-bold">
-            2
-          </span>
-          <span className="text-zinc-400 dark:text-zinc-550">Assign plan</span>
-        </div>
       </div>
 
       <form action={action} className="space-y-6 max-w-3xl mx-auto">
@@ -149,21 +120,29 @@ export default function AddStudentForm() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
+                  <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-2.5">
                     Gender *
                   </label>
-                  <select
-                    name="gender"
-                    required
-                    className={inputClass}
-                    value={gender}
-                    onChange={(e) => setGender(e.target.value)}
-                  >
-                    <option value="" disabled>Select gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
+                  <input type="hidden" name="gender" value={gender} required />
+                  <div className="flex gap-2.5">
+                    {["Male", "Female", "Other"].map((g) => {
+                      const isSelected = gender === g;
+                      return (
+                        <button
+                          key={g}
+                          type="button"
+                          onClick={() => setGender(g)}
+                          className={`flex-1 rounded-full border px-4 py-2 text-sm font-semibold text-center transition-all duration-200 cursor-pointer ${
+                            isSelected
+                              ? "bg-brand-orange-500 border-brand-orange-500 text-white shadow-xs shadow-brand-orange-500/10"
+                              : "bg-zinc-50 dark:bg-zinc-950/60 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-900/40"
+                          }`}
+                        >
+                          {g}
+                        </button>
+                      );
+                    })}
+                  </div>
                   {state?.errors?.gender && (
                     <p className="mt-1 text-xs text-rose-600">{state.errors.gender[0]}</p>
                   )}
@@ -267,7 +246,7 @@ export default function AddStudentForm() {
 
           {/* Medical history */}
           <div>
-            <FormSection title="Medical history" description="Allergies, conditions, etc.">
+            <FormSection title="Medical history">
               <textarea
                 name="medicalHistory"
                 rows={2}
@@ -282,7 +261,7 @@ export default function AddStudentForm() {
 
           {/* Training Focus */}
           <div>
-            <FormSection title="Training Focus" description="Main goals, focus areas, emphasis">
+            <FormSection title="Training Focus">
               <textarea
                 name="trainingFocus"
                 rows={2}
@@ -297,7 +276,7 @@ export default function AddStudentForm() {
 
           {/* Notes */}
           <div>
-            <FormSection title="Notes" description="Optional details about student">
+            <FormSection title="Notes">
               <textarea
                 name="notes"
                 rows={2}
@@ -326,31 +305,30 @@ export default function AddStudentForm() {
           </Link>
           <button
             type="submit"
-            name="next"
-            value="later"
             disabled={pending}
-            className="inline-flex items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-4.5 py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-850 disabled:opacity-50 cursor-pointer transition-colors"
+            className="inline-flex items-center justify-center rounded-full bg-brand-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-orange-600 disabled:opacity-50 cursor-pointer transition-colors"
           >
             {pending ? (
               <span className="flex items-center gap-2">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-600" />
-                Saving…
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-100" />
+                Saving Admission…
               </span>
             ) : (
-              "Save student"
+              "Take Admission"
             )}
-          </button>
-          <button
-            type="submit"
-            name="next"
-            value="assign-plan"
-            disabled={pending}
-            className="inline-flex items-center justify-center rounded-xl bg-brand-orange-500 px-4.5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-orange-600 disabled:opacity-50 cursor-pointer transition-colors"
-          >
-            {pending ? "Saving…" : "Save & assign plan"}
           </button>
         </div>
       </form>
+
+      <AdmissionSuccessModal
+        isOpen={showSuccessModal}
+        studentId={state?.studentId || ""}
+        studentName={state?.studentName || ""}
+        studentNumber={state?.studentNumber || 0}
+        avatarUrl={state?.avatarUrl}
+        gender={state?.gender}
+        registrationFee={state?.registrationFee || undefined}
+      />
     </div>
   );
 }

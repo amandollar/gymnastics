@@ -221,9 +221,6 @@ export default function BasicDetailsTab({ student }: { student: StudentData }) {
           <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
             Medical history
           </label>
-          <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-1.5">
-            Allergies, conditions, etc.
-          </p>
           <textarea
             name="medicalHistory"
             rows={2}
@@ -238,9 +235,6 @@ export default function BasicDetailsTab({ student }: { student: StudentData }) {
           <label className="block text-xs font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
             Notes
           </label>
-          <p className="text-xs text-zinc-400 dark:text-zinc-500 mb-1.5">
-            Optional details about student
-          </p>
           <textarea
             name="notes"
             rows={2}

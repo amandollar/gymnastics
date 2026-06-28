@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { Loader2 } from "lucide-react";
+import { sendWhatsAppMessageAction } from "@/lib/actions/whatsapp";
 
 interface WhatsAppModalProps {
   isOpen: boolean;
@@ -20,6 +22,8 @@ export default function WhatsAppModal({
   variables = [],
 }: WhatsAppModalProps) {
   const [messageText, setMessageText] = useState(defaultMessageText);
+  const [sending, setSending] = useState(false);
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Sync messageText state whenever defaultMessageText changes
@@ -45,17 +49,40 @@ export default function WhatsAppModal({
     }, 0);
   };
 
-  const handleSend = () => {
-    let cleanNumber = contactNumber.replace(/\D/g, "");
-    if (cleanNumber.length === 10) {
-      cleanNumber = "91" + cleanNumber;
+  const handleSend = async () => {
+    setSending(true);
+    
+    try {
+      let cleanNumber = contactNumber.replace(/\D/g, "");
+      if (cleanNumber.length === 10) {
+        cleanNumber = "91" + cleanNumber;
+      }
+
+      const res = await sendWhatsAppMessageAction({
+        to: cleanNumber,
+        type: "text",
+        text: messageText,
+      });
+
+      if (!res.success) {
+        throw new Error(res.message || "Failed to send WhatsApp message");
+      }
+
+      onClose();
+      setToast({ type: "success", message: "Message sent successfully!" });
+      setTimeout(() => {
+        setToast(null);
+      }, 4000);
+    } catch (error) {
+      setToast({ type: "error", message: error instanceof Error ? error.message : "Error sending message" });
+      setTimeout(() => setToast(null), 4000);
+    } finally {
+      setSending(false);
     }
-    const url = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(messageText)}`;
-    window.open(url, "_blank");
-    onClose();
   };
 
   return (
+    <>
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-all duration-300 ease-in-out ${
         isOpen ? "opacity-100 pointer-events-auto visible" : "opacity-0 pointer-events-none invisible"
@@ -169,20 +196,37 @@ export default function WhatsAppModal({
           </button>
           <button
             type="button"
+            disabled={sending}
             onClick={handleSend}
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer border-0"
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-orange-500 hover:bg-brand-orange-600 disabled:opacity-50 disabled:cursor-not-allowed px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer border-0"
           >
-            <svg
-              className="w-4 h-4 shrink-0"
-              fill="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path d="M12.016 2a10 10 0 0 0-8.77 14.77l-1.45 5.31 5.43-1.42A10 10 0 1 0 12.016 2zm0 18.18a8.18 8.18 0 0 1-4.23-1.16l-.3-.18-3.1.81.82-3.01-.19-.31a8.18 8.18 0 1 1 7 3.85zm4.49-5.96c-.25-.12-1.46-.72-1.69-.8-.22-.08-.39-.12-.55.12-.16.24-.62.8-.76.96-.14.16-.28.18-.53.06-.25-.12-1.07-.39-2.03-1.25-.75-.67-1.25-1.5-1.4-1.74-.15-.24-.01-.37.11-.49.11-.11.25-.28.37-.42.12-.14.16-.24.24-.4.08-.16.04-.31-.02-.44-.06-.13-.55-1.32-.75-1.81-.2-.48-.4-.41-.55-.42-.14-.01-.3-.01-.46-.01s-.42.06-.64.29c-.22.23-.85.83-.85 2.03s.87 2.35 1 2.51c.12.16 1.7 2.6 4.12 3.64.57.24 1.02.39 1.37.5.58.18 1.11.16 1.53.1.47-.07 1.45-.59 1.65-1.16.2-.57.2-1.06.14-1.16-.06-.1-.23-.16-.48-.28z" />
-            </svg>
-            Send via WhatsApp
+            {sending ? (
+              <Loader2 className="w-4 h-4 shrink-0 animate-spin" />
+            ) : (
+              <svg
+                className="w-4 h-4 shrink-0"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M12.016 2a10 10 0 0 0-8.77 14.77l-1.45 5.31 5.43-1.42A10 10 0 1 0 12.016 2zm0 18.18a8.18 8.18 0 0 1-4.23-1.16l-.3-.18-3.1.81.82-3.01-.19-.31a8.18 8.18 0 1 1 7 3.85zm4.49-5.96c-.25-.12-1.46-.72-1.69-.8-.22-.08-.39-.12-.55.12-.16.24-.62.8-.76.96-.14.16-.28.18-.53.06-.25-.12-1.07-.39-2.03-1.25-.75-.67-1.25-1.5-1.4-1.74-.15-.24-.01-.37.11-.49.11-.11.25-.28.37-.42.12-.14.16-.24.24-.4.08-.16.04-.31-.02-.44-.06-.13-.55-1.32-.75-1.81-.2-.48-.4-.41-.55-.42-.14-.01-.3-.01-.46-.01s-.42.06-.64.29c-.22.23-.85.83-.85 2.03s.87 2.35 1 2.51c.12.16 1.7 2.6 4.12 3.64.57.24 1.02.39 1.37.5.58.18 1.11.16 1.53.1.47-.07 1.45-.59 1.65-1.16.2-.57.2-1.06.14-1.16-.06-.1-.23-.16-.48-.28z" />
+              </svg>
+            )}
+            {sending ? "Sending..." : "Send via WhatsApp"}
           </button>
         </div>
       </div>
     </div>
+    {toast && (
+      <div
+        className={`fixed bottom-4 right-4 z-[9999] rounded-2xl border px-4 py-3.5 text-xs font-semibold shadow-lg max-w-sm transition-all duration-300 animate-fade-in ${
+          toast.type === "success"
+            ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-900/30"
+            : "bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-200/60 dark:border-rose-900/30"
+        }`}
+      >
+        {toast.message}
+      </div>
+    )}
+    </>
   );
 }

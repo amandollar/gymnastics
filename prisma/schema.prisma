@@ -261,6 +261,8 @@ model AcademyProfile {
   templateLoginCredentials String?
   /// WhatsApp template for enquiry follow-up. Supports {{variables}}.
   templateEnquiryFollowUp    String?
+  /// WhatsApp template for admission welcome message. Supports {{variables}}.
+  templateAdmissionWelcome   String?
   updatedAt          DateTime @updatedAt
 }
 

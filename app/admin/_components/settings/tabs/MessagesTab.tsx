@@ -78,6 +78,13 @@ const VARS_BY_TEMPLATE: Record<string, (keyof TemplateVars)[]> = {
     "portalLink",
   ],
   templateEnquiryFollowUp: ["studentName", "parentName", "planType"],
+  templateAdmissionWelcome: [
+    "studentName",
+    "parentName",
+    "loginId",
+    "password",
+    "portalLink",
+  ],
 };
 
 // ── Render message with highlighted variables ─────────────────────────────────
@@ -308,6 +315,9 @@ export default function MessagesTab({
   const [enquiryFollowUp, setEnquiryFollowUp] = useState(
     (initialProfile as any).templateEnquiryFollowUp ?? "",
   );
+  const [admissionWelcome, setAdmissionWelcome] = useState(
+    (initialProfile as any).templateAdmissionWelcome ?? "",
+  );
 
   const [editingTemplate, setEditingTemplate] = useState<{
     id: string;
@@ -343,6 +353,8 @@ export default function MessagesTab({
         cardId === "templateLoginCredentials" ? updatedValue : loginCredentials,
       templateEnquiryFollowUp:
         cardId === "templateEnquiryFollowUp" ? updatedValue : enquiryFollowUp,
+      templateAdmissionWelcome:
+        cardId === "templateAdmissionWelcome" ? updatedValue : admissionWelcome,
     };
 
     const res = await saveMessageTemplatesAction(payload);
@@ -356,6 +368,8 @@ export default function MessagesTab({
         setLoginCredentials(updatedValue);
       else if (cardId === "templateEnquiryFollowUp")
         setEnquiryFollowUp(updatedValue);
+      else if (cardId === "templateAdmissionWelcome")
+        setAdmissionWelcome(updatedValue);
 
       setResult({ success: true, message: "Template saved successfully!" });
       setSavingId(null);
@@ -400,6 +414,20 @@ export default function MessagesTab({
 
       {/* Template cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <TemplateCard
+          title="Admission welcome message"
+          value={admissionWelcome}
+          defaultValue={DEFAULT_TEMPLATES.templateAdmissionWelcome}
+          onClick={() =>
+            setEditingTemplate({
+              id: "templateAdmissionWelcome",
+              title: "Admission welcome message",
+              value: admissionWelcome,
+              defaultValue: DEFAULT_TEMPLATES.templateAdmissionWelcome,
+              availableVarKeys: VARS_BY_TEMPLATE.templateAdmissionWelcome,
+            })
+          }
+        />
         <TemplateCard
           title="Login credential sharing"
           value={loginCredentials}
