@@ -175,6 +175,19 @@ export default function FooterSection({ phone, phone2 }: { phone?: string; phone
           <p className="text-zinc-600 text-[11px] font-light">
             Designed with <span className="text-brand-orange-500">♥</span> for champions.
           </p>
+          <a
+            href="https://helpah.online"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-zinc-600 text-[11px] font-light hover:text-zinc-400 transition-colors duration-200"
+          >
+            Powered by
+            <img
+              src="/images/helpah_dark_logo.avif"
+              alt="Helpah"
+              className="h-4 w-auto object-contain"
+            />
+          </a>
         </div>
       </div>
     </footer>
