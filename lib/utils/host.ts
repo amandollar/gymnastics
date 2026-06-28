@@ -8,21 +8,35 @@ function stripPort(hostname: string) {
 export function getAppHost(hostname: string): AppHost {
   const { host } = stripPort(hostname);
 
+  // Handle localhost subdomains (admin.localhost, portal.localhost)
   if (host === "localhost" || host.endsWith(".localhost")) {
     const parts = host.split(".");
     return parts.length > 1 ? (parts[0] as AppHost) : "main";
   }
 
+  // Handle Vercel subdomains (admin.project-name.vercel.app)
   if (host.endsWith(".vercel.app")) {
     const parts = host.split(".");
-    if (parts.length > 3) {
-      return parts[0] as AppHost;
+    // If we have more than 3 parts (e.g., admin.tagadmin-chi.vercel.app), first part is subdomain
+    if (parts.length >= 4) {
+      const subdomain = parts[0];
+      if (subdomain === "admin" || subdomain === "portal") {
+        return subdomain as AppHost;
+      }
     }
     return "main";
   }
 
+  // Handle custom domains (admin.yourdomain.com)
   const parts = host.split(".");
-  return parts.length >= 3 ? (parts[0] as AppHost) : "main";
+  if (parts.length >= 3) {
+    const subdomain = parts[0];
+    if (subdomain === "admin" || subdomain === "portal") {
+      return subdomain as AppHost;
+    }
+  }
+
+  return "main";
 }
 
 export function buildAppUrl(
@@ -35,13 +49,21 @@ export function buildAppUrl(
   const url = new URL(requestUrl.toString());
 
   let baseHost = host;
+  
+  // Handle localhost
   if (host === "localhost" || host.endsWith(".localhost")) {
     baseHost = "localhost";
-  } else if (host.endsWith(".vercel.app")) {
+  } 
+  // Handle Vercel domains
+  else if (host.endsWith(".vercel.app")) {
     const parts = host.split(".");
+    // Extract base domain (e.g., tagadmin-chi.vercel.app from admin.tagadmin-chi.vercel.app)
     baseHost = parts.slice(-3).join(".");
-  } else {
+  } 
+  // Handle custom domains
+  else {
     const parts = host.split(".");
+    // If we have admin.yourdomain.com, extract yourdomain.com
     baseHost = parts.length >= 3 ? parts.slice(1).join(".") : host;
   }
 

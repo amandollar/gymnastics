@@ -119,13 +119,16 @@ export const authConfig = {
       return session;
     },
     async redirect({ url, baseUrl }) {
+      // If it's a relative path, append to baseUrl
       if (url.startsWith("/")) {
         return `${baseUrl}${url}`;
       }
+
       try {
         const parsedUrl = new URL(url);
         const parsedBase = new URL(baseUrl);
-        
+
+        // Allow redirects within the same root domain (including subdomains)
         const getRootDomain = (hostname: string) => {
           if (hostname === "localhost" || hostname.endsWith(".localhost")) {
             return "localhost";
@@ -137,13 +140,20 @@ export const authConfig = {
           return parts.length >= 3 ? parts.slice(1).join(".") : hostname;
         };
 
-        if (getRootDomain(parsedUrl.hostname) === getRootDomain(parsedBase.hostname)) {
+        const urlRoot = getRootDomain(parsedUrl.hostname);
+        const baseRoot = getRootDomain(parsedBase.hostname);
+
+        // If same root domain, allow the redirect (preserves subdomain)
+        if (urlRoot === baseRoot) {
           return url;
         }
+
+        // If different domain, redirect to baseUrl (stay on current subdomain)
+        return baseUrl;
       } catch (e) {
         console.error("Error in NextAuth redirect callback:", e);
+        return baseUrl;
       }
-      return baseUrl;
     },
   },
   providers: [],
