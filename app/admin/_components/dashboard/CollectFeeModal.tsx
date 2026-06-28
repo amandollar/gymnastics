@@ -2,11 +2,14 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { X, Check, Search, ArrowLeft } from "lucide-react";
-import { searchStudentsWithDuesAction, collectFeeAction } from "@/lib/actions/payments";
+import { searchStudentsWithDuesAction, collectFeeAction, getPaymentByIdAction } from "@/lib/actions/payments";
 import WhatsAppModal from "@/app/admin/_components/common/WhatsAppModal";
-import { buildFeeReminderMessage } from "@/lib/utils/whatsapp-templates";
+import { buildFeeReminderMessage, buildPaymentReceivedMessage } from "@/lib/utils/whatsapp-templates";
+import { uploadMediaToWhatsAppAction, sendWhatsAppMessageAction } from "@/lib/actions/whatsapp";
+import { FeeReceipt } from "@/app/admin/_components/students/studentProfile/FeeReceipt";
 import Image from "next/image";
 import Link from "next/link";
+import { useRef } from "react";
 
 interface CollectFeeModalProps {
   isOpen: boolean;
@@ -36,6 +39,9 @@ export default function CollectFeeModal({
   const [feeSearching, setFeeSearching] = useState(false);
   const [feeSubmitting, setFeeSubmitting] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>("DUE_DESC");
+  const [feePaymentData, setFeePaymentData] = useState<Awaited<ReturnType<typeof getPaymentByIdAction>> | null>(null);
+  const [sendingReceipt, setSendingReceipt] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
 
   // WhatsApp states
   const [waModal, setWaModal] = useState<{ open: boolean; message: string; title: string; templateName?: string; studentId?: string; contactNumber?: string }>({
@@ -43,18 +49,34 @@ export default function CollectFeeModal({
     message: "",
     title: "Send WhatsApp Message",
   });
+  const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  const showToast = (type: "success" | "error", message: string) => {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   // Preload students with outstanding dues on mount
   useEffect(() => {
-    setFeeSearching(true);
-    searchStudentsWithDuesAction("")
-      .then((res) => {
-        setAllFeeStudents(res);
-      })
-      .finally(() => {
-        setFeeSearching(false);
-      });
-  }, []);
+    if (isOpen) {
+      setFeeSearching(true);
+      searchStudentsWithDuesAction("")
+        .then((res) => {
+          setAllFeeStudents(res);
+        })
+        .finally(() => {
+          setFeeSearching(false);
+        });
+    } else {
+      setTimeout(() => {
+        setFeeSelectedStudent(null);
+        setFeeSuccess(false);
+        setFeeAmount("");
+        setFeePaymentData(null);
+        setFeeLastPaymentId(null);
+      }, 300);
+    }
+  }, [isOpen]);
 
   // Filter & Sort students
   const filteredAndSortedStudents = useMemo(() => {
@@ -111,11 +133,90 @@ export default function CollectFeeModal({
     setFeeAmount(student.outstanding.toString());
   };
 
+  const handleSendReceipt = async () => {
+    if (!feeSelectedStudent || !feePaymentData || !printRef.current) return;
+    setSendingReceipt(true);
+    
+    try {
+      const html2canvas = (await import("html2canvas-pro")).default;
+      const canvas = await html2canvas(printRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff",
+      });
+
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.75);
+
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      doc.addImage(dataUrl, "JPEG", 0, 0, 210, 297);
+      const pdfDataUri = doc.output("datauristring");
+      const rawBase64 = pdfDataUri.substring(pdfDataUri.indexOf(",") + 1);
+      const pdfDataUrl = `data:application/pdf;base64,${rawBase64}`;
+
+      const rollNumber = `TAG${String(feeSelectedStudent.studentNumber).padStart(3, "0")}`;
+      const filename = `Receipt_${rollNumber}.pdf`;
+
+      const uploadRes = await uploadMediaToWhatsAppAction(pdfDataUrl, filename);
+      if (!uploadRes.success || !uploadRes.id) {
+        throw new Error(uploadRes.message || "Failed to upload receipt PDF");
+      }
+
+      const msg = buildPaymentReceivedMessage({
+        student: feeSelectedStudent,
+        payment: {
+          amountPaid: Number(feeAmount),
+          method: feeMethod,
+          date: new Date(),
+          newOutstanding: feeSelectedStudent.outstanding - Number(feeAmount),
+        },
+        template: academyProfile?.templatePaymentReceived,
+      });
+
+      const res = await sendWhatsAppMessageAction({
+        to: feeSelectedStudent.contactNumber,
+        type: "document",
+        caption: msg,
+        mediaId: uploadRes.id,
+        filename,
+        studentId: feeSelectedStudent.id,
+        templateName: "Payment Received",
+      });
+
+      if (res.success) {
+        onClose();
+        showToast("success", "Receipt sent successfully via WhatsApp!");
+      } else {
+        throw new Error(res.message || "Failed to send message");
+      }
+    } catch (err: any) {
+      showToast("error", err.message || "An error occurred while sending the receipt");
+    } finally {
+      setSendingReceipt(false);
+    }
+  };
+
   return (
     <>
 
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-        <div className={`relative w-full ${feeSuccess || feeSelectedStudent ? "max-w-lg" : "max-w-4xl"} rounded-2xl bg-white dark:bg-zinc-900 border-0 shadow-2xl p-6 overflow-hidden flex flex-col max-h-[90vh] transition-all duration-300`}>
+      <div
+        className={`fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs transition-all duration-300 ease-in-out ${
+          isOpen ? "opacity-100 pointer-events-auto visible" : "opacity-0 pointer-events-none invisible"
+        }`}
+      >
+        <div className="absolute inset-0" onClick={onClose} />
+        <div 
+          className={`relative z-10 w-full ${feeSuccess || feeSelectedStudent ? "max-w-lg" : "max-w-4xl"} rounded-2xl bg-white dark:bg-zinc-900 border-0 shadow-2xl p-6 overflow-hidden flex flex-col max-h-[90vh] transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            isOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-4"
+          }`}
+          onClick={(e) => e.stopPropagation()}
+        >
           
           {/* Modal Header */}
           <div className="flex items-center justify-between mb-4 shrink-0">
@@ -173,11 +274,11 @@ export default function CollectFeeModal({
                 </div>
               </div>
 
-              <div className="mt-6 flex gap-3 w-full">
+              <div className="mt-6 flex flex-wrap sm:flex-nowrap gap-3 w-full">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer text-center"
+                  className="w-full sm:flex-1 px-4 py-2.5 rounded-xl text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer text-center order-3 sm:order-1"
                 >
                   Close
                 </button>
@@ -189,9 +290,24 @@ export default function CollectFeeModal({
                       onClose();
                     }
                   }}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-xs font-bold bg-brand-orange-500 text-white hover:bg-brand-orange-600 transition-colors cursor-pointer text-center"
+                  className="w-full sm:flex-1 px-4 py-2.5 rounded-xl text-xs font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors cursor-pointer text-center order-2"
                 >
                   Print Receipt
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSendReceipt}
+                  disabled={sendingReceipt}
+                  className="w-full sm:flex-1 px-4 py-2.5 rounded-xl text-xs font-bold bg-brand-orange-500 text-white hover:bg-brand-orange-600 transition-colors cursor-pointer text-center flex items-center justify-center gap-2 order-1 sm:order-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {sendingReceipt ? (
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0"></div>
+                  ) : (
+                    <svg className="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12.016 2a10 10 0 0 0-8.77 14.77l-1.45 5.31 5.43-1.42A10 10 0 1 0 12.016 2zm0 18.18a8.18 8.18 0 0 1-4.23-1.16l-.3-.18-3.1.81.82-3.01-.19-.31a8.18 8.18 0 1 1 7 3.85zm4.49-5.96c-.25-.12-1.46-.72-1.69-.8-.22-.08-.39-.12-.55.12-.16.24-.62.8-.76.96-.14.16-.28.18-.53.06-.25-.12-1.07-.39-2.03-1.25-.75-.67-1.25-1.5-1.4-1.74-.15-.24-.01-.37.11-.49.11-.11.25-.28.37-.42.12-.14.16-.24.24-.4.08-.16.04-.31-.02-.44-.06-.13-.55-1.32-.75-1.81-.2-.48-.4-.41-.55-.42-.14-.01-.3-.01-.46-.01s-.42.06-.64.29c-.22.23-.85.83-.85 2.03s.87 2.35 1 2.51c.12.16 1.7 2.6 4.12 3.64.57.24 1.02.39 1.37.5.58.18 1.11.16 1.53.1.47-.07 1.45-.59 1.65-1.16.2-.57.2-1.06.14-1.16-.06-.1-.23-.16-.48-.28z" />
+                    </svg>
+                  )}
+                  {sendingReceipt ? "Sending..." : "Send Receipt"}
                 </button>
               </div>
             </div>
@@ -212,13 +328,15 @@ export default function CollectFeeModal({
                   try {
                     const res = await collectFeeAction(null, formData);
                     if (res.success && res.paymentId) {
+                      const pData = await getPaymentByIdAction(res.paymentId);
+                      setFeePaymentData(pData);
                       setFeeLastPaymentId(res.paymentId);
                       setFeeSuccess(true);
                     } else {
-                      alert(res.message || "Failed to record payment");
+                      showToast("error", res.message || "Failed to record payment");
                     }
                   } catch (err) {
-                    alert("An error occurred while recording payment.");
+                    showToast("error", "An error occurred while recording payment.");
                   } finally {
                     setFeeSubmitting(false);
                   }
@@ -476,6 +594,27 @@ export default function CollectFeeModal({
         studentId={waModal.studentId}
         templateName={waModal.templateName}
       />
+
+      {/* Hidden Receipt for PDF Generation */}
+      {feeSuccess && feePaymentData && (
+        <div style={{ position: "absolute", top: "-9999px", left: "-9999px" }}>
+          <div ref={printRef} style={{ width: "210mm", height: "297mm", backgroundColor: "#fff" }}>
+            <FeeReceipt data={feePaymentData} academyProfile={academyProfile} />
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div
+          className={`fixed bottom-4 right-4 z-[9999] rounded-2xl border px-4 py-3.5 text-xs font-semibold shadow-lg max-w-sm transition-all duration-300 animate-fade-in ${
+            toast.type === "success"
+              ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200/60 dark:border-emerald-900/30"
+              : "bg-rose-50 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border-rose-200/60 dark:border-rose-900/30"
+          }`}
+        >
+          {toast.message}
+        </div>
+      )}
     </>
   );
 }

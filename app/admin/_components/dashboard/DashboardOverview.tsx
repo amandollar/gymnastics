@@ -929,14 +929,12 @@ export default function DashboardOverview({
       )}
 
       {/* Collect Student Fee Modal */}
-      {feeOpen && (
-        <CollectFeeModal
-          isOpen={feeOpen}
-          onClose={() => setFeeOpen(false)}
-          handlePrint={handlePrint}
-          academyProfile={academyProfile}
-        />
-      )}
+      <CollectFeeModal
+        isOpen={feeOpen}
+        onClose={() => setFeeOpen(false)}
+        handlePrint={handlePrint}
+        academyProfile={academyProfile}
+      />
 
       {/* Add Enquiry Popup Modal */}
       {addEnquiryOpen && (

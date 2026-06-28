@@ -255,6 +255,8 @@ model AcademyProfile {
   templateGrace      String?
   /// WhatsApp template for fee-due reminders. Supports {{variables}}.
   templateFeeReminder String?
+  /// WhatsApp template for payment received confirmation. Supports {{variables}}.
+  templatePaymentReceived String?
   /// WhatsApp template for inactive/expired re-engagement. Supports {{variables}}.
   templateInactive   String?
   /// WhatsApp template for inactive/expired re-engagement when all sessions are complete.

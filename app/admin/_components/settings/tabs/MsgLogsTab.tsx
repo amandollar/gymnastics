@@ -107,8 +107,13 @@ export default function MsgLogsTab() {
                           <Image src={log.student.avatarUrl} alt={log.student.name} fill className="object-cover" />
                         </div>
                       ) : (
-                        <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-zinc-200 dark:border-zinc-700">
-                          <span className="text-xs font-semibold text-zinc-500">{log.student.name.charAt(0)}</span>
+                        <div className="relative w-8 h-8 rounded-full overflow-hidden shrink-0 border border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800">
+                          <Image 
+                            src={(log.student as any).gender === "FEMALE" ? "/icons/women.webp" : "/icons/man.webp"} 
+                            alt={log.student.name} 
+                            fill 
+                            className="object-cover opacity-80" 
+                          />
                         </div>
                       )}
                       <div>

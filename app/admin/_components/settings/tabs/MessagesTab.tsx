@@ -44,6 +44,9 @@ const SAMPLE_VALUES: Required<TemplateVars> = {
   graceDeadline: "14 Jul 2026",
   daysLeft: "7",
   fee: "₹12,000",
+  amountPaid: "₹6,000",
+  paymentMethod: "UPI",
+  transactionDate: "28/6/2026",
   outstanding: "₹6,000",
   portalLink: "tag.app/portal",
   loginId: "TAG001",
@@ -84,6 +87,14 @@ const VARS_BY_TEMPLATE: Record<string, (keyof TemplateVars)[]> = {
     "loginId",
     "password",
     "portalLink",
+  ],
+  templatePaymentReceived: [
+    "studentName",
+    "parentName",
+    "amountPaid",
+    "paymentMethod",
+    "transactionDate",
+    "outstanding",
   ],
 };
 
@@ -318,6 +329,9 @@ export default function MessagesTab({
   const [admissionWelcome, setAdmissionWelcome] = useState(
     (initialProfile as any).templateAdmissionWelcome ?? "",
   );
+  const [paymentReceived, setPaymentReceived] = useState(
+    (initialProfile as any).templatePaymentReceived ?? "",
+  );
 
   const [editingTemplate, setEditingTemplate] = useState<{
     id: string;
@@ -355,6 +369,8 @@ export default function MessagesTab({
         cardId === "templateEnquiryFollowUp" ? updatedValue : enquiryFollowUp,
       templateAdmissionWelcome:
         cardId === "templateAdmissionWelcome" ? updatedValue : admissionWelcome,
+      templatePaymentReceived:
+        cardId === "templatePaymentReceived" ? updatedValue : paymentReceived,
     };
 
     const res = await saveMessageTemplatesAction(payload);
@@ -372,8 +388,10 @@ export default function MessagesTab({
         setEnquiryFollowUp(updatedValue);
       else if (cardId === "templateAdmissionWelcome")
         setAdmissionWelcome(updatedValue);
+      else if (cardId === "templatePaymentReceived")
+        setPaymentReceived(updatedValue);
 
-      setResult({ success: true, message: "Template saved successfully!" });
+      setResult({ success: true, message: "Template updated successfully!" });
       setSavingId(null);
       setTimeout(() => setResult(null), 3000);
       return true;
@@ -469,6 +487,20 @@ export default function MessagesTab({
               value: feeReminder,
               defaultValue: DEFAULT_TEMPLATES.templateFeeReminder,
               availableVarKeys: VARS_BY_TEMPLATE.templateFeeReminder,
+            })
+          }
+        />
+        <TemplateCard
+          title="Payment Received"
+          value={paymentReceived}
+          defaultValue={(DEFAULT_TEMPLATES as any).templatePaymentReceived}
+          onClick={() =>
+            setEditingTemplate({
+              id: "templatePaymentReceived",
+              title: "Payment Received",
+              value: paymentReceived,
+              defaultValue: (DEFAULT_TEMPLATES as any).templatePaymentReceived,
+              availableVarKeys: VARS_BY_TEMPLATE.templatePaymentReceived,
             })
           }
         />

@@ -60,21 +60,24 @@ export async function saveMessageTemplatesAction(data: {
   templateLoginCredentials: string;
   templateEnquiryFollowUp: string;
   templateAdmissionWelcome: string;
+  templatePaymentReceived: string;
 }): Promise<ActionResult> {
   try {
     await assertCanManageSettings();
     const profile = await getAcademyProfile();
+    const updateData = {
+      templateGrace: data.templateGrace.trim() || null,
+      templateFeeReminder: data.templateFeeReminder.trim() || null,
+      templateInactive: data.templateInactive.trim() || null,
+      templateInactiveSessionComplete: data.templateAllSessionsCompleted.trim() || null,
+      templateLoginCredentials: data.templateLoginCredentials.trim() || null,
+      templateEnquiryFollowUp: data.templateEnquiryFollowUp.trim() || null,
+      templateAdmissionWelcome: data.templateAdmissionWelcome.trim() || null,
+      templatePaymentReceived: data.templatePaymentReceived.trim() || null,
+    };
     await prisma.academyProfile.update({
       where: { id: profile.id },
-      data: {
-        templateGrace: data.templateGrace.trim() || null,
-        templateFeeReminder: data.templateFeeReminder.trim() || null,
-        templateInactive: data.templateInactive.trim() || null,
-        templateAllSessionsCompleted: data.templateAllSessionsCompleted.trim() || null,
-        templateLoginCredentials: data.templateLoginCredentials.trim() || null,
-        templateEnquiryFollowUp: data.templateEnquiryFollowUp.trim() || null,
-        templateAdmissionWelcome: data.templateAdmissionWelcome.trim() || null,
-      },
+      data: updateData,
     });
     revalidatePath("/admin/settings");
     updateTag("academy");
@@ -98,10 +101,11 @@ export async function getAcademyTemplatesAction() {
         templateGrace: profile.templateGrace,
         templateFeeReminder: profile.templateFeeReminder,
         templateInactive: profile.templateInactive,
-        templateAllSessionsCompleted: profile.templateAllSessionsCompleted,
+        templateAllSessionsCompleted: profile.templateInactiveSessionComplete,
         templateLoginCredentials: (profile as any).templateLoginCredentials as string | null,
         templateEnquiryFollowUp: (profile as any).templateEnquiryFollowUp as string | null,
         templateAdmissionWelcome: (profile as any).templateAdmissionWelcome as string | null,
+        templatePaymentReceived: (profile as any).templatePaymentReceived as string | null,
       },
     };
   } catch (e) {
@@ -123,13 +127,14 @@ export async function saveAutomationSettingsAction(data: {
   try {
     await assertCanManageSettings();
     const profile = await getAcademyProfile();
+    const updateData = {
+      autoSendGrace: data.autoSendGrace,
+      autoSendInactive: data.autoSendInactive,
+      autoSendAllSessionsCompleted: data.autoSendAllSessionsCompleted,
+    };
     await prisma.academyProfile.update({
       where: { id: profile.id },
-      data: {
-        autoSendGrace: data.autoSendGrace,
-        autoSendInactive: data.autoSendInactive,
-        autoSendAllSessionsCompleted: data.autoSendAllSessionsCompleted,
-      },
+      data: updateData,
     });
     revalidatePath("/admin/settings");
     updateTag("academy");
@@ -154,12 +159,14 @@ export async function getMessageLogsAction() {
             name: true,
             studentNumber: true,
             avatarUrl: true,
+            gender: true,
           }
         },
         enquiry: {
           select: {
             childName: true,
             enquiryNumber: true,
+            gender: true,
           }
         }
       }
@@ -174,14 +181,17 @@ export async function getMessageLogsAction() {
         name: log.student.name,
         studentNumber: log.student.studentNumber,
         avatarUrl: log.student.avatarUrl,
+        gender: log.student.gender,
       } : log.enquiry ? {
         name: log.enquiry.childName + " (Enquiry)",
         studentNumber: log.enquiry.enquiryNumber,
         avatarUrl: null,
+        gender: log.enquiry.gender,
       } : {
         name: "Unknown",
         studentNumber: 0,
         avatarUrl: null,
+        gender: "MALE",
       }
     }));
 

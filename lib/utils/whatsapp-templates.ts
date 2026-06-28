@@ -21,6 +21,9 @@ export type TemplateVars = Partial<{
   graceDeadline: string;
   daysLeft: string;
   fee: string;
+  amountPaid: string;
+  paymentMethod: string;
+  transactionDate: string;
   outstanding: string;
   portalLink: string;
   loginId: string;
@@ -36,7 +39,10 @@ export const ALL_VARIABLES: { key: keyof TemplateVars; label: string; example: s
   { key: "graceDeadline", label: "Grace Deadline",  example: "14 Jul 2026" },
   { key: "daysLeft",      label: "Days Left",       example: "7" },
   { key: "fee",           label: "Total Fee",       example: "₹12,000" },
-  { key: "outstanding",   label: "Outstanding",     example: "₹6,000" },
+  { key: "amountPaid",    label: "Amount Paid",     example: "₹6,000" },
+  { key: "paymentMethod", label: "Payment Method",  example: "UPI" },
+  { key: "transactionDate", label: "Transaction Date", example: "28/6/2026" },
+  { key: "outstanding",   label: "Outstanding",     example: "₹0" },
   { key: "portalLink",    label: "Portal Link",     example: "https://tag.app/portal/login" },
   { key: "loginId",       label: "Login ID",        example: "TAG001" },
   { key: "password",      label: "Password",        example: "123456" },
@@ -47,6 +53,7 @@ export const ALL_VARIABLES: { key: keyof TemplateVars; label: string; example: s
 export const DEFAULT_TEMPLATES = {
   templateGrace: `Hello {{parentName}},\n\n{{studentName}}’s training plan has reached its validity date, with {{remainingSessions}} session(s) still remaining.\n\nAs a courtesy, the academy has provided a grace period to allow completion of these remaining sessions. We kindly request you to utilize them within this period.\n\nTo view their details and progress, please visit the parent portal at:\n{{portalLink}}\n\nThank you for being part of our gymnastics family.\n\nTeam \nThe Academy Of Gymnastics`,
   templateFeeReminder: `Hello {{parentName}},\n\nThis is a gentle reminder that an outstanding fee of {{outstanding}} is due for {{studentName}}'s training plan.\n\nWe kindly request you to arrange the payment at your earliest convenience to ensure uninterrupted access to the sessions.\n\nThank you for being part of our gymnastics family.\n\nTeam\nThe Academy Of Gymnastics`,
+  templatePaymentReceived: `Hello {{parentName}},\n\nWe have successfully received a payment of {{amountPaid}} for {{studentName}}'s training plan via {{paymentMethod}} on {{transactionDate}}.\n\nYour updated outstanding balance is {{outstanding}}.\n\nYou will find the payment receipt attached to this message.\n\nThank you for being part of our gymnastics family.\n\nTeam\nThe Academy Of Gymnastics`,
   templateInactive: `Hello {{parentName}},\n\n{{studentName}}’s membership plan is no longer active.\n\nTo maintain continuity in training and continued skill development, we encourage you to renew the membership plan at your convenience.\n\nOur team will be happy to assist you with the renewal process.\n\nThank you for being part of our gymnastic family.\n\nTeam\nThe Academy Of Gymnastics\nTeam [Academy Name]`,
   templateLoginCredentials: `Hello {{parentName}},\n\nHere are the parent portal login credentials for {{studentName}}:\nLogin ID: {{loginId}}\nPassword: {{password}}\n\nWebsite: {{portalLink}}`,
   templateAdmissionWelcome: `Hello {{parentName}},\n\nWelcome to The Academy of Gymnastics! 🤸\n\nWe are excited to have {{studentName}} join our gymnastics family.\n\nHere are your Parent Portal login credentials to view progress, attendance, and fees:\nLogin ID: {{loginId}}\nTemporary Password: {{password}}\n\nParent Portal: {{portalLink}}\n\nPlease log in and change your temporary password to secure your account.\n\nBest regards,\nTeam TAG Academy`,
@@ -107,6 +114,38 @@ export function buildFeeReminderMessage({
     fee: formatINR(plan.fee),
     outstanding: formatINR(outstanding),
     planType: plan.planType === "ONE_TO_ONE" ? "Personal training" : "Group class",
+    portalLink: typeof window !== "undefined" ? `${window.location.origin}/portal/login` : "",
+  });
+}
+
+export function buildPaymentReceivedMessage({
+  student,
+  payment,
+  template,
+}: {
+  student: { name: string; parentName: string; contactNumber: string };
+  payment: { amountPaid: number; method: string; date: Date; newOutstanding: number };
+  template?: string | null;
+}): string {
+  const effectiveTemplate = getEffectiveTemplate(template, "templatePaymentReceived");
+  
+  const formatINR = (val: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(val);
+  };
+
+  return resolveTemplate(effectiveTemplate, {
+    studentName: student.name,
+    parentName: student.parentName,
+    phone: student.contactNumber,
+    amountPaid: formatINR(payment.amountPaid),
+    paymentMethod: payment.method === "BANK_TRANSFER" ? "Bank Transfer" : payment.method,
+    transactionDate: new Date(payment.date).toLocaleDateString("en-IN"),
+    outstanding: formatINR(payment.newOutstanding),
     portalLink: typeof window !== "undefined" ? `${window.location.origin}/portal/login` : "",
   });
 }
