@@ -146,6 +146,9 @@ export interface StudentWithDues {
   paidAmount: number;
   outstanding: number;
   planMonths: number | null;
+  avatarUrl: string | null;
+  gender: string | null;
+  planStartDate: Date;
 }
 
 export async function getStudentsWithDues(): Promise<StudentWithDues[]> {
@@ -164,8 +167,11 @@ export async function getStudentsWithDues(): Promise<StudentWithDues[]> {
           name: true,
           parentName: true,
           contactNumber: true,
+          avatarUrl: true,
+          gender: true,
         },
       },
+      startDate: true,
       payments: {
         select: { amount: true },
       },
@@ -195,6 +201,9 @@ export async function getStudentsWithDues(): Promise<StudentWithDues[]> {
         paidAmount,
         outstanding,
         planMonths: plan.planMonths,
+        avatarUrl: plan.student.avatarUrl,
+        gender: plan.student.gender,
+        planStartDate: plan.startDate,
       });
     }
   }

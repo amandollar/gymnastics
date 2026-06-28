@@ -963,6 +963,8 @@ export default function EnquiryListClient({
         contactNumber={followUpEnquiry?.contactNumber || ""}
         defaultMessageText={messageText}
         title="Follow up with WhatsApp"
+        enquiryId={followUpEnquiry?.id}
+        templateName="Enquiry Follow-up"
       />
 
       {/* Add Enquiry Popup Modal */}

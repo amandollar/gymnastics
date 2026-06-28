@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Copy, Check, ShieldAlert, Key, RefreshCw, MessageCircle, Sparkles, Lock, User } from "lucide-react";
+import { X, Copy, Check, ShieldAlert, Key, RefreshCw, MessageCircle, Sparkles, Lock, User, Loader2 } from "lucide-react";
 import { generateStudentCredentialsAction } from "@/lib/actions/students";
 import { getAcademyTemplatesAction } from "@/lib/actions/academy";
 import { resolveTemplate, getEffectiveTemplate } from "@/lib/utils/whatsapp-templates";
 import { getPortalBaseUrl } from "@/lib/utils/portal-url";
+import { sendWhatsAppMessageAction } from "@/lib/actions/whatsapp";
 
 interface StudentCredentialsModalProps {
   isOpen: boolean;
@@ -32,6 +33,8 @@ export default function StudentCredentialsModal({
   const [copiedPass, setCopiedPass] = useState(false);
   const [copiedBoth, setCopiedBoth] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
+  const [directSendSuccess, setDirectSendSuccess] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [hasPassword, setHasPassword] = useState(initialHasPassword);
   const [isTemp, setIsTemp] = useState(initialIsTemp);
@@ -129,10 +132,34 @@ export default function StudentCredentialsModal({
     }
   };
 
-  const handleWhatsAppShare = () => {
+  const handleWhatsAppShare = async () => {
     if (!whatsappMessageText || !whatsappNumber) return;
-    const encodedMessage = encodeURIComponent(whatsappMessageText);
-    window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, "_blank", "noopener,noreferrer");
+
+    setIsSendingWhatsApp(true);
+    setError(null);
+    try {
+      const res = await sendWhatsAppMessageAction({
+        to: whatsappNumber,
+        type: "text",
+        text: whatsappMessageText,
+        studentId: studentId,
+        templateName: "Login Credentials",
+      });
+
+      if (res.success) {
+        setDirectSendSuccess(true);
+        setTimeout(() => setDirectSendSuccess(false), 3500);
+      } else {
+        throw new Error(res.message || "Failed to send directly");
+      }
+    } catch (err) {
+      console.warn("Direct WhatsApp sending failed, falling back to Web redirect:", err);
+      // Fallback
+      const encodedMessage = encodeURIComponent(whatsappMessageText);
+      window.open(`https://wa.me/${whatsappNumber}?text=${encodedMessage}`, "_blank", "noopener,noreferrer");
+    } finally {
+      setIsSendingWhatsApp(false);
+    }
   };
 
   const statusConfig = !hasPassword
@@ -270,13 +297,24 @@ export default function StudentCredentialsModal({
                   {whatsappNumber && (
                     <button
                       type="button"
+                      disabled={isSendingWhatsApp}
                       onClick={handleWhatsAppShare}
-                      className="flex-1 flex items-center justify-center gap-1.5 rounded-2xl bg-brand-orange-500 hover:bg-brand-orange-600 active:scale-95 text-xs font-semibold text-white py-2.5 transition-all shadow-sm shadow-brand-orange-500/20 cursor-pointer border-0"
+                      className={`flex-1 flex items-center justify-center gap-1.5 rounded-2xl text-xs font-semibold py-2.5 transition-all shadow-sm border-0 cursor-pointer ${
+                        directSendSuccess
+                          ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20"
+                          : "bg-brand-orange-500 hover:bg-brand-orange-600 text-white shadow-brand-orange-500/20"
+                      }`}
                     >
-                      <svg className="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12.016 2a10 10 0 0 0-8.77 14.77l-1.45 5.31 5.43-1.42A10 10 0 1 0 12.016 2zm0 18.18a8.18 8.18 0 0 1-4.23-1.16l-.3-.18-3.1.81.82-3.01-.19-.31a8.18 8.18 0 1 1 7 3.85zm4.49-5.96c-.25-.12-1.46-.72-1.69-.8-.22-.08-.39-.12-.55.12-.16.24-.62.8-.76.96-.14.16-.28.18-.53.06-.25-.12-1.07-.39-2.03-1.25-.75-.67-1.25-1.5-1.4-1.74-.15-.24-.01-.37.11-.49.11-.11.25-.28.37-.42.12-.14.16-.24.24-.4.08-.16.04-.31-.02-.44-.06-.13-.55-1.32-.75-1.81-.2-.48-.4-.41-.55-.42-.14-.01-.3-.01-.46-.01s-.42.06-.64.29c-.22.23-.85.83-.85 2.03s.87 2.35 1 2.51c.12.16 1.7 2.6 4.12 3.64.57.24 1.02.39 1.37.5.58.18 1.11.16 1.53.1.47-.07 1.45-.59 1.65-1.16.2-.57.2-1.06.14-1.16-.06-.1-.23-.16-.48-.28z" />
-                      </svg>
-                      <span>WhatsApp</span>
+                      {isSendingWhatsApp ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
+                      ) : directSendSuccess ? (
+                        <Check className="w-3.5 h-3.5 shrink-0" />
+                      ) : (
+                        <svg className="w-3.5 h-3.5 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12.016 2a10 10 0 0 0-8.77 14.77l-1.45 5.31 5.43-1.42A10 10 0 1 0 12.016 2zm0 18.18a8.18 8.18 0 0 1-4.23-1.16l-.3-.18-3.1.81.82-3.01-.19-.31a8.18 8.18 0 1 1 7 3.85zm4.49-5.96c-.25-.12-1.46-.72-1.69-.8-.22-.08-.39-.12-.55.12-.16.24-.62.8-.76.96-.14.16-.28.18-.53.06-.25-.12-1.07-.39-2.03-1.25-.75-.67-1.25-1.5-1.4-1.74-.15-.24-.01-.37.11-.49.11-.11.25-.28.37-.42.12-.14.16-.24.24-.4.08-.16.04-.31-.02-.44-.06-.13-.55-1.32-.75-1.81-.2-.48-.4-.41-.55-.42-.14-.01-.3-.01-.46-.01s-.42.06-.64.29c-.22.23-.85.83-.85 2.03s.87 2.35 1 2.51c.12.16 1.7 2.6 4.12 3.64.57.24 1.02.39 1.37.5.58.18 1.11.16 1.53.1.47-.07 1.45-.59 1.65-1.16.2-.57.2-1.06.14-1.16-.06-.1-.23-.16-.48-.28z" />
+                        </svg>
+                      )}
+                      <span>{isSendingWhatsApp ? "Sending..." : directSendSuccess ? "Sent!" : "WhatsApp"}</span>
                     </button>
                   )}
                 </div>

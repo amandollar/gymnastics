@@ -44,6 +44,9 @@ const SAMPLE_VALUES: Required<TemplateVars> = {
   graceDeadline: "14 Jul 2026",
   daysLeft: "7",
   fee: "₹12,000",
+  amountPaid: "₹6,000",
+  paymentMethod: "UPI",
+  transactionDate: "28/6/2026",
   outstanding: "₹6,000",
   portalLink: "tag.app/portal",
   loginId: "TAG001",
@@ -78,6 +81,21 @@ const VARS_BY_TEMPLATE: Record<string, (keyof TemplateVars)[]> = {
     "portalLink",
   ],
   templateEnquiryFollowUp: ["studentName", "parentName", "planType"],
+  templateAdmissionWelcome: [
+    "studentName",
+    "parentName",
+    "loginId",
+    "password",
+    "portalLink",
+  ],
+  templatePaymentReceived: [
+    "studentName",
+    "parentName",
+    "amountPaid",
+    "paymentMethod",
+    "transactionDate",
+    "outstanding",
+  ],
 };
 
 // ── Render message with highlighted variables ─────────────────────────────────
@@ -300,13 +318,19 @@ export default function MessagesTab({
     initialProfile.templateInactive ?? "",
   );
   const [inactiveSessionComplete, setInactiveSessionComplete] = useState(
-    (initialProfile as any).templateInactiveSessionComplete ?? "",
+    (initialProfile as any).templateAllSessionsCompleted ?? "",
   );
   const [loginCredentials, setLoginCredentials] = useState(
     (initialProfile as any).templateLoginCredentials ?? "",
   );
   const [enquiryFollowUp, setEnquiryFollowUp] = useState(
     (initialProfile as any).templateEnquiryFollowUp ?? "",
+  );
+  const [admissionWelcome, setAdmissionWelcome] = useState(
+    (initialProfile as any).templateAdmissionWelcome ?? "",
+  );
+  const [paymentReceived, setPaymentReceived] = useState(
+    (initialProfile as any).templatePaymentReceived ?? "",
   );
 
   const [editingTemplate, setEditingTemplate] = useState<{
@@ -335,29 +359,39 @@ export default function MessagesTab({
       templateFeeReminder:
         cardId === "templateFeeReminder" ? updatedValue : feeReminder,
       templateInactive: cardId === "templateInactive" ? updatedValue : inactive,
-      templateInactiveSessionComplete:
-        cardId === "templateInactiveSessionComplete"
+      templateAllSessionsCompleted:
+        cardId === "templateAllSessionsCompleted"
           ? updatedValue
           : inactiveSessionComplete,
       templateLoginCredentials:
         cardId === "templateLoginCredentials" ? updatedValue : loginCredentials,
       templateEnquiryFollowUp:
         cardId === "templateEnquiryFollowUp" ? updatedValue : enquiryFollowUp,
+      templateAdmissionWelcome:
+        cardId === "templateAdmissionWelcome" ? updatedValue : admissionWelcome,
+      templatePaymentReceived:
+        cardId === "templatePaymentReceived" ? updatedValue : paymentReceived,
     };
 
     const res = await saveMessageTemplatesAction(payload);
     if (res.success) {
       if (cardId === "templateGrace") setGrace(updatedValue);
       else if (cardId === "templateFeeReminder") setFeeReminder(updatedValue);
-      else if (cardId === "templateInactive") setInactive(updatedValue);
-      else if (cardId === "templateInactiveSessionComplete")
+      else if (cardId === "templateInactive") {
+        setInactive(updatedValue);
+      }
+      else if (cardId === "templateAllSessionsCompleted")
         setInactiveSessionComplete(updatedValue);
       else if (cardId === "templateLoginCredentials")
         setLoginCredentials(updatedValue);
       else if (cardId === "templateEnquiryFollowUp")
         setEnquiryFollowUp(updatedValue);
+      else if (cardId === "templateAdmissionWelcome")
+        setAdmissionWelcome(updatedValue);
+      else if (cardId === "templatePaymentReceived")
+        setPaymentReceived(updatedValue);
 
-      setResult({ success: true, message: "Template saved successfully!" });
+      setResult({ success: true, message: "Template updated successfully!" });
       setSavingId(null);
       setTimeout(() => setResult(null), 3000);
       return true;
@@ -401,20 +435,6 @@ export default function MessagesTab({
       {/* Template cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <TemplateCard
-          title="Login credential sharing"
-          value={loginCredentials}
-          defaultValue={DEFAULT_TEMPLATES.templateLoginCredentials}
-          onClick={() =>
-            setEditingTemplate({
-              id: "templateLoginCredentials",
-              title: "Login credential sharing",
-              value: loginCredentials,
-              defaultValue: DEFAULT_TEMPLATES.templateLoginCredentials,
-              availableVarKeys: VARS_BY_TEMPLATE.templateLoginCredentials,
-            })
-          }
-        />
-        <TemplateCard
           title="Enquiry Follow-up"
           value={enquiryFollowUp}
           defaultValue={DEFAULT_TEMPLATES.templateEnquiryFollowUp}
@@ -429,16 +449,30 @@ export default function MessagesTab({
           }
         />
         <TemplateCard
-          title="Grace Period Reminder"
-          value={grace}
-          defaultValue={DEFAULT_TEMPLATES.templateGrace}
+          title="Admission welcome message"
+          value={admissionWelcome}
+          defaultValue={DEFAULT_TEMPLATES.templateAdmissionWelcome}
           onClick={() =>
             setEditingTemplate({
-              id: "templateGrace",
-              title: "Grace Period Reminder",
-              value: grace,
-              defaultValue: DEFAULT_TEMPLATES.templateGrace,
-              availableVarKeys: VARS_BY_TEMPLATE.templateGrace,
+              id: "templateAdmissionWelcome",
+              title: "Admission welcome message",
+              value: admissionWelcome,
+              defaultValue: DEFAULT_TEMPLATES.templateAdmissionWelcome,
+              availableVarKeys: VARS_BY_TEMPLATE.templateAdmissionWelcome,
+            })
+          }
+        />
+        <TemplateCard
+          title="Login credential sharing"
+          value={loginCredentials}
+          defaultValue={DEFAULT_TEMPLATES.templateLoginCredentials}
+          onClick={() =>
+            setEditingTemplate({
+              id: "templateLoginCredentials",
+              title: "Login credential sharing",
+              value: loginCredentials,
+              defaultValue: DEFAULT_TEMPLATES.templateLoginCredentials,
+              availableVarKeys: VARS_BY_TEMPLATE.templateLoginCredentials,
             })
           }
         />
@@ -457,31 +491,59 @@ export default function MessagesTab({
           }
         />
         <TemplateCard
-          title="Inactive (session pending)"
+          title="Payment Received"
+          value={paymentReceived}
+          defaultValue={(DEFAULT_TEMPLATES as any).templatePaymentReceived}
+          onClick={() =>
+            setEditingTemplate({
+              id: "templatePaymentReceived",
+              title: "Payment Received",
+              value: paymentReceived,
+              defaultValue: (DEFAULT_TEMPLATES as any).templatePaymentReceived,
+              availableVarKeys: VARS_BY_TEMPLATE.templatePaymentReceived,
+            })
+          }
+        />
+        <TemplateCard
+          title="All Session Completed"
+          value={inactiveSessionComplete}
+          defaultValue={DEFAULT_TEMPLATES.templateAllSessionsCompleted}
+          onClick={() =>
+            setEditingTemplate({
+              id: "templateAllSessionsCompleted",
+              title: "All Session Completed",
+              value: inactiveSessionComplete,
+              defaultValue: DEFAULT_TEMPLATES.templateAllSessionsCompleted,
+              availableVarKeys:
+                VARS_BY_TEMPLATE.templateAllSessionsCompleted,
+            })
+          }
+        />
+        <TemplateCard
+          title="Grace Period Reminder"
+          value={grace}
+          defaultValue={DEFAULT_TEMPLATES.templateGrace}
+          onClick={() =>
+            setEditingTemplate({
+              id: "templateGrace",
+              title: "Grace Period Reminder",
+              value: grace,
+              defaultValue: DEFAULT_TEMPLATES.templateGrace,
+              availableVarKeys: VARS_BY_TEMPLATE.templateGrace,
+            })
+          }
+        />
+        <TemplateCard
+          title="Inactive"
           value={inactive}
           defaultValue={DEFAULT_TEMPLATES.templateInactive}
           onClick={() =>
             setEditingTemplate({
               id: "templateInactive",
-              title: "Inactive (session pending)",
+              title: "Inactive",
               value: inactive,
               defaultValue: DEFAULT_TEMPLATES.templateInactive,
               availableVarKeys: VARS_BY_TEMPLATE.templateInactive,
-            })
-          }
-        />
-        <TemplateCard
-          title="Inactive (session complete)"
-          value={inactiveSessionComplete}
-          defaultValue={DEFAULT_TEMPLATES.templateInactiveSessionComplete}
-          onClick={() =>
-            setEditingTemplate({
-              id: "templateInactiveSessionComplete",
-              title: "Inactive (session complete)",
-              value: inactiveSessionComplete,
-              defaultValue: DEFAULT_TEMPLATES.templateInactiveSessionComplete,
-              availableVarKeys:
-                VARS_BY_TEMPLATE.templateInactiveSessionComplete,
             })
           }
         />

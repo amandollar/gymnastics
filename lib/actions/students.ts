@@ -669,4 +669,50 @@ export async function updateStudentShirtAction(
   }
 }
 
+export async function generateSiblingSwitchTokenAction(
+  siblingId: string
+): Promise<{ success: boolean; token?: string; message?: string }> {
+  try {
+    const session = await auth();
+    if (!session || (session.user as any)?.role !== "PARENT") {
+      throw new Error("Unauthorized");
+    }
+
+    const currentStudentId = (session.user as any)?.id;
+    if (!currentStudentId) {
+      throw new Error("Unauthorized");
+    }
+
+    const [currentStudent, sibling] = await Promise.all([
+      prisma.student.findUnique({
+        where: { id: currentStudentId },
+        select: { contactNumber: true },
+      }),
+      prisma.student.findUnique({
+        where: { id: siblingId },
+        select: { contactNumber: true },
+      }),
+    ]);
+
+    if (!currentStudent || !sibling) {
+      throw new Error("Student record not found");
+    }
+
+    if (currentStudent.contactNumber !== sibling.contactNumber) {
+      throw new Error("Invalid sibling mapping");
+    }
+
+    const { createSwitchToken } = await import("@/lib/switch-tokens");
+    const token = createSwitchToken(siblingId);
+
+    return { success: true, token };
+  } catch (e) {
+    return {
+      success: false,
+      message: e instanceof Error ? e.message : "Failed to switch account",
+    };
+  }
+}
+
+
 

@@ -23,7 +23,7 @@ export async function getNextStudentNumber(): Promise<number> {
 
 
 async function allocateStudentNumber(transaction: Pick<typeof prisma, "student" | "$executeRaw">) {
-  await transaction.$executeRaw`SELECT pg_advisory_xact_lock(617901231)`;
+  await transaction.$executeRaw`LOCK TABLE "Student" IN EXCLUSIVE MODE`;
   const result = await transaction.student.aggregate({
     _max: { studentNumber: true },
   });
@@ -275,6 +275,9 @@ export async function createStudent(data: {
         registrationFee: data.registrationFee,
       },
     });
+  }, {
+    maxWait: 15000,
+    timeout: 15000 // 15 seconds to survive database cold-starts / connection pool delays
   });
   if (data.avatarFile && data.avatarFile.size > 0) {
     const uploadedUrl = await uploadStudentAvatarToCloudinary(
@@ -505,6 +508,9 @@ export async function assignPlanToStudent(
         commissionPercent: input.planType === "ONE_TO_ONE" ? (input.commissionPercent ?? 50) : 50,
       },
     });
+  }, {
+    maxWait: 15000,
+    timeout: 15000 // 15 seconds to survive database cold-starts / connection pool delays
   });
 }
 
@@ -808,7 +814,7 @@ export interface BulkStudentPayload {
 
 export async function bulkImportStudents(students: BulkStudentPayload[]) {
   return prisma.$transaction(async (transaction) => {
-    await transaction.$executeRaw`SELECT pg_advisory_xact_lock(617901231)`;
+    await transaction.$executeRaw`LOCK TABLE "Student" IN EXCLUSIVE MODE`;
 
     const currentStudentNumberRes = await transaction.student.aggregate({
       _max: { studentNumber: true },
@@ -893,6 +899,9 @@ export async function bulkImportStudents(students: BulkStudentPayload[]) {
     }
 
     return results;
+  }, {
+    maxWait: 30000,
+    timeout: 30000 // 30 seconds for bulk imports
   });
 }
 

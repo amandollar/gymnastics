@@ -1,7 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth-session";
-import { getStudentById } from "@/lib/services/students";
-import { prisma } from "@/lib/prisma";
+import { getStudentById, getAcademyProfile } from "@/lib/services/cached";
 import { AdmissionReceipt } from "@/app/admin/_components/students/studentProfile/AdmissionReceipt";
 
 export const metadata = {
@@ -16,7 +15,7 @@ export default async function PortalAdmissionReceiptPage() {
 
   const [student, academyProfile] = await Promise.all([
     getStudentById(user.id),
-    prisma.academyProfile.findFirst(),
+    getAcademyProfile(),
   ]);
 
   if (!student || !student.registrationFee || student.registrationFee <= 0) {

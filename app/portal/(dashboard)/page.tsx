@@ -1,26 +1,25 @@
 import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth-session";
-import { getStudentById } from "@/lib/services/students";
-import { prisma } from "@/lib/prisma";
-import PortalDashboardClient from "@/app/portal/_components/PortalDashboardClient";
+import { getStudentById, getAcademyProfile } from "@/lib/services/cached";
+import OverviewTab from "@/app/portal/_components/OverviewTab";
 
-export default async function PortalDashboardPage() {
+export default async function OverviewPage() {
   const user = await getSessionUser();
   if (!user || user.role !== "PARENT" || !user.id) {
     redirect("/portal/login");
   }
 
-  const [student, academyProfile, notifications] = await Promise.all([
+  const [student, academyProfile] = await Promise.all([
     getStudentById(user.id),
-    prisma.academyProfile.findFirst(),
-    prisma.notification.findMany({
-      where: { studentId: user.id },
-      orderBy: { createdAt: "desc" },
-    }),
+    getAcademyProfile(),
   ]);
 
   if (!student) {
     redirect("/portal/login");
+  }
+
+  if (student.isTempPassword) {
+    redirect("/portal/settings/change-password");
   }
 
   const profileData = academyProfile || {
@@ -34,10 +33,9 @@ export default async function PortalDashboardPage() {
   };
 
   return (
-    <PortalDashboardClient
+    <OverviewTab
       student={JSON.parse(JSON.stringify(student))}
       academyProfile={JSON.parse(JSON.stringify(profileData))}
-      initialNotifications={JSON.parse(JSON.stringify(notifications))}
     />
   );
 }

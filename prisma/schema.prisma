@@ -63,6 +63,7 @@ model Student {
   attendances    Attendance[]
   payments       PaymentRecord[]
   notifications  Notification[]
+  messageLogs    MessageLog[]
 }
 
 model SessionPricing {
@@ -222,6 +223,7 @@ model Enquiry {
   convertedToId   String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+  MessageLog      MessageLog[]
 }
 
 model PaymentRecord {
@@ -253,6 +255,8 @@ model AcademyProfile {
   templateGrace      String?
   /// WhatsApp template for fee-due reminders. Supports {{variables}}.
   templateFeeReminder String?
+  /// WhatsApp template for payment received confirmation. Supports {{variables}}.
+  templatePaymentReceived String?
   /// WhatsApp template for inactive/expired re-engagement. Supports {{variables}}.
   templateInactive   String?
   /// WhatsApp template for inactive/expired re-engagement when all sessions are complete.
@@ -261,6 +265,16 @@ model AcademyProfile {
   templateLoginCredentials String?
   /// WhatsApp template for enquiry follow-up. Supports {{variables}}.
   templateEnquiryFollowUp    String?
+  /// WhatsApp template for admission welcome message. Supports {{variables}}.
+  templateAdmissionWelcome   String?
+  /// WhatsApp template for when all sessions are completed.
+  templateAllSessionsCompleted String?
+  /// Automation: Auto-send Grace Period Reminder
+  autoSendGrace              Boolean  @default(true)
+  /// Automation: Auto-send Inactive Reminder
+  autoSendInactive           Boolean  @default(true)
+  /// Automation: Auto-send All Sessions Completed
+  autoSendAllSessionsCompleted Boolean @default(true)
   updatedAt          DateTime @updatedAt
 }
 
@@ -404,4 +418,22 @@ model FinanceCategory {
   updatedAt DateTime        @updatedAt
 
   @@unique([name, type])
+}
+
+// ─────────────────────────────────────────────
+// Message Logging
+// ─────────────────────────────────────────────
+
+model MessageLog {
+  id           String   @id @default(cuid())
+  studentId    String?
+  student      Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  enquiryId    String?
+  enquiry      Enquiry? @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  templateName String   // The name/type of the message sent
+  isAutomated  Boolean  @default(false)
+  sentAt       DateTime @default(now())
+
+  @@index([studentId])
+  @@index([enquiryId])
 }

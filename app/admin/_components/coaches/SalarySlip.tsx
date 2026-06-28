@@ -3,12 +3,14 @@ import React from "react";
 
 export interface SalarySlipData {
   coach: {
+    id?: string;
     name: string;
     contactNumber: string;
     email: string | null;
     joinDate: Date | string;
     timing: string | null;
     specialization: string | null;
+    baseFixedSalary?: number;
     fixedSalary: number;
     role: "COACH" | "STAFF";
   };
@@ -231,32 +233,25 @@ export function SalarySlip({
         }}
       >
         <div>
-          <p style={{ margin: "0 0 6px" }}>
+          <p style={{ margin: "0 0 8px" }}>
             <strong style={{ color: "#0f172a" }}>Employee Name:</strong> {coach.name}
           </p>
-          <p style={{ margin: "0 0 6px" }}>
-            <strong style={{ color: "#0f172a" }}>Designation:</strong> {coach.role === "COACH" ? "Coach / Trainer" : "Staff Employee"}
+          <p style={{ margin: "0 0 8px" }}>
+            <strong style={{ color: "#0f172a" }}>Employee ID:</strong> {coach.id ? coach.id.slice(-8).toUpperCase() : "N/A"}
           </p>
-          {coach.specialization && (
-            <p style={{ margin: "0 0 6px" }}>
-              <strong style={{ color: "#0f172a" }}>Specialization:</strong> {coach.specialization}
-            </p>
-          )}
           <p style={{ margin: 0 }}>
-            <strong style={{ color: "#0f172a" }}>Timing:</strong> {coach.timing || "N/A"}
+            <strong style={{ color: "#0f172a" }}>Designation:</strong> {coach.role === "COACH" ? "Coach / Trainer" : "Staff Employee"}
           </p>
         </div>
         <div>
-          <p style={{ margin: "0 0 6px" }}>
-            <strong style={{ color: "#0f172a" }}>Contact:</strong> {coach.contactNumber}
-          </p>
-          {coach.email && (
-            <p style={{ margin: "0 0 6px" }}>
-              <strong style={{ color: "#0f172a" }}>Email:</strong> {coach.email}
-            </p>
-          )}
-          <p style={{ margin: 0 }}>
+          <p style={{ margin: "0 0 8px" }}>
             <strong style={{ color: "#0f172a" }}>Joining Date:</strong> {formatDateSalary(coach.joinDate)}
+          </p>
+          <p style={{ margin: "0 0 8px" }}>
+            <strong style={{ color: "#0f172a" }}>Contact Number:</strong> {coach.contactNumber}
+          </p>
+          <p style={{ margin: 0 }}>
+            <strong style={{ color: "#0f172a" }}>Email:</strong> {coach.email || "N/A"}
           </p>
         </div>
       </div>
@@ -293,7 +288,13 @@ export function SalarySlip({
             <tr style={{ borderBottom: "1px solid #e2e8f0" }}>
               <td style={{ padding: "10px 0", color: "#0f172a", fontWeight: 500 }}>
                 Fixed Salary
-                <span style={{ fontSize: "11px", color: "#64748b", display: "block" }}>Monthly fixed base pay</span>
+                <span style={{ fontSize: "11px", color: "#64748b", display: "block" }}>
+                  {coach.baseFixedSalary && coach.baseFixedSalary !== coach.fixedSalary ? (
+                    <>Monthly base pay: {formatINRSalary(coach.baseFixedSalary)} (Pro-rated for joining/leaving date)</>
+                  ) : (
+                    <>Monthly fixed base pay</>
+                  )}
+                </span>
               </td>
               <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 600, color: "#0f172a" }}>
                 {formatINRSalary(coach.fixedSalary)}
@@ -305,7 +306,7 @@ export function SalarySlip({
                 <td style={{ padding: "10px 0", color: "#e11d48", fontWeight: 500 }}>
                   Absent Deductions
                   <span style={{ fontSize: "11px", color: "#64748b", display: "block" }}>
-                    {absentDays} absent day{absentDays > 1 ? "s" : ""} out of {workingDays} working days
+                    {absentDays} absent day{absentDays > 1 ? "s" : ""} out of {workingDays} working days (Daily rate: {formatINRSalary(workingDays > 0 ? Math.round(coach.fixedSalary / workingDays) : 0)}/day)
                   </span>
                 </td>
                 <td style={{ padding: "10px 0", textAlign: "right", fontWeight: 600, color: "#e11d48" }}>
@@ -349,29 +350,28 @@ export function SalarySlip({
               style={{
                 width: "100%",
                 borderCollapse: "collapse",
-                fontSize: "11px",
+                fontSize: "12px",
                 color: "#475569",
               }}
             >
               <thead>
-                <tr style={{ borderBottom: "1px solid #cbd5e1", textAlign: "left", fontSize: "10px", textTransform: "uppercase", color: "#64748b" }}>
-                  <th style={{ padding: "6px 0", fontWeight: 700 }}>Student (TAG)</th>
-                  <th style={{ padding: "6px 0", fontWeight: 700 }}>Daily Fee</th>
-                  <th style={{ padding: "6px 0", fontWeight: 700, textAlign: "center" }}>Days Attended</th>
-                  <th style={{ padding: "6px 0", fontWeight: 700, textAlign: "center" }}>Split %</th>
-                  <th style={{ padding: "6px 0", fontWeight: 700, textAlign: "right" }}>Share</th>
+                <tr style={{ borderBottom: "1.5px solid #cbd5e1", textAlign: "left", fontSize: "11px", textTransform: "uppercase", color: "#64748b" }}>
+                  <th style={{ padding: "8px 0", fontWeight: 700 }}>Student & Calculation Formula</th>
+                  <th style={{ padding: "8px 0", fontWeight: 700, textAlign: "right" }}>Coach Share</th>
                 </tr>
               </thead>
               <tbody>
                 {ptStudentsBreakdown.map((row, idx) => (
                   <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
-                    <td style={{ padding: "6px 0", fontWeight: 600, color: "#334155" }}>
-                      {row.studentName} <span style={{ fontWeight: 400, color: "#64748b" }}>(TAG {row.studentNumber})</span>
+                    <td style={{ padding: "8px 0" }}>
+                      <div style={{ fontWeight: 600, color: "#334155" }}>
+                        {row.studentName} <span style={{ fontWeight: 400, color: "#64748b" }}>(TAG {row.studentNumber})</span>
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+                        {row.commissionPercent}% split of ({formatINRSalary(row.pricePerSession)} × {row.daysAttended} day{row.daysAttended > 1 ? "s" : ""})
+                      </div>
                     </td>
-                    <td style={{ padding: "6px 0" }}>{formatINRSalary(row.pricePerSession)}</td>
-                    <td style={{ padding: "6px 0", textAlign: "center" }}>{row.daysAttended}</td>
-                    <td style={{ padding: "6px 0", textAlign: "center" }}>{row.commissionPercent}%</td>
-                    <td style={{ padding: "6px 0", textAlign: "right", fontWeight: 600, color: "#0f172a" }}>
+                    <td style={{ padding: "8px 0", textAlign: "right", fontWeight: 600, color: "#0f172a", verticalAlign: "middle" }}>
                       {formatINRSalary(row.monthlyAmount)}
                     </td>
                   </tr>
@@ -428,26 +428,56 @@ export function SalarySlip({
         </div>
       </div>
 
-      {/* Signatures */}
+      {/* Signature and Footer Section */}
       <div
         style={{
-          display: "flex",
-          justifyContent: "space-between",
           marginTop: "auto",
-          paddingTop: "12mm",
-          fontSize: "12px",
-          color: "#475569",
+          display: "flex",
+          flexDirection: "column",
+          gap: "16px",
+          paddingTop: "8mm",
         }}
       >
-        <div style={{ textAlign: "center", width: "160px" }}>
-          <div style={{ borderTop: "1.5px solid #cbd5e1", paddingTop: "6px", fontWeight: 650 }}>
-            Employee Signature
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "flex-end",
+          }}
+        >
+          <div style={{ textAlign: "center", width: "180px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <img
+              src="/saif-tamboli-sign.webp"
+              alt="Authorized Signature"
+              style={{
+                width: "120px",
+                height: "auto",
+                maxHeight: "60px",
+                objectFit: "contain",
+                marginBottom: "4px",
+              }}
+            />
+            <div style={{ borderTop: "1.5px solid #cbd5e1", width: "100%", paddingTop: "6px", fontSize: "12px", fontWeight: 700, color: "#334155" }}>
+              Authorized Signatory
+            </div>
+            <div style={{ fontSize: "11px", color: "#64748b", marginTop: "2px" }}>
+              The Academy Of Gymnastics
+            </div>
           </div>
         </div>
-        <div style={{ textAlign: "center", width: "160px" }}>
-          <div style={{ borderTop: "1.5px solid #cbd5e1", paddingTop: "6px", fontWeight: 650 }}>
-            Authorized Signatory
-          </div>
+
+        {/* Footer info */}
+        <div
+          style={{
+            borderTop: "1px dashed #cbd5e1",
+            paddingTop: "8px",
+            textAlign: "center",
+            fontSize: "10px",
+            color: "#64748b",
+            marginTop: "12px",
+          }}
+        >
+          This is a computer-generated salary slip and does not require a physical signature.
         </div>
       </div>
     </div>

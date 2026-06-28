@@ -118,6 +118,33 @@ export const authConfig = {
       }
       return session;
     },
+    async redirect({ url, baseUrl }) {
+      if (url.startsWith("/")) {
+        return `${baseUrl}${url}`;
+      }
+      try {
+        const parsedUrl = new URL(url);
+        const parsedBase = new URL(baseUrl);
+        
+        const getRootDomain = (hostname: string) => {
+          if (hostname === "localhost" || hostname.endsWith(".localhost")) {
+            return "localhost";
+          }
+          if (hostname.endsWith(".vercel.app")) {
+            return hostname.split(".").slice(-3).join(".");
+          }
+          const parts = hostname.split(".");
+          return parts.length >= 3 ? parts.slice(1).join(".") : hostname;
+        };
+
+        if (getRootDomain(parsedUrl.hostname) === getRootDomain(parsedBase.hostname)) {
+          return url;
+        }
+      } catch (e) {
+        console.error("Error in NextAuth redirect callback:", e);
+      }
+      return baseUrl;
+    },
   },
   providers: [],
 } satisfies NextAuthConfig;

@@ -266,11 +266,6 @@ export default function StudentLists({
                       </h4>
                       <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 font-medium mt-0.5 truncate">
                         <span>TAG{String(student.studentNumber).padStart(3, "0")}</span>
-                        <span>·</span>
-                        <span className="flex items-center gap-1 font-semibold">
-                          <Calendar className="h-3.5 w-3.5 shrink-0 text-zinc-400 dark:text-zinc-500" />
-                          <span>{student.sessionsCompleted}/{student.totalSessions}</span>
-                        </span>
                       </div>
                     </div>
                   </div>

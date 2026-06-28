@@ -5,13 +5,18 @@ import { Search, CalendarDays, Filter } from "lucide-react";
 import StudentAvatar from "@/app/admin/_components/students/StudentAvatar";
 import type { PresentStudent } from "@/lib/services/attendance";
 
+import Link from "next/link";
+
 interface PresentRowProps {
   student: PresentStudent;
 }
 
 function PresentRow({ student }: PresentRowProps) {
   return (
-    <div className="flex items-center gap-3 px-3 py-2.5 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-900/40 transition-all duration-205 group">
+    <Link 
+      href={`/admin/students/${student.id}`}
+      className="flex items-center gap-3 px-3 py-2.5 rounded-2xl hover:bg-zinc-50 dark:hover:bg-zinc-900/40 transition-all duration-205 group cursor-pointer"
+    >
       {/* Avatar */}
       <StudentAvatar
         student={student}
@@ -35,7 +40,7 @@ function PresentRow({ student }: PresentRowProps) {
           </p>
         )}
       </div>
-    </div>
+    </Link>
   );
 }
 
