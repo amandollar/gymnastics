@@ -453,12 +453,14 @@ export async function getSalarySlipDataAction(
 
     const data = {
       coach: {
+        id: coach.id,
         name: coach.name,
         contactNumber: coach.contactNumber,
         email: coach.email,
         joinDate: coach.joinDate.toISOString(),
         timing: coach.timing,
         specialization: coach.specialization,
+        baseFixedSalary: coach.fixedSalary,
         fixedSalary: proRatedFixedSalary,
         role: coach.role as "COACH" | "STAFF",
       },

@@ -18,6 +18,7 @@ import {
   Check,
   Loader2,
   Printer,
+  IdCard,
 } from "lucide-react";
 import {
   updateCoachAction,
@@ -721,14 +722,24 @@ export default function CoachProfileClient({ coach, todayStr }: Props) {
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setEditOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
-          >
-            <Edit2 className="h-3.5 w-3.5 text-brand-orange-500" />
-            Edit Profile
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/admin/coaches/${coach.id}/id-card`}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
+            >
+              <IdCard className="h-3.5 w-3.5 text-brand-orange-500" />
+              ID Card
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => setEditOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 py-2 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors cursor-pointer shadow-sm"
+            >
+              <Edit2 className="h-3.5 w-3.5 text-brand-orange-500" />
+              Edit Profile
+            </button>
+          </div>
         </div>
       </div>
 

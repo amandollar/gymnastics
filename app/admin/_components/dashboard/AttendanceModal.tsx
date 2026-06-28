@@ -8,6 +8,7 @@ import {
   searchStudentsForAttendanceAction,
   markAttendanceAction,
   getAttendanceSessionDataAction,
+  markCoachAttendanceFromScanAction,
 } from "@/lib/actions/attendance";
 
 interface AttendanceModalProps {
@@ -303,6 +304,79 @@ export default function AttendanceModal({
     }, 2500);
   };
 
+  const markCoachAttendance = async (coachId: string) => {
+    if (processingRef.current.has(coachId)) return;
+
+    if (attendedTodayRef.current.has(coachId)) {
+      setIsScanning(false);
+      setScanMessage({
+        type: "error",
+        text: `Employee is already marked present today.`,
+      });
+      setTimeout(() => { setIsScanning(true); setScanMessage(null); }, 2500);
+      return;
+    }
+
+    processingRef.current.add(coachId);
+    attendedTodayRef.current.add(coachId);
+    setIsScanning(false);
+
+    try {
+      const res = await markCoachAttendanceFromScanAction(coachId);
+      if (res.success && res.employee) {
+        setScanMessage({
+          type: "success",
+          text: `Attendance marked successfully for ${res.employee.name}`,
+        });
+
+        setScannedStudent({
+          id: res.employee.id,
+          studentNumber: 0,
+          name: res.employee.name,
+          parentName: "",
+          contactNumber: "",
+          activePlan: res.employee.role === "COACH" ? "Coach" : "Staff",
+          outstanding: 0,
+          sessionsCompleted: 0,
+          totalSessions: 0,
+        });
+
+        onAttendanceRecorded({
+          name: res.employee.name,
+          studentNumber: 0,
+          activePlan: res.employee.role === "COACH" ? "Coach" : "Staff",
+          sessionsCompleted: 0,
+          totalSessions: 0,
+        });
+
+        try {
+          const audio = new Audio("/audio/atttendance-success.mp3");
+          audio.volume = 1.0;
+          audio.play().catch((err) => console.log("Audio play deferred/failed:", err));
+        } catch (e) {
+          console.log("Audio not supported or allowed:", e);
+        }
+
+        router.refresh();
+      } else {
+        attendedTodayRef.current.delete(coachId);
+        setScanMessage({ type: "error", text: res.message || "Failed to mark employee attendance" });
+      }
+    } catch (err: any) {
+      console.error("Background coach mark error:", err);
+      attendedTodayRef.current.delete(coachId);
+      setScanMessage({ type: "error", text: err.message || "Failed to mark employee attendance" });
+    } finally {
+      processingRef.current.delete(coachId);
+    }
+
+    setTimeout(() => {
+      setIsScanning(true);
+      setScanMessage(null);
+      setScannedStudent(null);
+    }, 2500);
+  };
+
   const handleSelectStudentManual = async (studentId: string) => {
     const optStudent = searchResults.find((s) => s.id === studentId);
     setManualSearchQuery("");
@@ -313,11 +387,16 @@ export default function AttendanceModal({
   const handleScanSuccess = async (qrValue: string) => {
     let studentId: string | null = null;
     let studentNumber: number | null = null;
+    let coachId: string | null = null;
 
     if (qrValue.includes("/students/")) {
       const parts = qrValue.split("/students/");
       const rawId = parts[parts.length - 1];
       studentId = rawId.split(/[?#\/]/)[0].trim() || null;
+    } else if (qrValue.includes("/coaches/")) {
+      const parts = qrValue.split("/coaches/");
+      const rawId = parts[parts.length - 1];
+      coachId = rawId.split(/[?#\/]/)[0].trim() || null;
     } else {
       const tagMatch = qrValue.match(/^tag\s*(\d+)/i);
       if (tagMatch) {
@@ -329,6 +408,8 @@ export default function AttendanceModal({
 
     if (studentId) {
       await markAttendance(studentId);
+    } else if (coachId) {
+      await markCoachAttendance(coachId);
     } else if (studentNumber !== null) {
       const res = await searchStudentsForAttendanceAction(String(studentNumber));
       if (res && res.length > 0) {

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { StudentLevel } from "@prisma/client";
 import { STUDENT_LEVELS, getLevelConfig } from "@/lib/utils/level";
@@ -28,19 +27,26 @@ function getBadgeImage(idx: number): string {
   return BADGE_IMAGES[idx] ?? "/icons/logo.webp";
 }
 
-const LEVEL_QUOTES: Record<string, string> = {
-  BEGINNER: "Every champion was once a beginner.",
-  FOUNDATION_1: "Building the foundation of greatness.",
-  FOUNDATION_2: "Stronger every single day.",
-  FOUNDATION_3: "The roots are growing deep.",
-  NATIONAL_4: "Rising to national standards.",
-  NATIONAL_5: "Excellence is becoming a habit.",
-  NATIONAL_6: "Among the elite. Keep pushing.",
-  NATIONAL_7: "You've reached the peak. Stay legendary.",
-};
+// const LEVEL_QUOTES: Record<string, string> = {
+//   BEGINNER: "Every champion was once a beginner.",
+//   FOUNDATION_1: "Building the foundation of greatness.",
+//   FOUNDATION_2: "Stronger every single day.",
+//   FOUNDATION_3: "The roots are growing deep.",
+//   NATIONAL_4: "Rising to national standards.",
+//   NATIONAL_5: "Excellence is becoming a habit.",
+//   NATIONAL_6: "Among the elite. Keep pushing.",
+//   NATIONAL_7: "You've reached the peak. Stay legendary.",
+// };
 
-export function PortalLevelCard({ studentId, studentName, currentLevel, trainingFocus }: PortalLevelCardProps) {
-  const currentIndex = STUDENT_LEVELS.findIndex((l) => l.value === currentLevel);
+export function PortalLevelCard({
+  studentId,
+  studentName,
+  currentLevel,
+  trainingFocus,
+}: PortalLevelCardProps) {
+  const currentIndex = STUDENT_LEVELS.findIndex(
+    (l) => l.value === currentLevel,
+  );
   const currentCfg = getLevelConfig(currentLevel);
 
   return (
@@ -88,9 +94,14 @@ export function PortalLevelCard({ studentId, studentName, currentLevel, training
             const isActive = i === currentIndex;
             const isCompleted = i < currentIndex;
             return (
-              <div key={lvl.value} className="shrink-0 flex flex-col items-center gap-1 snap-start w-10">
+              <div
+                key={lvl.value}
+                className="shrink-0 flex flex-col items-center gap-1 snap-start w-10"
+              >
                 {isCompleted || isActive ? (
-                  <div className={`relative transition-all duration-300 ${isActive ? "scale-110" : "opacity-70 hover:opacity-100"}`}>
+                  <div
+                    className={`relative transition-all duration-300 ${isActive ? "scale-110" : "opacity-70 hover:opacity-100"}`}
+                  >
                     <Image
                       src={getBadgeImage(i)}
                       alt={lvl.label}
@@ -106,7 +117,9 @@ export function PortalLevelCard({ studentId, studentName, currentLevel, training
                     <Lock className="w-3.5 h-3.5" />
                   </div>
                 )}
-                <span className={`text-[8px] font-bold uppercase tracking-wide ${isActive ? "text-brand-orange-500 font-extrabold" : "text-zinc-400 dark:text-zinc-500"}`}>
+                <span
+                  className={`text-[8px] font-bold uppercase tracking-wide ${isActive ? "text-brand-orange-500 font-extrabold" : "text-zinc-400 dark:text-zinc-500"}`}
+                >
                   {lvl.shortLabel}
                 </span>
               </div>

@@ -17,10 +17,7 @@ import {
   Info,
   X,
   BellOff,
-  ChevronRight,
   IdCard,
-  LogOut,
-  Snowflake
 } from "lucide-react";
 import StudentAvatar from "@/app/admin/_components/students/StudentAvatar";
 import ThemeSelector from "@/app/admin/_components/layout/ThemeSelector";
@@ -119,7 +116,9 @@ export default function PortalLayoutClient({
     NATIONAL_7: "You've reached the peak. Stay legendary.",
   };
 
-  const currentIndex = STUDENT_LEVELS.findIndex((l) => l.value === student.level);
+  const currentIndex = STUDENT_LEVELS.findIndex(
+    (l) => l.value === student.level,
+  );
   const currentCfg = getLevelConfig(student.level);
   const quote = LEVEL_QUOTES[student.level] ?? "Keep training hard!";
 
@@ -167,11 +166,22 @@ export default function PortalLayoutClient({
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const COLORS = ["#f16d28", "#ffd700", "#ff6b6b", "#4ecdc4", "#a8edea", "#fff"];
+    const COLORS = [
+      "#f16d28",
+      "#ffd700",
+      "#ff6b6b",
+      "#4ecdc4",
+      "#a8edea",
+      "#fff",
+    ];
     const particles: {
-      x: number; y: number;
-      vx: number; vy: number;
-      r: number; color: string; alpha: number;
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      r: number;
+      color: string;
+      alpha: number;
     }[] = Array.from({ length: 180 }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height * 0.4,
@@ -211,9 +221,10 @@ export default function PortalLayoutClient({
   useEffect(() => {
     if (!showIDCardModal) return;
 
-    const attendanceUrl = typeof window !== "undefined"
-      ? `${window.location.origin}/admin/students/${student.id}`
-      : `/admin/students/${student.id}`;
+    const attendanceUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/admin/students/${student.id}`
+        : `/admin/students/${student.id}`;
 
     QRCode.toDataURL(attendanceUrl, {
       margin: 1,
@@ -237,15 +248,21 @@ export default function PortalLayoutClient({
   const handleOpenNotifications = async () => {
     setShowNotifications(true);
     if (notifications.some((n: any) => !n.isRead)) {
-      setNotifications(prev => prev.map((n: any) => ({ ...n, isRead: true })));
+      setNotifications((prev) =>
+        prev.map((n: any) => ({ ...n, isRead: true })),
+      );
       await markNotificationsAsReadAction(student.id);
     }
   };
 
-  const unreadCount = useMemo(() => notifications.filter((n: any) => !n.isRead).length, [notifications]);
+  const unreadCount = useMemo(
+    () => notifications.filter((n: any) => !n.isRead).length,
+    [notifications],
+  );
 
   useEffect(() => {
-    const collapsed = localStorage.getItem("portal-sidebar-collapsed") === "true";
+    const collapsed =
+      localStorage.getItem("portal-sidebar-collapsed") === "true";
     if (collapsed) {
       setTimeout(() => {
         setIsCollapsed(true);
@@ -283,9 +300,11 @@ export default function PortalLayoutClient({
         }`}
       >
         {/* Top Header Row */}
-        <div className={`flex h-14 items-center px-4 ${
-          isCollapsed ? "justify-center" : "justify-between gap-2.5"
-        }`}>
+        <div
+          className={`flex h-14 items-center px-4 ${
+            isCollapsed ? "justify-center" : "justify-between gap-2.5"
+          }`}
+        >
           {!isCollapsed ? (
             <>
               <div className="flex items-center gap-1.5 min-w-0">
@@ -299,7 +318,9 @@ export default function PortalLayoutClient({
                   alt="TAG"
                   className="h-[34px] w-auto shrink-0 hidden dark:block -mb-[3px]"
                 />
-                <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100 capitalize">portal</p>
+                <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100 capitalize">
+                  portal
+                </p>
               </div>
 
               <button
@@ -343,8 +364,12 @@ export default function PortalLayoutClient({
         )}
 
         {/* Nav List */}
-        <div className={`flex-1 pt-2 ${isCollapsed ? "overflow-visible" : "overflow-y-auto"}`}>
-          <nav className={`transition-all ${isCollapsed ? "space-y-2 p-1.5" : "space-y-0.5 p-3"}`}>
+        <div
+          className={`flex-1 pt-2 ${isCollapsed ? "overflow-visible" : "overflow-y-auto"}`}
+        >
+          <nav
+            className={`transition-all ${isCollapsed ? "space-y-2 p-1.5" : "space-y-0.5 p-3"}`}
+          >
             {!student.isTempPassword ? (
               <>
                 <Link
@@ -358,7 +383,10 @@ export default function PortalLayoutClient({
                       : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:text-zinc-900 dark:hover:text-zinc-50"
                   }`}
                 >
-                  <Home className={`shrink-0 transition-all ${isCollapsed ? "h-5 w-5" : "h-4 w-4"}`} strokeWidth={2} />
+                  <Home
+                    className={`shrink-0 transition-all ${isCollapsed ? "h-5 w-5" : "h-4 w-4"}`}
+                    strokeWidth={2}
+                  />
                   {!isCollapsed && "Overview"}
                   {isCollapsed && (
                     <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
@@ -378,7 +406,10 @@ export default function PortalLayoutClient({
                       : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:text-zinc-900 dark:hover:text-zinc-50"
                   }`}
                 >
-                  <CheckCircle2 className={`shrink-0 transition-all ${isCollapsed ? "h-5 w-5" : "h-4 w-4"}`} strokeWidth={2} />
+                  <CheckCircle2
+                    className={`shrink-0 transition-all ${isCollapsed ? "h-5 w-5" : "h-4 w-4"}`}
+                    strokeWidth={2}
+                  />
                   {!isCollapsed && "Attendance"}
                   {isCollapsed && (
                     <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
@@ -398,7 +429,10 @@ export default function PortalLayoutClient({
                       : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:text-zinc-900 dark:hover:text-zinc-50"
                   }`}
                 >
-                  <Settings className={`shrink-0 transition-all ${isCollapsed ? "h-5 w-5" : "h-4 w-4"}`} strokeWidth={2} />
+                  <Settings
+                    className={`shrink-0 transition-all ${isCollapsed ? "h-5 w-5" : "h-4 w-4"}`}
+                    strokeWidth={2}
+                  />
                   {!isCollapsed && "Settings"}
                   {isCollapsed && (
                     <span className="pointer-events-none absolute left-full ml-4 z-50 rounded-xl bg-zinc-900 dark:bg-zinc-800 border border-zinc-800 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-white dark:text-zinc-100 opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap shadow-md translate-x-1 group-hover:translate-x-0">
@@ -425,7 +459,9 @@ export default function PortalLayoutClient({
 
         {/* Bottom User Card */}
         <div className="p-3 bg-zinc-50/50 dark:bg-zinc-900/10 flex items-center justify-between">
-          <div className={`flex items-center gap-3 min-w-0 flex-1 relative group ${isCollapsed ? "justify-center" : ""}`}>
+          <div
+            className={`flex items-center gap-3 min-w-0 flex-1 relative group ${isCollapsed ? "justify-center" : ""}`}
+          >
             <div
               onClick={isCollapsed ? handleOpenNotifications : undefined}
               className={`relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-orange-500 text-xs font-bold text-white shadow-2xs ${
@@ -445,7 +481,9 @@ export default function PortalLayoutClient({
             {!isCollapsed && (
               <div className="min-w-0 flex-1 flex items-center justify-between gap-1">
                 <div className="min-w-0 flex-1 flex flex-col">
-                  <p className="truncate text-xs font-bold text-zinc-900 dark:text-zinc-100">{student.parentName}</p>
+                  <p className="truncate text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                    {student.parentName}
+                  </p>
                   <span className="self-start inline-flex items-center rounded-md bg-zinc-150 dark:bg-zinc-800 px-1.5 py-0.5 text-[9px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mt-0.5">
                     Parent
                   </span>
@@ -532,9 +570,7 @@ export default function PortalLayoutClient({
           </header>
 
           {/* Children views */}
-          <div className="transition-all duration-300">
-            {children}
-          </div>
+          <div className="transition-all duration-300">{children}</div>
         </main>
       </div>
 
@@ -598,7 +634,9 @@ export default function PortalLayoutClient({
             <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-800/80 pb-4">
               <div className="flex items-center gap-2">
                 <Bell className="w-5 h-5 text-brand-orange-500" />
-                <h3 className="text-base font-bold text-zinc-900 dark:text-white leading-tight">Notifications</h3>
+                <h3 className="text-base font-bold text-zinc-900 dark:text-white leading-tight">
+                  Notifications
+                </h3>
               </div>
               <button
                 onClick={() => setShowNotifications(false)}
@@ -615,9 +653,12 @@ export default function PortalLayoutClient({
                     <BellOff className="w-6 h-6" />
                   </div>
                   <div className="space-y-1">
-                    <h4 className="text-sm font-bold text-zinc-800 dark:text-zinc-300">No notifications yet</h4>
+                    <h4 className="text-sm font-bold text-zinc-800 dark:text-zinc-300">
+                      No notifications yet
+                    </h4>
                     <p className="text-xs text-zinc-500 max-w-[220px]">
-                      Alerts and announcements from the academy will appear here.
+                      Alerts and announcements from the academy will appear
+                      here.
                     </p>
                   </div>
                 </div>
@@ -637,7 +678,7 @@ export default function PortalLayoutClient({
                           month: "short",
                           year: "numeric",
                           hour: "2-digit",
-                          minute: "2-digit"
+                          minute: "2-digit",
                         })}
                       </span>
                     </div>
@@ -679,8 +720,12 @@ export default function PortalLayoutClient({
                   Ac
                 </span>
                 <div>
-                  <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Active</p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Currently enrolled and regularly attending classes.</p>
+                  <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                    Active
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                    Currently enrolled and regularly attending classes.
+                  </p>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -688,8 +733,12 @@ export default function PortalLayoutClient({
                   In
                 </span>
                 <div>
-                  <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Inactive</p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Not currently attending classes.</p>
+                  <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                    Inactive
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                    Not currently attending classes.
+                  </p>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -697,8 +746,12 @@ export default function PortalLayoutClient({
                   Fr
                 </span>
                 <div>
-                  <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Freeze</p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Membership is temporarily paused or on hold.</p>
+                  <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                    Freeze
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                    Membership is temporarily paused or on hold.
+                  </p>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -706,8 +759,12 @@ export default function PortalLayoutClient({
                   Gr
                 </span>
                 <div>
-                  <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Grace</p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Extra time provided to renew a plan before expiry.</p>
+                  <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                    Grace
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                    Extra time provided to renew a plan before expiry.
+                  </p>
                 </div>
               </div>
               <div className="flex gap-3">
@@ -715,8 +772,12 @@ export default function PortalLayoutClient({
                   Ex
                 </span>
                 <div>
-                  <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">Expired</p>
-                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">Membership or plan validity has ended.</p>
+                  <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                    Expired
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                    Membership or plan validity has ended.
+                  </p>
                 </div>
               </div>
             </div>
@@ -749,8 +810,13 @@ export default function PortalLayoutClient({
             className="relative flex flex-col items-center gap-6"
           >
             {/* flip card */}
-            <div className="flip-card w-[18.75em] h-[29.734em] cursor-pointer" onClick={() => setIsFlipped(!isFlipped)}>
-              <div className={`flip-card-inner relative w-full h-full transform-style-3d ${isFlipped ? "flipped" : ""}`}>
+            <div
+              className="flip-card w-[18.75em] h-[29.734em] cursor-pointer"
+              onClick={() => setIsFlipped(!isFlipped)}
+            >
+              <div
+                className={`flip-card-inner relative w-full h-full transform-style-3d ${isFlipped ? "flipped" : ""}`}
+              >
                 {/* front */}
                 <div className="flip-card-front backface-hidden absolute inset-0 rounded-[1.5em] overflow-hidden shadow-2xl bg-white select-none">
                   <div className="absolute inset-0 z-0">
@@ -794,34 +860,65 @@ export default function PortalLayoutClient({
 
                     <div className="flex flex-col gap-[0.3em]">
                       <div className="flex items-center text-[0.58em] font-bold text-zinc-800">
-                        <span className="w-[6.2em] text-zinc-500 uppercase tracking-wider shrink-0 font-extrabold">ID No.</span>
-                        <span className="text-zinc-400 mr-[0.5em] font-medium">:</span>
-                        <span className="text-zinc-955 font-black truncate">TAG{String(student.studentNumber).padStart(3, "0")}</span>
-                      </div>
-                      <div className="flex items-center text-[0.58em] font-bold text-zinc-800">
-                        <span className="w-[6.2em] text-zinc-500 uppercase tracking-wider shrink-0 font-extrabold">Parent</span>
-                        <span className="text-zinc-400 mr-[0.5em] font-medium">:</span>
-                        <span className="text-zinc-955 font-black truncate">{student.parentName}</span>
-                      </div>
-                      <div className="flex items-center text-[0.58em] font-bold text-zinc-800">
-                        <span className="w-[6.2em] text-zinc-500 uppercase tracking-wider shrink-0 font-extrabold">Contact</span>
-                        <span className="text-zinc-400 mr-[0.5em] font-medium">:</span>
-                        <span className="text-zinc-955 font-black truncate">{student.contactNumber}</span>
-                      </div>
-                      <div className="flex items-center text-[0.58em] font-bold text-zinc-800">
-                        <span className="w-[6.2em] text-zinc-500 uppercase tracking-wider shrink-0 font-extrabold">DOB</span>
-                        <span className="text-zinc-400 mr-[0.5em] font-medium">:</span>
+                        <span className="w-[6.2em] text-zinc-500 uppercase tracking-wider shrink-0 font-extrabold">
+                          ID No.
+                        </span>
+                        <span className="text-zinc-400 mr-[0.5em] font-medium">
+                          :
+                        </span>
                         <span className="text-zinc-955 font-black truncate">
-                          {new Date(student.dateOfBirth).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                          TAG{String(student.studentNumber).padStart(3, "0")}
+                        </span>
+                      </div>
+                      <div className="flex items-center text-[0.58em] font-bold text-zinc-800">
+                        <span className="w-[6.2em] text-zinc-500 uppercase tracking-wider shrink-0 font-extrabold">
+                          Parent
+                        </span>
+                        <span className="text-zinc-400 mr-[0.5em] font-medium">
+                          :
+                        </span>
+                        <span className="text-zinc-955 font-black truncate">
+                          {student.parentName}
+                        </span>
+                      </div>
+                      <div className="flex items-center text-[0.58em] font-bold text-zinc-800">
+                        <span className="w-[6.2em] text-zinc-500 uppercase tracking-wider shrink-0 font-extrabold">
+                          Contact
+                        </span>
+                        <span className="text-zinc-400 mr-[0.5em] font-medium">
+                          :
+                        </span>
+                        <span className="text-zinc-955 font-black truncate">
+                          {student.contactNumber}
+                        </span>
+                      </div>
+                      <div className="flex items-center text-[0.58em] font-bold text-zinc-800">
+                        <span className="w-[6.2em] text-zinc-500 uppercase tracking-wider shrink-0 font-extrabold">
+                          DOB
+                        </span>
+                        <span className="text-zinc-400 mr-[0.5em] font-medium">
+                          :
+                        </span>
+                        <span className="text-zinc-955 font-black truncate">
+                          {new Date(student.dateOfBirth).toLocaleDateString(
+                            "en-IN",
+                            { day: "numeric", month: "short", year: "numeric" },
+                          )}
                         </span>
                       </div>
                     </div>
                   </div>
 
                   <div className="absolute bottom-[1.8em] left-[1.6em] border-l-[0.15em] border-[#f05a22] pl-[0.5em] text-left leading-[1.1] z-10">
-                    <p className="text-[0.52em] font-black text-zinc-500 uppercase tracking-wider">Focus.</p>
-                    <p className="text-[0.52em] font-black text-zinc-500 uppercase tracking-wider">Practice.</p>
-                    <p className="text-[0.52em] font-black text-[#f05a22] uppercase tracking-wider">Achieve.</p>
+                    <p className="text-[0.52em] font-black text-zinc-500 uppercase tracking-wider">
+                      Focus.
+                    </p>
+                    <p className="text-[0.52em] font-black text-zinc-500 uppercase tracking-wider">
+                      Practice.
+                    </p>
+                    <p className="text-[0.52em] font-black text-[#f05a22] uppercase tracking-wider">
+                      Achieve.
+                    </p>
                   </div>
 
                   <div className="absolute bottom-[1.5em] right-[1.6em] z-10">
@@ -858,8 +955,12 @@ export default function PortalLayoutClient({
                   </div>
 
                   <div className="absolute top-[6.0em] left-0 right-0 text-center w-full z-10 uppercase tracking-wider font-black leading-tight">
-                    <p className="text-[0.60em] text-white">Empowering Athletes.</p>
-                    <p className="text-[0.60em] text-[#f05a22]">Building Champions.</p>
+                    <p className="text-[0.60em] text-white">
+                      Empowering Athletes.
+                    </p>
+                    <p className="text-[0.60em] text-[#f05a22]">
+                      Building Champions.
+                    </p>
                   </div>
 
                   <div className="absolute top-[8.8em] left-1/2 -translate-x-1/2 z-10 flex flex-col items-center justify-center">
@@ -878,7 +979,9 @@ export default function PortalLayoutClient({
 
                   {/* contact info */}
                   <div className="absolute bottom-[2.5em] left-[1.6em] right-[1.6em] text-center z-10 text-white space-y-[0.4em]">
-                    <p className="text-[0.52em] font-black uppercase tracking-wider text-[#f05a22]">The Academy of Gymnastics</p>
+                    <p className="text-[0.52em] font-black uppercase tracking-wider text-[#f05a22]">
+                      The Academy of Gymnastics
+                    </p>
                     <p className="text-[0.45em] font-semibold text-zinc-400 leading-normal whitespace-pre-line max-w-[90%] mx-auto">
                       {academyProfile.address}
                     </p>
@@ -890,7 +993,7 @@ export default function PortalLayoutClient({
                 </div>
               </div>
             </div>
-            
+
             <p className="text-[10px] text-zinc-400 dark:text-zinc-500 font-semibold tracking-wider uppercase text-center max-w-[280px] leading-relaxed">
               Click card to flip
             </p>
@@ -899,9 +1002,7 @@ export default function PortalLayoutClient({
       )}
       {/* ── Level-Up Celebration Modal (Theme adaptive) ──────────────────── */}
       {showLevelUp && (
-        <div
-          className="fixed inset-0 z-[99999] flex flex-col items-center justify-center p-6 bg-black/90 backdrop-blur-xl animate-fade-in"
-        >
+        <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center p-6 bg-black/90 backdrop-blur-xl animate-fade-in">
           <style>{`
             @keyframes coin-spin {
               0% { transform: rotateY(0deg); }
@@ -920,9 +1021,7 @@ export default function PortalLayoutClient({
             style={{ zIndex: 1 }}
           />
 
-          <div
-            className="relative z-10 flex flex-col items-center text-center max-w-2xl w-full mx-auto space-y-8 animate-scale-in"
-          >
+          <div className="relative z-10 flex flex-col items-center text-center max-w-2xl w-full mx-auto space-y-8 animate-scale-in">
             {/* Level Up Subheader */}
             <span className="text-xs sm:text-sm font-black uppercase tracking-[0.4em] text-brand-orange-500 animate-pulse">
               Level Up
@@ -930,9 +1029,7 @@ export default function PortalLayoutClient({
 
             {/* Giant Badge Coin Block with White Glow */}
             <div className="relative flex items-center justify-center w-64 h-64 sm:w-80 sm:h-80 my-2">
-              <div
-                className="absolute inset-0 rounded-full blur-3xl opacity-40 bg-white animate-pulse"
-              />
+              <div className="absolute inset-0 rounded-full blur-3xl opacity-40 bg-white animate-pulse" />
               <Image
                 src={getBadgeImage(currentIndex)}
                 alt="New level badge"
@@ -948,9 +1045,12 @@ export default function PortalLayoutClient({
               <h2 className="text-4xl sm:text-6xl font-black text-white tracking-tight uppercase leading-none">
                 {student.name}
               </h2>
-              
+
               <p className="text-base sm:text-lg font-bold text-zinc-400 tracking-wide">
-                Advanced to <span className="text-white font-extrabold border-b-2 border-brand-orange-500 pb-0.5 ml-1">{currentCfg.label}</span>
+                Advanced to{" "}
+                <span className="text-white font-extrabold border-b-2 border-brand-orange-500 pb-0.5 ml-1">
+                  {currentCfg.label}
+                </span>
               </p>
             </div>
 

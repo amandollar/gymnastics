@@ -375,3 +375,66 @@ export async function undoMarkAttendanceAction(studentId: string, dateStr: strin
     return { success: false, message: err.message || "Failed to undo attendance" };
   }
 }
+
+export async function markCoachAttendanceFromScanAction(coachId: string) {
+  try {
+    const coach = await prisma.coach.findUnique({
+      where: { id: coachId },
+    });
+
+    if (!coach) {
+      return { success: false, message: "Employee not found" };
+    }
+
+    if (coach.status === "LEFT") {
+      return { success: false, message: "Cannot mark attendance for an employee who has left." };
+    }
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const attendanceDate = new Date(dateStr + "T00:00:00.000Z");
+
+    // Check if attendance is already marked for this date
+    const existing = await prisma.coachAttendance.findUnique({
+      where: {
+        coachId_date: {
+          coachId,
+          date: attendanceDate,
+        }
+      }
+    });
+
+    if (existing) {
+      return { success: false, message: `${coach.name} is already marked present for today.` };
+    }
+
+    await prisma.coachAttendance.create({
+      data: {
+        coachId,
+        date: attendanceDate,
+        status: "PRESENT",
+      }
+    });
+
+    revalidatePath("/admin/dashboard");
+    revalidatePath("/admin/coaches");
+    revalidatePath(`/admin/coaches/${coachId}`);
+    updateTag("coaches");
+    updateTag("attendance");
+    updateTag("dashboard");
+
+    return {
+      success: true,
+      message: `Attendance marked successfully for ${coach.name}`,
+      employee: {
+        id: coach.id,
+        name: coach.name,
+        role: coach.role, // "COACH" or "STAFF"
+      }
+    };
+  } catch (err: any) {
+    console.error("Mark coach attendance scan error:", err);
+    return { success: false, message: err.message || "Failed to mark employee attendance" };
+  }
+}
+
