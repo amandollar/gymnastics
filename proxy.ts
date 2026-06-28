@@ -18,22 +18,24 @@ export const proxy = auth((req) => {
 
   if (currentHost === "admin") {
     if (pathname === "/") {
-      return NextResponse.redirect(new URL("/dashboard", req.url));
+      const rewriteUrl = new URL("/admin/dashboard", req.url);
+      rewriteUrl.search = url.search;
+      return NextResponse.rewrite(rewriteUrl);
     }
 
     if (pathname.startsWith("/admin")) {
-      const cleanPath = pathname.replace(/^\/admin/, "") || "/";
-      const redirectUrl = new URL(cleanPath, req.url);
-      redirectUrl.search = url.search;
-      return NextResponse.redirect(redirectUrl);
+      // Already on admin path, let it through
+      return NextResponse.next();
     }
 
     if (pathname.startsWith("/portal")) {
+      // Redirect portal requests to portal subdomain
       const cleanPath = pathname.replace(/^\/portal/, "") || "/";
       return NextResponse.redirect(buildAppUrl(url, hostname, "portal", cleanPath));
     }
 
     if (!pathname.startsWith("/_next") && !pathname.startsWith("/api")) {
+      // Rewrite all other paths to /admin/...
       const requestHeaders = new Headers(req.headers);
       requestHeaders.set("x-subdomain-rewritten", "true");
       const rewriteUrl = new URL(`/admin${pathname}`, req.url);
@@ -48,18 +50,18 @@ export const proxy = auth((req) => {
 
   if (currentHost === "portal") {
     if (pathname.startsWith("/portal")) {
-      const cleanPath = pathname.replace(/^\/portal/, "") || "/";
-      const redirectUrl = new URL(cleanPath, req.url);
-      redirectUrl.search = url.search;
-      return NextResponse.redirect(redirectUrl);
+      // Already on portal path, let it through
+      return NextResponse.next();
     }
 
     if (pathname.startsWith("/admin")) {
-      const cleanPath = pathname.replace(/^\/admin/, "") || "/";
+      // Redirect admin requests to admin subdomain
+      const cleanPath = pathname.replace(/^\/admin/, "") || "/dashboard";
       return NextResponse.redirect(buildAppUrl(url, hostname, "admin", cleanPath));
     }
 
     if (!pathname.startsWith("/_next") && !pathname.startsWith("/api")) {
+      // Rewrite all other paths to /portal/...
       const requestHeaders = new Headers(req.headers);
       requestHeaders.set("x-subdomain-rewritten", "true");
       const rewriteUrl = new URL(`/portal${pathname}`, req.url);
@@ -74,6 +76,7 @@ export const proxy = auth((req) => {
 
   if (currentHost === "main") {
     if (pathname.startsWith("/admin") || pathname.startsWith("/portal")) {
+      // Redirect admin/portal paths on main domain to home
       return NextResponse.redirect(new URL("/", req.url));
     }
   }
