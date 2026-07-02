@@ -376,7 +376,7 @@ export default function StudentIDCardClient({
                 <span className="text-[0.48em] font-extrabold text-white leading-none tracking-wider">
                   {academyProfile.phone && academyProfile.phone2
                     ? `${academyProfile.phone} / ${academyProfile.phone2}`
-                    : academyProfile.phone || academyProfile.phone2 || "7977177463 / 7757965651"}
+                    : academyProfile.phone || academyProfile.phone2 || "Contact for details"}
                 </span>
               </div>
               {/* Row 3: Email */}

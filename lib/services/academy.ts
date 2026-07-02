@@ -6,10 +6,10 @@ export async function getAcademyProfile() {
     profile = await prisma.academyProfile.create({
       data: {
         email: "",
-        phone: "7977177463",
-        phone2: "7757965651",
-        address: "Office No 7, 2nd floor, Nine Hills Plaza\nopposite Tribeca High street NIBM Annexe\nPune 411060",
-        website: "www.theacademyofgymnastics.com",
+        phone: "9999999999",
+        phone2: "9999999999",
+        address: "Academy Address\nCity, State\nPincode",
+        website: "www.academy.com",
       },
     });
   }

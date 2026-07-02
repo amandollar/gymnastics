@@ -149,7 +149,7 @@ export function SalarySlip({
               <span>
                 {academyProfile.phone && academyProfile.phone2
                   ? `${academyProfile.phone} / ${academyProfile.phone2}`
-                  : academyProfile.phone || academyProfile.phone2 || "7977177463 / 7757965651"}
+                  : academyProfile.phone || academyProfile.phone2 || "Contact for details"}
               </span>
             </div>
             {academyProfile.email && (
@@ -446,17 +446,9 @@ export function SalarySlip({
           }}
         >
           <div style={{ textAlign: "center", width: "180px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <img
-              src="/saif-tamboli-sign.webp"
-              alt="Authorized Signature"
-              style={{
-                width: "120px",
-                height: "auto",
-                maxHeight: "60px",
-                objectFit: "contain",
-                marginBottom: "4px",
-              }}
-            />
+            <div style={{ height: "60px", marginBottom: "4px" }}>
+              {/* Signature space - removed for privacy */}
+            </div>
             <div style={{ borderTop: "1.5px solid #cbd5e1", width: "100%", paddingTop: "6px", fontSize: "12px", fontWeight: 700, color: "#334155" }}>
               Authorized Signatory
             </div>

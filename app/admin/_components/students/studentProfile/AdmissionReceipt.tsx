@@ -119,7 +119,7 @@ export function AdmissionReceipt({
               <span>
                 {academyProfile.phone && academyProfile.phone2
                   ? `${academyProfile.phone} / ${academyProfile.phone2}`
-                  : academyProfile.phone || academyProfile.phone2 || "7977177463 / 7757965651"}
+                  : academyProfile.phone || academyProfile.phone2 || "Contact for details"}
               </span>
             </div>
 
@@ -396,7 +396,7 @@ export function AdmissionReceipt({
 
         {/* Signature Line */}
         <div style={{ textAlign: "center", width: "200px", display: "flex", flexDirection: "column", alignItems: "center" }}>
-          {/* Signature Image Container */}
+          {/* Signature space */}
           <div
             style={{
               height: "45px",
@@ -405,17 +405,7 @@ export function AdmissionReceipt({
               justifyContent: "center",
               marginBottom: "4px",
             }}
-          >
-            <img
-              src="/saif-tamboli-sign.webp"
-              alt="Signature"
-              style={{
-                maxHeight: "100%",
-                maxWidth: "140px",
-                objectFit: "contain",
-              }}
-            />
-          </div>
+          />
           <div
             style={{
               width: "100%",
@@ -442,7 +432,7 @@ export function AdmissionReceipt({
               color: "#0f172a",
             }}
           >
-            (ALISHA SAIF TAMBOLI)
+            Authorized Signatory
           </p>
         </div>
       </div>

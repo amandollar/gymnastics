@@ -62,7 +62,7 @@ export default function LandingLayout({
           &copy; {new Date().getFullYear()} The Academy of Gymnastics
         </span>
         <div className="flex items-center gap-4">
-          <a href="mailto:info@academyofgymnastics.com" className="hover:text-zinc-800 transition-colors">
+          <a href="mailto:contact@academy.com" className="hover:text-zinc-800 transition-colors">
             Contact
           </a>
           <span className="text-zinc-300">&bull;</span>

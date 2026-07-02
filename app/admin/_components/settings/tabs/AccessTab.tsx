@@ -416,7 +416,7 @@ export default function AccessTab({
                       required
                       value={formName}
                       onChange={(e) => setFormName(e.target.value)}
-                      placeholder="e.g. Saif Tamboli"
+                      placeholder="e.g. John Smith"
                       className={inputClass}
                     />
                     {createState?.errors?.name && (
@@ -518,7 +518,7 @@ export default function AccessTab({
                       required
                       value={editFormName}
                       onChange={(e) => setEditFormName(e.target.value)}
-                      placeholder="e.g. Saif Tamboli"
+                      placeholder="e.g. John Smith"
                       className={inputClass}
                     />
                     {editState?.errors?.name && (

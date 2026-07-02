@@ -111,7 +111,7 @@ export default function AcademyTab({ initialProfile, isReadOnly = false }: Acade
                 disabled={isReadOnly}
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="e.g. 7977177463"
+                placeholder="e.g. 9876543210"
                 className={inputClass}
               />
             </div>
@@ -126,7 +126,7 @@ export default function AcademyTab({ initialProfile, isReadOnly = false }: Acade
                 disabled={isReadOnly}
                 value={phone2}
                 onChange={(e) => setPhone2(e.target.value)}
-                placeholder="e.g. 7757965651"
+                placeholder="e.g. 9876543211"
                 className={inputClass}
               />
             </div>
@@ -158,7 +158,7 @@ export default function AcademyTab({ initialProfile, isReadOnly = false }: Acade
                 disabled={isReadOnly}
                 value={website}
                 onChange={(e) => setWebsite(e.target.value)}
-                placeholder="e.g. www.theacademyofgymnastics.com"
+                placeholder="e.g. www.youracademy.com"
                 className={inputClass}
               />
             </div>
@@ -173,7 +173,7 @@ export default function AcademyTab({ initialProfile, isReadOnly = false }: Acade
                 disabled={isReadOnly}
                 value={parentPortalUrl}
                 onChange={(e) => setParentPortalUrl(e.target.value)}
-                placeholder="e.g. https://theacademyofgymnastics.com/parents"
+                placeholder="e.g. https://youracademy.com/parents"
                 className={inputClass}
               />
             </div>

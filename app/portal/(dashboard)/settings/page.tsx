@@ -38,11 +38,11 @@ export default async function SettingsPage() {
 
   const profileData = academyProfile || {
     id: "default",
-    email: "info@academyofgymnastics.com",
-    phone: "+91 7977177463",
-    phone2: "+91 7757965651",
-    address: "Office No 7, 2nd floor, Nine Hills Plaza\nopposite Tribeca High street NIBM Annexe\nPune 411060",
-    website: "www.academyofgymnastics.com",
+    email: "contact@academy.com",
+    phone: "+91 9999999999",
+    phone2: "+91 9999999999",
+    address: "Academy Address\nCity, State\nPincode",
+    website: "www.academy.com",
     updatedAt: new Date(),
   };
 

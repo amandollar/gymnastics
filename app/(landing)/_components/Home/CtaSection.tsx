@@ -142,12 +142,12 @@ export default function CtaSection({ phone }: { phone?: string }) {
             Register Now
           </Link>
           <a
-            href={phone ? getTelLink(phone) : "tel:+917977177463"}
+            href={phone ? getTelLink(phone) : "tel:+919999999999"}
             id="cta-call-btn"
             className="inline-flex items-center justify-center gap-3 px-8 py-4 rounded-full border border-white/20 hover:border-white/50 text-white text-sm font-bold uppercase tracking-wider transition-colors duration-300 w-full sm:w-auto"
           >
             <Phone className="w-4 h-4" />
-            Call Us — {phone ? formatPhoneNumber(phone) : "+91 79771 77463"}
+            Call Us — {phone ? formatPhoneNumber(phone) : "Contact Us"}
           </a>
         </div>
       </div>

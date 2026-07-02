@@ -30,7 +30,7 @@ const faqs = [
   },
   {
     q: "How do I register my child?",
-    a: "You can register through our website or call us directly on +91 79771 77463. Our team will guide you through the process and answer any questions.",
+    a: "You can register through our website or call us directly. Our team will guide you through the process and answer any questions.",
   },
 ];
 
@@ -66,17 +66,14 @@ export default function FaqBlogSection({ phone, phone2 }: { phone?: string; phon
   const [animate, setAnimate] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
-  const formattedPhone = phone ? formatPhoneNumber(phone) : "+91 79771 77463";
+  const formattedPhone = phone ? formatPhoneNumber(phone) : "Contact Us";
   const formattedPhone2 = phone2 ? formatPhoneNumber(phone2) : "";
   const phoneText = formattedPhone2 ? `${formattedPhone} / ${formattedPhone2}` : formattedPhone;
 
   const dynamicFaqs = useMemo(() => {
     return faqs.map((faq) => {
-      if (faq.a.includes("+91 79771 77463")) {
-        return {
-          ...faq,
-          a: faq.a.replace("+91 79771 77463", phoneText),
-        };
+      // Apply any dynamic replacements if needed
+      return faq;
       }
       return faq;
     });

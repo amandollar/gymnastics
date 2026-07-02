@@ -220,7 +220,7 @@ export default function EmployeeIDCardClient({
             {/* Bottom Footer Website */}
             <div className="absolute bottom-[0.55em] left-0 right-0 z-10 text-center px-[1.2em]">
               <p className="text-[0.58em] font-semibold text-white lowercase tracking-wide truncate">
-                {academyProfile.website || "www.theacademyofgymnastics.com"}
+                {academyProfile.website || "www.academy.com"}
               </p>
             </div>
           </div>

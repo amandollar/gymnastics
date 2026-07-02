@@ -225,7 +225,7 @@ export default function AboutTeaserSection({ phone }: { phone?: string }) {
 
         {/* Right: Call Us Block */}
         <a
-          href={phone ? getTelLink(phone) : "tel:+917977177463"}
+          href={phone ? getTelLink(phone) : "#"}
           className="clip-slant-right relative overflow-hidden flex-1 flex items-center justify-center gap-4 sm:gap-5 py-6 pl-8 sm:pl-12 pr-6 sm:pr-10 bg-[#121214] hover:bg-[#18181b] transition-colors duration-300 group text-white cursor-pointer select-none border-t border-zinc-800 md:border-t-0 md:-ml-[22px]"
         >
           {/* Subtle Hover Glow */}
@@ -241,7 +241,7 @@ export default function AboutTeaserSection({ phone }: { phone?: string }) {
               Call Us
             </span>
             <span className="text-base sm:text-lg md:text-xl font-bold tracking-wide mt-0.5 text-white">
-              {phone ? formatPhoneNumber(phone) : "+91 79771 77463"}
+              {phone ? formatPhoneNumber(phone) : "Contact Us"}
             </span>
           </div>
         </a>
