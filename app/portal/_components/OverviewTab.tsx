@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { Info, Download, ChevronRight } from "lucide-react";
 import StudentAvatar from "@/app/admin/_components/students/StudentAvatar";
@@ -15,18 +15,7 @@ interface OverviewTabProps {
 
 export default function OverviewTab({ student, academyProfile }: OverviewTabProps) {
   const [printData, setPrintData] = useState<any | null>(null);
-
-  const [isSubdomain, setIsSubdomain] = useState(false);
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const host = window.location.hostname;
-      if (host === "portal.localhost" || host.startsWith("portal.")) {
-        setIsSubdomain(true);
-      }
-    }
-  }, []);
-
-  const profileUrl = isSubdomain ? "/profile" : "/portal/profile";
+  const profileUrl = "/parents/profile";
 
   const activePlan = student.plans?.find((p: any) => p.isActive) || null;
 
@@ -415,7 +404,7 @@ export default function OverviewTab({ student, academyProfile }: OverviewTabProp
                   {INR(student.registrationFee)}
                 </span>
                 <a
-                  href="/portal/admission-receipt"
+                  href="/parents/admission-receipt"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-brand-orange-500/50 hover:text-brand-orange-500 dark:hover:text-brand-orange-400 text-zinc-700 dark:text-zinc-300 transition-colors shadow-3xs cursor-pointer"
@@ -447,7 +436,7 @@ export default function OverviewTab({ student, academyProfile }: OverviewTabProp
                     setPrintData(null);
                     // restore title
                     const firstName = student.name.trim().split(/\s+/)[0]?.toLowerCase() || "student";
-                    document.title = `TAG${student.studentNumber}-${firstName}-portal`;
+                    document.title = `TAG${student.studentNumber}-${firstName}-parents`;
                   }}
                   className="bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-semibold text-xs px-4 py-2 rounded-xl cursor-pointer"
                 >

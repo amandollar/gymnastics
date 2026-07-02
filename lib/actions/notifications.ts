@@ -28,6 +28,7 @@ export async function createNotificationAction(studentId: string, message: strin
     });
 
     revalidatePath(`/admin/students/${studentId}`);
+    revalidatePath("/parents");
     revalidatePath("/portal");
     updateTag("notifications");
 
@@ -87,6 +88,7 @@ export async function markNotificationsAsReadAction(studentId: string) {
     });
 
     revalidatePath(`/admin/students/${studentId}`);
+    revalidatePath("/parents");
     revalidatePath("/portal");
     updateTag("notifications");
 

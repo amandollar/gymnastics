@@ -10,7 +10,7 @@ export const metadata = {
 export default async function PortalAdmissionReceiptPage() {
   const user = await getSessionUser();
   if (!user || user.role !== "PARENT" || !user.id) {
-    redirect("/portal/login");
+    redirect("/parents/login");
   }
 
   const [student, academyProfile] = await Promise.all([

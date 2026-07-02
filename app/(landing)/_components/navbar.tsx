@@ -94,7 +94,7 @@ export default function Navbar() {
               Register
             </Link>
             <Link
-              href="/portal"
+              href="/parents"
               className="text-xs font-bold uppercase tracking-wider text-white bg-brand-orange-500 hover:bg-brand-orange-600 px-5 py-2.5 rounded-full transition-all duration-200 shadow-md shadow-brand-orange-500/10 hover:shadow-brand-orange-500/20 active:scale-[0.98] cursor-pointer"
             >
               Parent Portal
@@ -169,7 +169,7 @@ export default function Navbar() {
                 Register
               </Link>
               <Link
-                href="/portal"
+                href="/parents"
                 onClick={() => setIsMobileMenuOpen(false)}
                 className="flex items-center justify-center rounded-full bg-brand-orange-500 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-brand-orange-600 transition-all duration-200 cursor-pointer"
               >

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { STUDENT_LEVELS, getLevelConfig } from "@/lib/utils/level";
 import QRCode from "qrcode";
@@ -39,41 +39,19 @@ export default function PortalLayoutClient({
   children,
 }: PortalLayoutClientProps) {
   const pathname = usePathname();
-  const router = useRouter();
-
-  const [isSubdomain, setIsSubdomain] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const host = window.location.hostname;
-      if (host === "portal.localhost" || host.startsWith("portal.")) {
-        setIsSubdomain(true);
-      }
-    }
-  }, []);
-
-  const getLinkHref = (path: string) => {
-    if (isSubdomain) {
-      return path.replace(/^\/portal/, "") || "/";
-    }
-    return path;
-  };
+  const getLinkHref = (path: string) => path;
 
   const activeTab = useMemo(() => {
     if (!pathname) return "overview";
     if (
-      pathname === "/portal/attendance" ||
-      pathname.startsWith("/portal/attendance/") ||
-      pathname === "/attendance" ||
-      pathname.startsWith("/attendance/")
+      pathname === "/parents/attendance" ||
+      pathname.startsWith("/parents/attendance/")
     ) {
       return "attendance";
     }
     if (
-      pathname === "/portal/settings" ||
-      pathname.startsWith("/portal/settings/") ||
-      pathname === "/settings" ||
-      pathname.startsWith("/settings/")
+      pathname === "/parents/settings" ||
+      pathname.startsWith("/parents/settings/")
     ) {
       return "settings";
     }
@@ -287,8 +265,7 @@ export default function PortalLayoutClient({
   }, [student.parentName]);
 
   const handleLogout = () => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    signOut({ callbackUrl: `${origin}/login` });
+    signOut({ callbackUrl: "/parents/login" });
   };
 
   return (
@@ -346,7 +323,7 @@ export default function PortalLayoutClient({
         {isCollapsed && (
           <div className="flex justify-center pt-4 pb-2 relative group overflow-visible">
             <Link
-              href={getLinkHref("/portal")}
+              href={getLinkHref("/parents")}
               className="transition-transform hover:scale-105 active:scale-95 shrink-0 block cursor-pointer"
             >
               <img
@@ -373,7 +350,7 @@ export default function PortalLayoutClient({
             {!student.isTempPassword ? (
               <>
                 <Link
-                  href={getLinkHref("/portal")}
+                  href={getLinkHref("/parents")}
                   prefetch
                   className={`w-full flex items-center ${isCollapsed ? "justify-center" : "gap-2.5"} rounded-lg ${isCollapsed ? "px-2" : "px-3"} ${
                     isCollapsed ? "py-3.5" : "py-2.5"
@@ -396,7 +373,7 @@ export default function PortalLayoutClient({
                 </Link>
 
                 <Link
-                  href={getLinkHref("/portal/attendance")}
+                  href={getLinkHref("/parents/attendance")}
                   prefetch
                   className={`w-full flex items-center ${isCollapsed ? "justify-center" : "gap-2.5"} rounded-lg ${isCollapsed ? "px-2" : "px-3"} ${
                     isCollapsed ? "py-3.5" : "py-2.5"
@@ -419,7 +396,7 @@ export default function PortalLayoutClient({
                 </Link>
 
                 <Link
-                  href={getLinkHref("/portal/settings")}
+                  href={getLinkHref("/parents/settings")}
                   prefetch
                   className={`w-full flex items-center ${isCollapsed ? "justify-center" : "gap-2.5"} rounded-lg ${isCollapsed ? "px-2" : "px-3"} ${
                     isCollapsed ? "py-3.5" : "py-2.5"
@@ -582,7 +559,7 @@ export default function PortalLayoutClient({
         >
           <div className="flex h-14 items-center px-2 gap-1 justify-around">
             <Link
-              href={getLinkHref("/portal")}
+              href={getLinkHref("/parents")}
               prefetch
               className={`flex flex-col items-center justify-center w-16 h-full gap-1 text-[10px] font-bold transition-colors ${
                 activeTab === "overview"
@@ -595,7 +572,7 @@ export default function PortalLayoutClient({
             </Link>
 
             <Link
-              href={getLinkHref("/portal/attendance")}
+              href={getLinkHref("/parents/attendance")}
               prefetch
               className={`flex flex-col items-center justify-center w-16 h-full gap-1 text-[10px] font-bold transition-colors ${
                 activeTab === "attendance"
@@ -608,7 +585,7 @@ export default function PortalLayoutClient({
             </Link>
 
             <Link
-              href={getLinkHref("/portal/settings")}
+              href={getLinkHref("/parents/settings")}
               prefetch
               className={`flex flex-col items-center justify-center w-16 h-full gap-1 text-[10px] font-bold transition-colors ${
                 activeTab === "settings"

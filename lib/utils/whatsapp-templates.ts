@@ -43,7 +43,7 @@ export const ALL_VARIABLES: { key: keyof TemplateVars; label: string; example: s
   { key: "paymentMethod", label: "Payment Method",  example: "UPI" },
   { key: "transactionDate", label: "Transaction Date", example: "28/6/2026" },
   { key: "outstanding",   label: "Outstanding",     example: "₹0" },
-  { key: "portalLink",    label: "Portal Link",     example: "https://tag.app/portal/login" },
+  { key: "portalLink",    label: "Portal Link",     example: "https://tag.app/parents/login" },
   { key: "loginId",       label: "Login ID",        example: "TAG001" },
   { key: "password",      label: "Password",        example: "123456" },
   { key: "remainingSessions", label: "Remaining Sessions", example: "3" },
@@ -114,7 +114,7 @@ export function buildFeeReminderMessage({
     fee: formatINR(plan.fee),
     outstanding: formatINR(outstanding),
     planType: plan.planType === "ONE_TO_ONE" ? "Personal training" : "Group class",
-    portalLink: typeof window !== "undefined" ? `${window.location.origin}/portal/login` : "",
+    portalLink: typeof window !== "undefined" ? `${window.location.origin}/parents/login` : "",
   });
 }
 
@@ -146,6 +146,6 @@ export function buildPaymentReceivedMessage({
     paymentMethod: payment.method === "BANK_TRANSFER" ? "Bank Transfer" : payment.method,
     transactionDate: new Date(payment.date).toLocaleDateString("en-IN"),
     outstanding: formatINR(payment.newOutstanding),
-    portalLink: typeof window !== "undefined" ? `${window.location.origin}/portal/login` : "",
+    portalLink: typeof window !== "undefined" ? `${window.location.origin}/parents/login` : "",
   });
 }

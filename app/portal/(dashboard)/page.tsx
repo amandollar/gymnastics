@@ -6,7 +6,7 @@ import OverviewTab from "@/app/portal/_components/OverviewTab";
 export default async function OverviewPage() {
   const user = await getSessionUser();
   if (!user || user.role !== "PARENT" || !user.id) {
-    redirect("/portal/login");
+    redirect("/parents/login");
   }
 
   const [student, academyProfile] = await Promise.all([
@@ -15,11 +15,11 @@ export default async function OverviewPage() {
   ]);
 
   if (!student) {
-    redirect("/portal/login");
+    redirect("/parents/login");
   }
 
   if (student.isTempPassword) {
-    redirect("/portal/settings/change-password");
+    redirect("/parents/settings/change-password");
   }
 
   const profileData = academyProfile || {

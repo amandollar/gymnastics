@@ -1,6 +1,5 @@
 import type { NextAuthConfig } from "next-auth";
 import { NextResponse } from "next/server";
-import { buildAppUrl, getAppHost } from "@/lib/utils/host";
 
 export const authConfig = {
   pages: {
@@ -13,52 +12,45 @@ export const authConfig = {
     authorized({ auth, request }) {
       const { nextUrl } = request;
       const isLoggedIn = !!auth?.user;
-      const { pathname } = nextUrl;
+      const pathname =
+        nextUrl.pathname === "/portal" || nextUrl.pathname.startsWith("/portal/")
+          ? nextUrl.pathname.replace(/^\/portal/, "/parents") || "/parents"
+          : nextUrl.pathname;
       const role = (auth?.user as { role?: string })?.role;
 
-      const hostname = request.headers.get("host") || "";
-      const currentHost = getAppHost(hostname);
+      const redirectTo = (targetPath: string) =>
+        NextResponse.redirect(new URL(targetPath, request.url));
 
-      const redirectTo = (targetHost: "main" | "admin" | "portal", targetPath: string) =>
-        NextResponse.redirect(buildAppUrl(nextUrl, hostname, targetHost, targetPath));
-
-      let logicalPath = pathname;
-      if (currentHost === "admin" && !pathname.startsWith("/admin")) {
-        logicalPath = `/admin${pathname === "/" ? "/dashboard" : pathname}`;
-      } else if (currentHost === "portal" && !pathname.startsWith("/portal")) {
-        logicalPath = `/portal${pathname === "/" ? "" : pathname}`;
-      }
-
-      const isAdminRoute = logicalPath.startsWith("/admin");
-      const isAdminLoginRoute = logicalPath === "/admin/login";
-      const isPortalRoute = logicalPath.startsWith("/portal");
-      const isPortalLoginRoute = logicalPath === "/portal/login";
-      const isSettingsRoute = logicalPath === "/admin/settings";
+      const isAdminRoute = pathname.startsWith("/admin");
+      const isAdminLoginRoute = pathname === "/admin/login";
+      const isParentsRoute = pathname.startsWith("/parents");
+      const isParentsLoginRoute = pathname === "/parents/login";
+      const isSettingsRoute = pathname === "/admin/settings";
       const requiresManageAccess =
-        logicalPath === "/admin/students" ||
-        logicalPath.startsWith("/admin/students/") ||
-        logicalPath === "/admin/enquiries" ||
-        logicalPath.startsWith("/admin/enquiries/") ||
-        logicalPath === "/admin/plans" ||
-        logicalPath.startsWith("/admin/plans/");
+        pathname === "/admin/students" ||
+        pathname.startsWith("/admin/students/") ||
+        pathname === "/admin/enquiries" ||
+        pathname.startsWith("/admin/enquiries/") ||
+        pathname === "/admin/plans" ||
+        pathname.startsWith("/admin/plans/");
 
-      if (isPortalRoute) {
-        if (isPortalLoginRoute) {
+      if (isParentsRoute) {
+        if (isParentsLoginRoute) {
           if (isLoggedIn) {
             if (role === "PARENT") {
-              return redirectTo("portal", "/");
+              return redirectTo("/parents");
             }
-            return redirectTo("admin", "/dashboard");
+            return redirectTo("/admin/dashboard");
           }
           return true;
         }
 
         if (!isLoggedIn) {
-          return redirectTo("portal", "/login");
+          return redirectTo("/parents/login");
         }
 
         if (role !== "PARENT") {
-          return redirectTo("admin", "/dashboard");
+          return redirectTo("/admin/dashboard");
         }
 
         return true;
@@ -68,37 +60,37 @@ export const authConfig = {
         if (isAdminLoginRoute) {
           if (isLoggedIn) {
             if (role === "PARENT") {
-              return redirectTo("portal", "/");
+              return redirectTo("/parents");
             }
-            return redirectTo("admin", "/dashboard");
+            return redirectTo("/admin/dashboard");
           }
           return true;
         }
 
         if (!isLoggedIn) {
-          return redirectTo("admin", "/login");
+          return redirectTo("/admin/login");
         }
 
         if (role === "PARENT") {
-          return redirectTo("portal", "/");
+          return redirectTo("/parents");
         }
 
         if (isSettingsRoute && role !== "ADMIN" && role !== "STAFF") {
-          return redirectTo("admin", "/dashboard");
+          return redirectTo("/admin/dashboard");
         }
 
         if (requiresManageAccess && role !== "ADMIN" && role !== "STAFF") {
-          return redirectTo("admin", "/dashboard");
+          return redirectTo("/admin/dashboard");
         }
 
-        if (logicalPath === "/admin") {
-          return redirectTo("admin", "/dashboard");
+        if (pathname === "/admin") {
+          return redirectTo("/admin/dashboard");
         }
 
         return true;
       }
 
-      if (logicalPath === "/") {
+      if (pathname === "/") {
         return true;
       }
 

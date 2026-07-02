@@ -17,8 +17,7 @@ export default function PortalSettingsClient({
   academyProfile,
 }: PortalSettingsClientProps) {
   const handleLogout = () => {
-    const origin = typeof window !== "undefined" ? window.location.origin : "";
-    signOut({ callbackUrl: `${origin}/login` });
+    signOut({ callbackUrl: "/parents/login" });
   };
 
   const handleSwitchSibling = async (siblingId: string) => {
@@ -28,8 +27,8 @@ export default function PortalSettingsClient({
         await signIn("credentials", {
           email: "sibling_switch_token",
           password: res.token,
-          callbackUrl: "/portal",
-          redirect: true
+          callbackUrl: "/parents",
+          redirect: true,
         });
       } else {
         alert(res.message || "Failed to generate switch token");

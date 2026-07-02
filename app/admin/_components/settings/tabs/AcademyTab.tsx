@@ -173,7 +173,7 @@ export default function AcademyTab({ initialProfile, isReadOnly = false }: Acade
                 disabled={isReadOnly}
                 value={parentPortalUrl}
                 onChange={(e) => setParentPortalUrl(e.target.value)}
-                placeholder="e.g. portal.theacademyofgymnastics.com"
+                placeholder="e.g. https://theacademyofgymnastics.com/parents"
                 className={inputClass}
               />
             </div>

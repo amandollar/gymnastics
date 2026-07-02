@@ -48,7 +48,7 @@ const SAMPLE_VALUES: Required<TemplateVars> = {
   paymentMethod: "UPI",
   transactionDate: "28/6/2026",
   outstanding: "₹6,000",
-  portalLink: "tag.app/portal",
+  portalLink: "tag.app/parents",
   loginId: "TAG001",
   password: "password123",
   remainingSessions: "3",

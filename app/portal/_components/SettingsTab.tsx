@@ -146,7 +146,7 @@ export default function SettingsTab({
 
         {/* Change password item */}
         <Link
-          href="/portal/settings/change-password"
+          href="/parents/settings/change-password"
           className="w-full flex items-center justify-between px-5 py-4.5 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors text-left cursor-pointer group"
         >
           <div className="flex items-center gap-3">
@@ -300,7 +300,7 @@ export default function SettingsTab({
 
             <div className="border-t border-zinc-100 dark:border-zinc-800/60 pt-4">
               <Link
-                href="/portal/login"
+                href="/parents/login"
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-brand-orange-500 hover:text-brand-orange-500 hover:bg-brand-orange-500/[0.02] transition-colors text-xs font-bold text-zinc-600 dark:text-zinc-450 cursor-pointer"
               >
                 + Add Another Account

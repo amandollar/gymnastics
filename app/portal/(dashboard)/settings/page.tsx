@@ -7,7 +7,7 @@ import PortalSettingsClient from "./PortalSettingsClient";
 export default async function SettingsPage() {
   const user = await getSessionUser();
   if (!user || user.role !== "PARENT" || !user.id) {
-    redirect("/portal/login");
+    redirect("/parents/login");
   }
 
   const [student, academyProfile] = await Promise.all([
@@ -16,11 +16,11 @@ export default async function SettingsPage() {
   ]);
 
   if (!student) {
-    redirect("/portal/login");
+    redirect("/parents/login");
   }
 
   if (student.isTempPassword) {
-    redirect("/portal/settings/change-password");
+    redirect("/parents/settings/change-password");
   }
 
   const siblings = await prisma.student.findMany({

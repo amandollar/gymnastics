@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { getSessionUser } from "@/lib/auth-session";
 import { getStudentById } from "@/lib/services/cached";
 import Link from "next/link";
-import { headers } from "next/headers";
 import { ArrowLeft, User, Phone, Calendar, Clock, Award, ShieldAlert, BadgeCheck } from "lucide-react";
 import StudentAvatar from "@/app/admin/_components/students/StudentAvatar";
 import { formatAge, formatJoinedDate, formatTenure } from "@/lib/utils/student";
@@ -10,18 +9,15 @@ import { formatAge, formatJoinedDate, formatTenure } from "@/lib/utils/student";
 export default async function StudentProfilePage() {
   const user = await getSessionUser();
   if (!user || user.role !== "PARENT" || !user.id) {
-    redirect("/portal/login");
+    redirect("/parents/login");
   }
 
   const student = await getStudentById(user.id);
   if (!student) {
-    redirect("/portal/login");
+    redirect("/parents/login");
   }
 
-  const headerList = await headers();
-  const host = headerList.get("host") || "";
-  const isSubdomain = host === "portal.localhost" || host.startsWith("portal.");
-  const backUrl = isSubdomain ? "/" : "/portal";
+  const backUrl = "/parents";
 
   const age = formatAge(student.dateOfBirth);
   const tenure = formatTenure(student.admissionDate);

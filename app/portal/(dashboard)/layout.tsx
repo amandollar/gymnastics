@@ -11,7 +11,7 @@ export default async function DashboardLayout({
 }) {
   const user = await getSessionUser();
   if (!user || user.role !== "PARENT" || !user.id) {
-    redirect("/portal/login");
+    redirect("/parents/login");
   }
 
   const [student, academyProfile, notifications] = await Promise.all([
@@ -24,7 +24,7 @@ export default async function DashboardLayout({
   ]);
 
   if (!student) {
-    redirect("/portal/login");
+    redirect("/parents/login");
   }
 
   const siblings = await prisma.student.findMany({

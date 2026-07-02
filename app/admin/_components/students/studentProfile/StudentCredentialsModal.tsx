@@ -71,7 +71,7 @@ export default function StudentCredentialsModal({
 
   const formattedRollNumber = `TAG${String(studentNumber).padStart(3, "0")}`;
 
-  const loginUrl = `${getPortalBaseUrl(customPortalUrl, academyWebsite)}/portal/login`;
+  const loginUrl = `${getPortalBaseUrl(customPortalUrl, academyWebsite)}/login`;
   const cleanParentPhoneNumber = (parentPhoneNumber ?? "").replace(/\D/g, "");
   const whatsappNumber =
     cleanParentPhoneNumber.length === 10

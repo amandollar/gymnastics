@@ -607,6 +607,7 @@ export async function changePortalPasswordAction(
 
     revalidatePath(`/admin/students/${studentId}`);
     revalidatePath("/admin/students");
+    revalidatePath("/parents");
     revalidatePath("/portal");
     updateTag("students");
 

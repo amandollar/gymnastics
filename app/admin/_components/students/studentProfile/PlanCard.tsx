@@ -73,7 +73,7 @@ function buildInactiveMessage({
     parentName: student.parentName,
     phone: student.contactNumber,
     planType: plan.planType === "ONE_TO_ONE" ? "Personal training" : "Group class",
-    portalLink: typeof window !== "undefined" ? `${window.location.origin}/portal/login` : "",
+    portalLink: typeof window !== "undefined" ? `${window.location.origin}/parents/login` : "",
   });
 }
 

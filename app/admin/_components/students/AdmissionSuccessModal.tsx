@@ -91,7 +91,7 @@ export default function AdmissionSuccessModal({
         }
 
         // Resolve welcome text
-        const loginUrl = `${getPortalBaseUrl(portalUrl, detailsRes.academyProfile?.website)}/portal/login`;
+        const loginUrl = `${getPortalBaseUrl(portalUrl, detailsRes.academyProfile?.website)}/login`;
         const rollNumber = `TAG${String(student.studentNumber).padStart(3, "0")}`;
         const template = getEffectiveTemplate(customTemplate, "templateAdmissionWelcome");
         

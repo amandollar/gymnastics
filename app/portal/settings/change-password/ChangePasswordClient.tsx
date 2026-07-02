@@ -26,18 +26,7 @@ export default function ChangePasswordClient({ student }: ChangePasswordClientPr
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // Subdomain States
-  const [isSubdomain, setIsSubdomain] = useState(false);
-  React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const host = window.location.hostname;
-      if (host === "portal.localhost" || host.startsWith("portal.")) {
-        setIsSubdomain(true);
-      }
-    }
-  }, []);
-
-  const backUrl = isSubdomain ? "/settings" : "/portal/settings";
+  const backUrl = "/parents/settings";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

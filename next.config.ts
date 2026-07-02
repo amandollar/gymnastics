@@ -22,7 +22,32 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-
+  async redirects() {
+    return [
+      {
+        source: "/portal",
+        destination: "/parents",
+        permanent: true,
+      },
+      {
+        source: "/portal/:path*",
+        destination: "/parents/:path*",
+        permanent: true,
+      },
+    ];
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/parents",
+        destination: "/portal",
+      },
+      {
+        source: "/parents/:path*",
+        destination: "/portal/:path*",
+      },
+    ];
+  },
 };
 
 // Trigger dev server restart to reload prisma client

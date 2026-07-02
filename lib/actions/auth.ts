@@ -46,7 +46,7 @@ export async function authenticatePortal(
     await signIn("credentials", {
       email: rawData.email,
       password: rawData.password,
-      redirectTo: "/portal",
+      redirectTo: "/parents",
     });
     return undefined;
   } catch (error) {
