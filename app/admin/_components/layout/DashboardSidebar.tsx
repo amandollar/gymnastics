@@ -41,11 +41,8 @@ export default function DashboardSidebar({
     .slice(0, 2)
     .toUpperCase();
 
-  const isUserAdmin = userRole === "ADMIN" || userRole === "SUPER" || userRole === "SUPER_ADMIN";
-  const avatarSrc = isUserAdmin
-    ? "/icons/admin-profile-placeholder.webp"
-    : "/icons/staff-profile-placeholder.webp";
-  const displayRole = isUserAdmin ? "Admin" : userRole === "STAFF" ? "Staff" : userRole;
+  const displayRole = userRole === "ADMIN" || userRole === "SUPER" || userRole === "SUPER_ADMIN" ? "Admin" : userRole === "STAFF" ? "Staff" : userRole;
+  const avatarSrc = "/icons/staff-profile-placeholder.webp";
 
   return (
     <aside
@@ -62,11 +59,11 @@ export default function DashboardSidebar({
             <div className="flex items-center gap-2.5 min-w-0">
               <img
                 src="/icons/logo.webp"
-                alt="TAG"
+                alt="Academy of Gymnastics"
                 className="h-8 w-8 rounded-full border border-zinc-200 dark:border-zinc-800 object-cover shrink-0"
               />
               <div className="min-w-0">
-                <p className="truncate text-sm font-bold text-zinc-900 dark:text-zinc-100">TAG CRM</p>
+                <p className="truncate text-sm font-bold text-zinc-900 dark:text-zinc-100">Academy CRM</p>
               </div>
             </div>
 

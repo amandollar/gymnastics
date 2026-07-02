@@ -450,7 +450,7 @@ export default function CollectFeeModal({
                     type="text"
                     value={feeSearchQuery}
                     onChange={(e) => setFeeSearchQuery(e.target.value)}
-                    placeholder="Search by name or TAG ID..."
+                    placeholder="Search by name or student ID..."
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-brand-orange-500/50 transition-all"
                   />
                 </div>

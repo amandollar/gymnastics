@@ -60,7 +60,7 @@ export default function PortalLoginPage() {
               Welcome
             </h1>
             <p className="text-sm text-zinc-500 dark:text-zinc-450 font-medium">
-              Sign in with your Roll Number (e.g. TAG173) and password
+              Sign in with your Roll Number (e.g. 173) and password
             </p>
           </div>
  

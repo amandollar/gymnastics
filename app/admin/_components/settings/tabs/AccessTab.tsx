@@ -286,11 +286,7 @@ export default function AccessTab({
                           <td className="px-4 py-2 first:rounded-l-2xl">
                             <div className="flex items-center gap-3">
                               <img
-                                src={
-                                  u.role === "ADMIN"
-                                    ? "/icons/admin-profile-placeholder.webp"
-                                    : "/icons/staff-profile-placeholder.webp"
-                                }
+                                src="/icons/staff-profile-placeholder.webp"
                                 alt={u.name}
                                 className="h-14 w-14 shrink-0 rounded-full object-cover bg-zinc-100 dark:bg-zinc-900"
                               />

@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "TAG CRM · Academy of Gymnastics",
+  title: "Academy of Gymnastics CRM",
   description: "Staff portal for The Academy of Gymnastics",
   icons: {
     icon: "/icons/logo.webp",
